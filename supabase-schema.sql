@@ -221,3 +221,17 @@ create table public.hem_koperasi (
 );
 alter table public.hem_koperasi enable row level security;
 create policy "anon full access" on public.hem_koperasi for all to anon using (true) with check (true);
+
+-- ─── 16. NOTIS & KEMASKINI ──────────────────────────────
+drop table if exists public.notis cascade;
+create table public.notis (
+  id         uuid primary key default gen_random_uuid(),
+  icon       text default '📌',
+  teks       text not null,
+  tag        text default 'Maklumat',
+  tc         text default '#6366f1',
+  bg         text default '#f0f0ff',
+  created_at timestamptz default now()
+);
+alter table public.notis enable row level security;
+create policy "anon full access" on public.notis for all to anon using (true) with check (true);

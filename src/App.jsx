@@ -23,12 +23,14 @@ const MODULES = [
     ids:["murid-pra","aktiviti-pra","penilaian-pra","laporan-pra"] },
 ];
 
-const UPDATES = [
-  { icon:"📅", text:"Mesyuarat Kurikulum Bil.3 — Jumaat ini 2:00 PM", tag:"Segera", tc:"#ef4444", bg:"#fef2f2" },
-  { icon:"📋", text:"PAJSK suku 2 perlu dikemaskini sebelum 30 Jun", tag:"Peringatan", tc:"#f59e0b", bg:"#fffbeb" },
-  { icon:"📦", text:"Laporan Aset JKPAK Q2 berjaya dijana", tag:"Selesai", tc:"#22c55e", bg:"#f0fdf4" },
-  { icon:"👦", text:"12 murid baharu didaftarkan minggu ini", tag:"Baharu", tc:"#2563eb", bg:"#eff6ff" },
+const TAG_OPTS = [
+  { lbl:"Segera",     tc:"#ef4444", bg:"#fef2f2" },
+  { lbl:"Peringatan", tc:"#f59e0b", bg:"#fffbeb" },
+  { lbl:"Maklumat",   tc:"#6366f1", bg:"#f0f0ff" },
+  { lbl:"Baharu",     tc:"#2563eb", bg:"#eff6ff" },
+  { lbl:"Selesai",    tc:"#22c55e", bg:"#f0fdf4" },
 ];
+const NOTIS_ICONS = ["📅","📋","📦","👦","📢","⚠️","✅","🏫","📌","🔔"];
 
 // ─── KURIKULUM DATA ──────────────────────────────────────────────────────────
 const SC = {
@@ -1292,6 +1294,30 @@ function Overview({ onNav, user }) {
     fetchStats();
   }, []);
 
+  const [notisData, setNotisData] = useState([]);
+  const [showAddNotis, setShowAddNotis] = useState(false);
+  const [notisForm, setNotisForm] = useState({ icon:"📌", teks:"", tag:"Maklumat" });
+
+  const loadNotis = async () => {
+    const { data } = await supabase.from('notis').select('*').order('created_at', { ascending:false });
+    setNotisData(data||[]);
+  };
+  useEffect(() => { loadNotis(); }, []);
+
+  const addNotis = async () => {
+    if (!notisForm.teks.trim()) return;
+    const tagCfg = TAG_OPTS.find(t=>t.lbl===notisForm.tag) || TAG_OPTS[2];
+    await supabase.from('notis').insert([{ icon:notisForm.icon, teks:notisForm.teks, tag:notisForm.tag, tc:tagCfg.tc, bg:tagCfg.bg }]);
+    setShowAddNotis(false);
+    setNotisForm({ icon:"📌", teks:"", tag:"Maklumat" });
+    loadNotis();
+  };
+
+  const delNotis = async (id) => {
+    await supabase.from('notis').delete().eq('id', id);
+    setNotisData(d=>d.filter(r=>r.id!==id));
+  };
+
   const STATS = [
     { lbl:"Jumlah Murid",   val:liveStats.murid,    ico:"👦",   color:"#2563eb", featured:true },
     { lbl:"Jumlah Guru",    val:liveStats.guru,     ico:"👩‍🏫",  color:"#0ea5e9" },
@@ -1346,19 +1372,54 @@ function Overview({ onNav, user }) {
       {/* Updates */}
       <div className="sec-hd">
         <div className="sec-title">📌 Notis & Kemaskini</div>
-        <span className="sec-sub">{UPDATES.length} item</span>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <span className="sec-sub">{notisData.length} item</span>
+          <button className="btn-add" onClick={()=>setShowAddNotis(true)}>+ Tambah</button>
+        </div>
       </div>
       <div className="updates" style={{marginBottom:8}}>
-        {UPDATES.map((u,i)=>(
-          <div className="upd-card" key={i} style={{animationDelay:`${i*0.07}s`}}>
+        {notisData.length === 0 && (
+          <div style={{textAlign:"center",padding:"24px",color:"var(--text3)",fontWeight:700,fontSize:14}}>
+            Tiada notis. Tambah yang pertama!
+          </div>
+        )}
+        {notisData.map((u,i)=>(
+          <div className="upd-card" key={u.id} style={{animationDelay:`${i*0.07}s`}}>
             <div className="upd-ico" style={{background:u.bg}}>{u.icon}</div>
             <div style={{flex:1,minWidth:0}}>
-              <div className="upd-text">{u.text}</div>
+              <div className="upd-text">{u.teks}</div>
             </div>
             <div className="upd-tag" style={{background:u.bg,color:u.tc}}>{u.tag}</div>
+            <button onClick={()=>delNotis(u.id)} style={{marginLeft:8,background:"none",border:"none",cursor:"pointer",fontSize:15,opacity:0.45,lineHeight:1}} title="Padam">🗑️</button>
           </div>
         ))}
       </div>
+      {showAddNotis && (
+        <Modal title="Tambah Notis" onClose={()=>setShowAddNotis(false)}>
+          <div className="form-field">
+            <label className="form-label">Ikon</label>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:4}}>
+              {NOTIS_ICONS.map(ic=>(
+                <button key={ic} onClick={()=>setNotisForm(f=>({...f,icon:ic}))}
+                  style={{fontSize:20,background:notisForm.icon===ic?"var(--accent-lt)":"var(--card)",border:`2px solid ${notisForm.icon===ic?"var(--accent)":"var(--border)"}`,borderRadius:8,padding:"4px 8px",cursor:"pointer"}}>
+                  {ic}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="form-field">
+            <label className="form-label">Teks Notis</label>
+            <input className="form-input" placeholder="cth: Mesyuarat PKG Jumaat ini 2PM" value={notisForm.teks} onChange={e=>setNotisForm(f=>({...f,teks:e.target.value}))}/>
+          </div>
+          <div className="form-field">
+            <label className="form-label">Tag</label>
+            <select className="form-input" value={notisForm.tag} onChange={e=>setNotisForm(f=>({...f,tag:e.target.value}))}>
+              {TAG_OPTS.map(t=><option key={t.lbl}>{t.lbl}</option>)}
+            </select>
+          </div>
+          <button className="btn-add" style={{width:"100%",justifyContent:"center"}} onClick={addNotis}>Simpan Notis</button>
+        </Modal>
+      )}
 
       {/* Modules */}
       <div className="sec-hd">
