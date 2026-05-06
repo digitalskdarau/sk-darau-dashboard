@@ -2570,7 +2570,9 @@ function Page({ modId, subId }) {
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try { const s = localStorage.getItem("edu-user"); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
   const [sbOpen, setSbOpen] = useState(false);
   const [exp, setExp] = useState("");
   const [actMod, setActMod] = useState(null);
@@ -2588,7 +2590,7 @@ export default function App() {
   const sName = idx>=0 ? m.subs[idx] : "";
   const initials = user ? user.name.split(" ").map(w=>w[0]).join("").slice(0,2) : "";
 
-  if (!user) return <Login onLogin={u=>setUser(u)}/>;
+  if (!user) return <Login onLogin={u=>{ localStorage.setItem("edu-user", JSON.stringify(u)); setUser(u); }}/>;
 
   return (
     <>
@@ -2596,7 +2598,7 @@ export default function App() {
       <div className="app">
         <Sidebar open={sbOpen} onClose={()=>setSbOpen(false)}
           exp={exp} setExp={setExp} actMod={actMod} actSub={actSub}
-          onNav={onNav} user={user} onLogout={()=>setUser(null)}/>
+          onNav={onNav} user={user} onLogout={()=>{ localStorage.removeItem("edu-user"); setUser(null); }}/>
 
         <div className="main">
           <div className="topbar">
