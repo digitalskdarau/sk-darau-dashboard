@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from './lib/supabase.js';
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 const MODULES = [
@@ -1108,6 +1109,78 @@ body::before {
   .panitia-grid { grid-template-columns:1fr 1fr; }
   .prog-grid { grid-template-columns:1fr; }
 }
+
+/* ── MODAL ── */
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal-overlay {
+  position:fixed; inset:0; z-index:1000;
+  background:rgba(5,11,25,0.65);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  display:flex; align-items:center; justify-content:center;
+  padding:20px; animation:fadeIn 0.15s ease;
+}
+.modal-card {
+  background:var(--surface-s); border:1px solid var(--border);
+  border-radius:20px; width:100%; max-width:440px;
+  box-shadow:var(--shadow-lg);
+  animation:pop 0.22s cubic-bezier(.34,1.56,.64,1) both;
+}
+.modal-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-bottom:1px solid var(--divider);
+}
+.modal-title { font-size:15px; font-weight:900; color:var(--text); font-family:'Plus Jakarta Sans',sans-serif; }
+.modal-close {
+  width:30px; height:30px; border-radius:8px;
+  background:var(--accent-lt); border:1px solid var(--border);
+  color:var(--text2); cursor:pointer; font-size:13px;
+  display:flex; align-items:center; justify-content:center; transition:all 0.15s;
+}
+.modal-close:hover { background:rgba(239,68,68,0.1); color:#ef4444; }
+.modal-body { padding:20px; }
+
+/* Forms */
+.form-field { margin-bottom:13px; }
+.form-label { display:block; font-size:10.5px; font-weight:900; color:var(--accent); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:6px; }
+.form-input {
+  width:100%; padding:9px 13px;
+  background:var(--input-bg); border:1px solid var(--input-br);
+  border-radius:10px; color:var(--text);
+  font-size:13px; font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  outline:none; transition:all 0.2s;
+}
+.form-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-ring); }
+.form-input:disabled { opacity:0.55; cursor:not-allowed; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.btn-primary {
+  width:100%; padding:11px;
+  background:linear-gradient(135deg,#1d4ed8,#3b82f6);
+  border:none; border-radius:12px;
+  color:white; font-size:14px; font-weight:900;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  cursor:pointer; margin-top:4px;
+  box-shadow:0 4px 14px rgba(37,99,235,0.3); transition:all 0.2s;
+}
+.btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(37,99,235,0.4); }
+.btn-add {
+  display:flex; align-items:center; gap:6px;
+  padding:8px 16px; border-radius:11px;
+  background:var(--accent); border:none; color:white;
+  font-size:12.5px; font-weight:800;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  cursor:pointer; transition:all 0.2s;
+  box-shadow:0 3px 10px rgba(37,99,235,0.25);
+}
+.btn-add:hover { transform:translateY(-1px); box-shadow:0 5px 14px rgba(37,99,235,0.38); }
+.btn-del {
+  padding:4px 9px; border-radius:7px;
+  background:transparent; border:1px solid transparent;
+  color:var(--text3); font-size:12px; cursor:pointer;
+  font-family:'Plus Jakarta Sans',sans-serif; transition:all 0.15s;
+}
+.btn-del:hover { background:rgba(239,68,68,0.1); color:#ef4444; border-color:rgba(239,68,68,0.2); }
+.loading { padding:48px; text-align:center; color:var(--text3); font-size:14px; font-weight:700; animation:float 2s ease-in-out infinite; }
 `;
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
@@ -1414,6 +1487,27 @@ function Overview({ onNav, user }) {
   );
 }
 
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+async function seedOnce(table, rows) {
+  const { count } = await supabase.from(table).select('*', { count:'exact', head:true });
+  if (count === 0) await supabase.from(table).insert(rows);
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+function Modal({ title, onClose, children }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={e=>e.stopPropagation()}>
+        <div className="modal-head">
+          <div className="modal-title">{title}</div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 // ─── KURIKULUM — shared page wrapper ─────────────────────────────────────────
 function KurPage({ title, sub, stats, children }) {
   return (
@@ -1438,327 +1532,690 @@ function KurPage({ title, sub, stats, children }) {
 
 // ─── 1. JADUAL WAKTU ─────────────────────────────────────────────────────────
 function JadualWaktu() {
+  const HARI = ["Isnin","Selasa","Rabu","Khamis","Jumaat"];
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [kelas, setKelas] = useState("Tahun 4 Angsana");
   const [q, setQ] = useState("");
-  const jadual = JADUAL_DB[kelas] || JADUAL_DB["Tahun 4 Angsana"];
-  const hari = ["Isnin","Selasa","Rabu","Khamis","Jumaat"];
-  const search = q.toLowerCase().trim();
+  const [editCell, setEditCell] = useState(null);
 
-  const matchCell = (cell) => {
-    if (!search || !cell) return null;
-    return cell.s.toLowerCase().includes(search) || cell.g.toLowerCase().includes(search);
+  useEffect(() => {
+    const init = async () => {
+      const { count } = await supabase.from('jadual_waktu').select('*',{count:'exact',head:true});
+      if (count === 0) {
+        const jadualRows = [];
+        KELAS_LIST.forEach(k => {
+          const slots = JADUAL_DB[k]; if (!slots) return;
+          slots.forEach((row, ri) => {
+            if (!row) return;
+            row.forEach((cell, ci) => {
+              jadualRows.push({ kelas:k, hari:HARI[ci], waktu_slot:ri, subjek:cell.s, guru:cell.g });
+            });
+          });
+        });
+        await supabase.from('jadual_waktu').insert(jadualRows);
+      }
+    };
+    init();
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data } = await supabase.from('jadual_waktu').select('*').eq('kelas', kelas);
+      setRows(data || []);
+      setLoading(false);
+    };
+    load();
+  }, [kelas]);
+
+  const buildGrid = () => WAKTU_SLOTS.map((_,ri) => {
+    if (ri === 5) return null;
+    return HARI.map(h => {
+      const c = rows.find(r => r.waktu_slot===ri && r.hari===h);
+      return c ? { s:c.subjek, g:c.guru, id:c.id } : null;
+    });
+  });
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (editCell.id) {
+      await supabase.from('jadual_waktu').update({ subjek:editCell.subjek, guru:editCell.guru }).eq('id', editCell.id);
+    } else {
+      await supabase.from('jadual_waktu').insert([{ kelas, hari:editCell.hari, waktu_slot:editCell.ri, subjek:editCell.subjek, guru:editCell.guru }]);
+    }
+    setEditCell(null);
+    const { data } = await supabase.from('jadual_waktu').select('*').eq('kelas', kelas);
+    setRows(data || []);
   };
 
-  // count unique subjects for stats
-  const allCells = jadual.flat().filter(Boolean);
-  const uniqueSubj = [...new Set(allCells.map(c=>c.s))].length;
-  const uniqueGuru = [...new Set(allCells.map(c=>c.g))].length;
+  const grid = buildGrid();
+  const search = q.toLowerCase().trim();
+  const matchCell = (cell) => !search||!cell ? null : cell.s.toLowerCase().includes(search)||cell.g.toLowerCase().includes(search);
+  const uniqueSubj = [...new Set(rows.map(r=>r.subjek))].length;
+  const uniqueGuru = [...new Set(rows.map(r=>r.guru))].length;
 
   return (
-    <KurPage
-      title="Jadual Waktu"
-      sub="Kurikulum · SK Darau, Kota Kinabalu"
+    <KurPage title="Jadual Waktu" sub="Kurikulum · SK Darau, Kota Kinabalu"
       stats={[
-        { ico:"🏫", val:KELAS_LIST.length, lbl:"Jumlah Kelas" },
-        { ico:"📚", val:uniqueSubj, lbl:"Mata Pelajaran" },
-        { ico:"👩‍🏫", val:uniqueGuru, lbl:"Guru Mengajar" },
-        { ico:"⏰", val:10, lbl:"Waktu / Hari" },
-      ]}
-    >
+        {ico:"🏫",val:KELAS_LIST.length,lbl:"Jumlah Kelas"},
+        {ico:"📚",val:uniqueSubj,lbl:"Mata Pelajaran"},
+        {ico:"👩‍🏫",val:uniqueGuru,lbl:"Guru Mengajar"},
+        {ico:"⏰",val:10,lbl:"Waktu / Hari"},
+      ]}>
       <div className="kur-header">
         <select className="kur-select" value={kelas} onChange={e=>setKelas(e.target.value)}>
           {KELAS_LIST.map(k=><option key={k}>{k}</option>)}
         </select>
         <div className="kur-search-wrap">
           <span className="kur-search-ico">🔍</span>
-          <input className="kur-search" placeholder="Cari subjek atau guru…"
-            value={q} onChange={e=>setQ(e.target.value)} />
+          <input className="kur-search" placeholder="Cari subjek atau guru…" value={q} onChange={e=>setQ(e.target.value)}/>
         </div>
-        {q && (
-          <button onClick={()=>setQ("")}
-            style={{padding:"8px 14px",borderRadius:10,border:"1px solid var(--border)",background:"var(--surface)",color:"var(--text2)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
-            ✕ Bersih
-          </button>
-        )}
+        {q&&<button className="btn-del" onClick={()=>setQ("")}>✕ Bersih</button>}
+        <div style={{fontSize:11,color:"var(--text3)",fontWeight:700}}>Klik sel untuk edit</div>
       </div>
 
-      <div className="jadual-wrap">
-        <table className="jadual-table">
-          <thead>
-            <tr>
-              <th>Waktu</th>
-              {hari.map(h=><th key={h}>{h}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {WAKTU_SLOTS.map((waktu, ri) => {
-              const row = jadual[ri];
-              if (!row) {
+      {loading ? <div className="loading">⏳ Memuatkan jadual…</div> : (
+        <div className="jadual-wrap">
+          <table className="jadual-table">
+            <thead><tr><th>Waktu</th>{HARI.map(h=><th key={h}>{h}</th>)}</tr></thead>
+            <tbody>
+              {WAKTU_SLOTS.map((waktu,ri) => {
+                const row = grid[ri];
+                if (!row) return <tr key={ri} className="jadual-rehat"><td colSpan={6} style={{textAlign:"center"}}>— Rehat —</td></tr>;
                 return (
-                  <tr key={ri} className="jadual-rehat">
-                    <td colSpan={6} style={{textAlign:"center"}}>— Rehat —</td>
+                  <tr key={ri}>
+                    <td>{waktu}</td>
+                    {row.map((cell,ci) => {
+                      const cfg = SC[cell?.s] || {c:"#94a3b8",bg:"var(--accent-lt)",i:"+"};
+                      const m = matchCell(cell);
+                      return (
+                        <td key={ci} className={search?(m?"j-match":"j-dim"):""}>
+                          <div className="jadual-cell" style={{background:cfg.bg,cursor:"pointer",opacity:cell?1:0.5}}
+                            onClick={()=>setEditCell({id:cell?.id||null,ri,hari:HARI[ci],subjek:cell?.s||"",guru:cell?.g||""})}>
+                            {cell
+                              ? <><span className="jadual-cell-sub" style={{color:cfg.c}}>{cfg.i} {cell.s}</span><span className="jadual-cell-guru">{cell.g}</span></>
+                              : <span style={{fontSize:18,color:"var(--text3)"}}>+</span>
+                            }
+                          </div>
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
-              }
-              return (
-                <tr key={ri}>
-                  <td>{waktu}</td>
-                  {row.map((cell, ci) => {
-                    const cfg = SC[cell.s] || { c:"#475569", bg:"#f8fafc", i:"📘" };
-                    const m = matchCell(cell);
-                    const cls = search ? (m ? "j-match" : "j-dim") : "";
-                    return (
-                      <td key={ci} className={cls}>
-                        <div className="jadual-cell" style={{background:cfg.bg}}>
-                          <span className="jadual-cell-sub" style={{color:cfg.c}}>{cfg.i} {cell.s}</span>
-                          <span className="jadual-cell-guru">{cell.g}</span>
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {editCell && (
+        <Modal title={`Edit — ${editCell.hari}, Slot ${editCell.ri+1}`} onClose={()=>setEditCell(null)}>
+          <form onSubmit={handleSave}>
+            <div className="form-field">
+              <label className="form-label">Subjek</label>
+              <select className="form-input" value={editCell.subjek} onChange={e=>setEditCell(c=>({...c,subjek:e.target.value}))}>
+                <option value="">-- Pilih --</option>
+                {Object.keys(SC).map(s=><option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="form-field">
+              <label className="form-label">Nama Guru</label>
+              <input className="form-input" placeholder="cth: Pn.Ramlah" value={editCell.guru} onChange={e=>setEditCell(c=>({...c,guru:e.target.value}))}/>
+            </div>
+            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+          </form>
+        </Modal>
+      )}
     </KurPage>
   );
 }
 
 // ─── 2. PANITIA MATA PELAJARAN ────────────────────────────────────────────────
 function PanitiaMP() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ subjek:"", icon:"📋", color:"#2563eb", bg:"#eff6ff", ketua:"", jumlah_ahli:4, tarikh_mesyuarat:"", status:"Aktif" });
+
+  const load = async () => {
+    setLoading(true);
+    await seedOnce('panitia', PANITIA_DATA.map(p=>({ subjek:p.sub, icon:p.ico, color:p.color, bg:p.bg, ketua:p.ketua, jumlah_ahli:p.ahli, tarikh_mesyuarat:p.mesyuarat, status:p.status })));
+    const { data: rows } = await supabase.from('panitia').select('*').order('created_at');
+    setData(rows||[]); setLoading(false);
+  };
+  useEffect(()=>{ load(); },[]);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    await supabase.from('panitia').insert([form]);
+    setShowAdd(false); setForm({ subjek:"", icon:"📋", color:"#2563eb", bg:"#eff6ff", ketua:"", jumlah_ahli:4, tarikh_mesyuarat:"", status:"Aktif" });
+    load();
+  };
+  const handleDel = async (id) => {
+    await supabase.from('panitia').delete().eq('id',id);
+    setData(d=>d.filter(r=>r.id!==id));
+  };
+
   return (
-    <KurPage
-      title="Panitia Mata Pelajaran"
-      sub="Kurikulum · SK Darau, Kota Kinabalu"
+    <KurPage title="Panitia Mata Pelajaran" sub="Kurikulum · SK Darau, Kota Kinabalu"
       stats={[
-        { ico:"📋", val:PANITIA_DATA.length, lbl:"Panitia Aktif" },
-        { ico:"👩‍🏫", val:34, lbl:"Jumlah Guru" },
-        { ico:"📅", val:"Apr", lbl:"Mesyuarat Terakhir" },
-        { ico:"✅", val:"100%", lbl:"Status Aktif" },
-      ]}
-    >
-      <div className="panitia-grid">
-        {PANITIA_DATA.map((p,i) => (
-          <div className="panitia-card" key={i}>
-            <div className="panitia-head">
-              <div className="panitia-ico" style={{background:p.bg}}>{p.ico}</div>
-              <div>
-                <div className="panitia-name">{p.sub}</div>
-                <div className="panitia-ketua">Ketua: {p.ketua}</div>
+        {ico:"📋",val:data.length,lbl:"Panitia Aktif"},
+        {ico:"👩‍🏫",val:data.reduce((a,r)=>a+(r.jumlah_ahli||0),0),lbl:"Jumlah Ahli"},
+        {ico:"📅",val:"Apr",lbl:"Mesyuarat Terakhir"},
+        {ico:"✅",val:"100%",lbl:"Status Aktif"},
+      ]}>
+      <div className="kur-header">
+        <button className="btn-add" onClick={()=>setShowAdd(true)}>+ Tambah Panitia</button>
+      </div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+        <div className="panitia-grid">
+          {data.map(p=>(
+            <div className="panitia-card" key={p.id}>
+              <div className="panitia-head">
+                <div className="panitia-ico" style={{background:p.bg||"#eff6ff"}}>{p.icon}</div>
+                <div style={{flex:1}}>
+                  <div className="panitia-name">{p.subjek}</div>
+                  <div className="panitia-ketua">Ketua: {p.ketua}</div>
+                </div>
+                <button className="btn-del" onClick={()=>handleDel(p.id)}>🗑</button>
+              </div>
+              <div className="panitia-body">👥 {p.jumlah_ahli} ahli &nbsp;·&nbsp; 📅 {p.tarikh_mesyuarat}</div>
+              <div className="panitia-foot">
+                <span className="badge b-green">{p.status}</span>
+                <span className="badge b-blue">{p.jumlah_ahli} Ahli</span>
               </div>
             </div>
-            <div className="panitia-body">
-              👥 {p.ahli} ahli &nbsp;·&nbsp; 📅 Mesyuarat: {p.mesyuarat}
+          ))}
+        </div>
+      )}
+      {showAdd && (
+        <Modal title="Tambah Panitia" onClose={()=>setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Subjek</label><input className="form-input" required value={form.subjek} onChange={e=>setForm(f=>({...f,subjek:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Ikon</label><input className="form-input" value={form.icon} onChange={e=>setForm(f=>({...f,icon:e.target.value}))}/></div>
             </div>
-            <div className="panitia-foot">
-              <span className="badge b-green">{p.status}</span>
-              <span className="badge b-blue">{p.ahli} Ahli</span>
+            <div className="form-field"><label className="form-label">Nama Ketua Panitia</label><input className="form-input" required value={form.ketua} onChange={e=>setForm(f=>({...f,ketua:e.target.value}))}/></div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Jumlah Ahli</label><input className="form-input" type="number" min="1" value={form.jumlah_ahli} onChange={e=>setForm(f=>({...f,jumlah_ahli:+e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Tarikh Mesyuarat</label><input className="form-input" placeholder="cth: 15 Jun 2025" value={form.tarikh_mesyuarat} onChange={e=>setForm(f=>({...f,tarikh_mesyuarat:e.target.value}))}/></div>
             </div>
-          </div>
-        ))}
-      </div>
+            <button className="btn-primary" type="submit">+ Tambah</button>
+          </form>
+        </Modal>
+      )}
     </KurPage>
   );
 }
 
 // ─── 3. PEPERIKSAAN & PENILAIAN ───────────────────────────────────────────────
 function Peperiksaan() {
-  const selesai = PEPX_DATA.filter(p=>p.status==="Selesai").length;
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ nama:"", tarikh:"", kelas:"Tahun 1–6", status:"Akan Datang" });
+  const badgeMap = { "Selesai":"b-green","Akan Datang":"b-yellow","Semasa":"b-blue" };
+
+  const load = async () => {
+    setLoading(true);
+    await seedOnce('peperiksaan', PEPX_DATA.map(p=>({ nama:p.nama, tarikh:p.tarikh, kelas:p.kelas, status:p.status })));
+    const { data: rows } = await supabase.from('peperiksaan').select('*').order('created_at');
+    setData(rows||[]); setLoading(false);
+  };
+  useEffect(()=>{ load(); },[]);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    await supabase.from('peperiksaan').insert([form]);
+    setShowAdd(false); setForm({ nama:"", tarikh:"", kelas:"Tahun 1–6", status:"Akan Datang" }); load();
+  };
+  const handleDel = async (id) => { await supabase.from('peperiksaan').delete().eq('id',id); setData(d=>d.filter(r=>r.id!==id)); };
+
+  const selesai = data.filter(p=>p.status==="Selesai").length;
   return (
-    <KurPage
-      title="Peperiksaan & Penilaian"
-      sub="Kurikulum · SK Darau, Kota Kinabalu"
+    <KurPage title="Peperiksaan & Penilaian" sub="Kurikulum · SK Darau, Kota Kinabalu"
       stats={[
-        { ico:"📝", val:PEPX_DATA.length, lbl:"Jumlah Peperiksaan" },
-        { ico:"✅", val:selesai, lbl:"Selesai" },
-        { ico:"⏳", val:PEPX_DATA.length-selesai, lbl:"Akan Datang" },
-        { ico:"🎓", val:"Nov", lbl:"Peperiksaan Akhir" },
-      ]}
-    >
-      <div className="kur-table-wrap">
-        <table className="kur-table">
-          <thead>
-            <tr>
-              <th>#</th><th>Nama Peperiksaan</th><th>Tarikh</th><th>Kelas</th><th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {PEPX_DATA.map((p,i)=>(
-              <tr key={i}>
-                <td style={{color:"var(--text3)",fontWeight:800}}>{i+1}</td>
-                <td style={{fontWeight:800}}>{p.nama}</td>
-                <td style={{color:"var(--text2)"}}>{p.tarikh}</td>
-                <td>{p.kelas}</td>
-                <td><span className={`badge ${p.badge}`}>{p.status}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {ico:"📝",val:data.length,lbl:"Jumlah Peperiksaan"},
+        {ico:"✅",val:selesai,lbl:"Selesai"},
+        {ico:"⏳",val:data.length-selesai,lbl:"Akan Datang"},
+        {ico:"🎓",val:"Nov",lbl:"Peperiksaan Akhir"},
+      ]}>
+      <div className="kur-header">
+        <button className="btn-add" onClick={()=>setShowAdd(true)}>+ Tambah Peperiksaan</button>
       </div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+        <div className="kur-table-wrap">
+          <table className="kur-table">
+            <thead><tr><th>#</th><th>Nama Peperiksaan</th><th>Tarikh</th><th>Kelas</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {data.map((p,i)=>(
+                <tr key={p.id}>
+                  <td style={{color:"var(--text3)",fontWeight:800}}>{i+1}</td>
+                  <td style={{fontWeight:800}}>{p.nama}</td>
+                  <td style={{color:"var(--text2)"}}>{p.tarikh}</td>
+                  <td>{p.kelas}</td>
+                  <td><span className={`badge ${badgeMap[p.status]||"b-gray"}`}>{p.status}</span></td>
+                  <td><button className="btn-del" onClick={()=>handleDel(p.id)}>🗑</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {showAdd && (
+        <Modal title="Tambah Peperiksaan" onClose={()=>setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <div className="form-field"><label className="form-label">Nama Peperiksaan</label><input className="form-input" required value={form.nama} onChange={e=>setForm(f=>({...f,nama:e.target.value}))}/></div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" placeholder="cth: 3–7 Nov 2025" value={form.tarikh} onChange={e=>setForm(f=>({...f,tarikh:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))}/></div>
+            </div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                <option>Akan Datang</option><option>Semasa</option><option>Selesai</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">+ Tambah</button>
+          </form>
+        </Modal>
+      )}
     </KurPage>
   );
 }
 
 // ─── 4. RPH / REKOD MENGAJAR ──────────────────────────────────────────────────
 function RPHRekod() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
-  const filtered = RPH_DATA.filter(r =>
-    !q || r.guru.toLowerCase().includes(q.toLowerCase()) ||
-    r.subj.toLowerCase().includes(q.toLowerCase())
-  );
-  const hantar = RPH_DATA.filter(r=>r.status==="Hantar").length;
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ guru:"", subjek:"", kelas:"", minggu:"Minggu 16", status:"Tertunggak" });
+  const badgeMap = { "Hantar":"b-green","Tertunggak":"b-red","Semak":"b-yellow" };
+
+  const load = async () => {
+    setLoading(true);
+    await seedOnce('rph', RPH_DATA.map(r=>({ guru:r.guru, subjek:r.subj, kelas:r.kelas, minggu:r.minggu, status:r.status })));
+    const { data: rows } = await supabase.from('rph').select('*').order('created_at');
+    setData(rows||[]); setLoading(false);
+  };
+  useEffect(()=>{ load(); },[]);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    await supabase.from('rph').insert([form]);
+    setShowAdd(false); setForm({ guru:"", subjek:"", kelas:"", minggu:"Minggu 16", status:"Tertunggak" }); load();
+  };
+  const handleDel = async (id) => { await supabase.from('rph').delete().eq('id',id); setData(d=>d.filter(r=>r.id!==id)); };
+  const handleStatus = async (id, status) => {
+    await supabase.from('rph').update({ status }).eq('id',id);
+    setData(d=>d.map(r=>r.id===id?{...r,status}:r));
+  };
+
+  const filtered = data.filter(r=>!q||r.guru?.toLowerCase().includes(q.toLowerCase())||r.subjek?.toLowerCase().includes(q.toLowerCase()));
+  const hantar = data.filter(r=>r.status==="Hantar").length;
+
   return (
-    <KurPage
-      title="RPH / Rekod Mengajar"
-      sub="Kurikulum · SK Darau, Kota Kinabalu"
+    <KurPage title="RPH / Rekod Mengajar" sub="Kurikulum · SK Darau, Kota Kinabalu"
       stats={[
-        { ico:"📄", val:RPH_DATA.length, lbl:"Jumlah RPH" },
-        { ico:"✅", val:hantar, lbl:"Sudah Hantar" },
-        { ico:"⚠️", val:RPH_DATA.length-hantar, lbl:"Tertunggak / Semak" },
-        { ico:"📅", val:"Minggu 16", lbl:"Minggu Semasa" },
-      ]}
-    >
+        {ico:"📄",val:data.length,lbl:"Jumlah RPH"},
+        {ico:"✅",val:hantar,lbl:"Sudah Hantar"},
+        {ico:"⚠️",val:data.length-hantar,lbl:"Tertunggak / Semak"},
+        {ico:"📅",val:"Minggu 16",lbl:"Minggu Semasa"},
+      ]}>
       <div className="kur-header">
+        <button className="btn-add" onClick={()=>setShowAdd(true)}>+ Tambah RPH</button>
         <div className="kur-search-wrap">
           <span className="kur-search-ico">🔍</span>
-          <input className="kur-search" placeholder="Cari nama guru atau subjek…"
-            value={q} onChange={e=>setQ(e.target.value)} />
+          <input className="kur-search" placeholder="Cari guru atau subjek…" value={q} onChange={e=>setQ(e.target.value)}/>
         </div>
       </div>
-      <div className="kur-table-wrap">
-        <table className="kur-table">
-          <thead>
-            <tr><th>Guru</th><th>Subjek</th><th>Kelas</th><th>Minggu</th><th>Status</th></tr>
-          </thead>
-          <tbody>
-            {filtered.map((r,i)=>(
-              <tr key={i}>
-                <td style={{fontWeight:800}}>{r.guru}</td>
-                <td>{r.subj}</td>
-                <td>{r.kelas}</td>
-                <td style={{color:"var(--text3)"}}>{r.minggu}</td>
-                <td><span className={`badge ${r.badge}`}>{r.status}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+        <div className="kur-table-wrap">
+          <table className="kur-table">
+            <thead><tr><th>Guru</th><th>Subjek</th><th>Kelas</th><th>Minggu</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {filtered.map(r=>(
+                <tr key={r.id}>
+                  <td style={{fontWeight:800}}>{r.guru}</td>
+                  <td>{r.subjek}</td>
+                  <td>{r.kelas}</td>
+                  <td style={{color:"var(--text3)"}}>{r.minggu}</td>
+                  <td>
+                    <select style={{border:"none",background:"transparent",cursor:"pointer",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:12,color:"inherit"}}
+                      value={r.status} onChange={e=>handleStatus(r.id,e.target.value)}>
+                      <option>Hantar</option><option>Tertunggak</option><option>Semak</option>
+                    </select>
+                    <span className={`badge ${badgeMap[r.status]||"b-gray"}`} style={{pointerEvents:"none",marginLeft:4}}>{r.status}</span>
+                  </td>
+                  <td><button className="btn-del" onClick={()=>handleDel(r.id)}>🗑</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {showAdd && (
+        <Modal title="Tambah RPH" onClose={()=>setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <div className="form-field"><label className="form-label">Nama Guru</label><input className="form-input" required value={form.guru} onChange={e=>setForm(f=>({...f,guru:e.target.value}))}/></div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Subjek</label><input className="form-input" value={form.subjek} onChange={e=>setForm(f=>({...f,subjek:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" placeholder="cth: Thn 4" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))}/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Minggu</label><input className="form-input" value={form.minggu} onChange={e=>setForm(f=>({...f,minggu:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Status</label>
+                <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                  <option>Tertunggak</option><option>Hantar</option><option>Semak</option>
+                </select>
+              </div>
+            </div>
+            <button className="btn-primary" type="submit">+ Tambah</button>
+          </form>
+        </Modal>
+      )}
     </KurPage>
   );
 }
 
 // ─── 5. PROGRAM AKADEMIK ──────────────────────────────────────────────────────
 function ProgramAkademik() {
-  const aktif = PROGRAM_DATA.filter(p=>p.status==="Sedang Berjalan").length;
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ nama:"", tarikh:"", deskripsi:"", color:"#2563eb", status:"Akan Datang" });
+  const badgeMap = { "Sedang Berjalan":"b-green","Akan Datang":"b-yellow","Selesai":"b-gray" };
+
+  const load = async () => {
+    setLoading(true);
+    await seedOnce('program_akademik', PROGRAM_DATA.map(p=>({ nama:p.nama, tarikh:p.tarikh, deskripsi:p.desc, color:p.color, status:p.status })));
+    const { data: rows } = await supabase.from('program_akademik').select('*').order('created_at');
+    setData(rows||[]); setLoading(false);
+  };
+  useEffect(()=>{ load(); },[]);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    await supabase.from('program_akademik').insert([form]);
+    setShowAdd(false); setForm({ nama:"", tarikh:"", deskripsi:"", color:"#2563eb", status:"Akan Datang" }); load();
+  };
+  const handleDel = async (id) => { await supabase.from('program_akademik').delete().eq('id',id); setData(d=>d.filter(r=>r.id!==id)); };
+
+  const aktif = data.filter(p=>p.status==="Sedang Berjalan").length;
   return (
-    <KurPage
-      title="Program Akademik"
-      sub="Kurikulum · SK Darau, Kota Kinabalu"
+    <KurPage title="Program Akademik" sub="Kurikulum · SK Darau, Kota Kinabalu"
       stats={[
-        { ico:"🎯", val:PROGRAM_DATA.length, lbl:"Jumlah Program" },
-        { ico:"🟢", val:aktif, lbl:"Sedang Berjalan" },
-        { ico:"📅", val:PROGRAM_DATA.length-aktif, lbl:"Akan Datang" },
-        { ico:"📆", val:"2025", lbl:"Tahun Semasa" },
-      ]}
-    >
-      <div className="prog-grid">
-        {PROGRAM_DATA.map((p,i)=>(
-          <div className="prog-card" key={i}>
-            <div className="prog-card-accent" style={{background:p.color}}/>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-              <div className="prog-title">{p.nama}</div>
-              <span className={`badge ${p.badge}`} style={{marginLeft:8,flexShrink:0}}>{p.status}</span>
-            </div>
-            <div className="prog-date">📅 {p.tarikh}</div>
-            <div className="prog-desc">{p.desc}</div>
-          </div>
-        ))}
+        {ico:"🎯",val:data.length,lbl:"Jumlah Program"},
+        {ico:"🟢",val:aktif,lbl:"Sedang Berjalan"},
+        {ico:"📅",val:data.length-aktif,lbl:"Lain-lain"},
+        {ico:"📆",val:"2025",lbl:"Tahun Semasa"},
+      ]}>
+      <div className="kur-header">
+        <button className="btn-add" onClick={()=>setShowAdd(true)}>+ Tambah Program</button>
       </div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+        <div className="prog-grid">
+          {data.map(p=>(
+            <div className="prog-card" key={p.id}>
+              <div className="prog-card-accent" style={{background:p.color||"#2563eb"}}/>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                <div className="prog-title">{p.nama}</div>
+                <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                  <span className={`badge ${badgeMap[p.status]||"b-gray"}`}>{p.status}</span>
+                  <button className="btn-del" onClick={()=>handleDel(p.id)}>🗑</button>
+                </div>
+              </div>
+              <div className="prog-date">📅 {p.tarikh}</div>
+              <div className="prog-desc">{p.deskripsi}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {showAdd && (
+        <Modal title="Tambah Program Akademik" onClose={()=>setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <div className="form-field"><label className="form-label">Nama Program</label><input className="form-input" required value={form.nama} onChange={e=>setForm(f=>({...f,nama:e.target.value}))}/></div>
+            <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" placeholder="cth: Jun 2025" value={form.tarikh} onChange={e=>setForm(f=>({...f,tarikh:e.target.value}))}/></div>
+            <div className="form-field"><label className="form-label">Deskripsi</label><textarea className="form-input" rows={3} value={form.deskripsi} onChange={e=>setForm(f=>({...f,deskripsi:e.target.value}))}/></div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                <option>Akan Datang</option><option>Sedang Berjalan</option><option>Selesai</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">+ Tambah</button>
+          </form>
+        </Modal>
+      )}
     </KurPage>
   );
 }
 
 // ─── 6. PUSAT SUMBER / NILAM ──────────────────────────────────────────────────
 function PusatSumber() {
-  const totalBuku = NILAM_DATA.reduce((a,r)=>a+r.buku,0);
-  const capai = NILAM_DATA.filter(r=>r.buku>=r.sasaran).length;
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ nama:"", kelas:"", buku_dibaca:0, sasaran:8 });
+
+  const load = async () => {
+    setLoading(true);
+    await seedOnce('nilam', NILAM_DATA.map(r=>({ nama:r.nama, kelas:r.kelas, buku_dibaca:r.buku, sasaran:r.sasaran })));
+    const { data: rows } = await supabase.from('nilam').select('*').order('buku_dibaca', { ascending:false });
+    setData(rows || []);
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async () => {
+    if (!form.nama.trim() || !form.kelas.trim()) return;
+    await supabase.from('nilam').insert([{ nama:form.nama, kelas:form.kelas, buku_dibaca:Number(form.buku_dibaca), sasaran:Number(form.sasaran) }]);
+    setShowAdd(false);
+    setForm({ nama:"", kelas:"", buku_dibaca:0, sasaran:8 });
+    load();
+  };
+
+  const handleDel = async (id) => {
+    await supabase.from('nilam').delete().eq('id', id);
+    load();
+  };
+
+  const adjustBuku = async (id, cur, delta) => {
+    const val = Math.max(0, cur + delta);
+    await supabase.from('nilam').update({ buku_dibaca: val }).eq('id', id);
+    load();
+  };
+
+  const totalBuku = data.reduce((a,r)=>a+(r.buku_dibaca||0),0);
+  const capai = data.filter(r=>r.buku_dibaca>=r.sasaran).length;
+
   return (
     <KurPage
       title="Pusat Sumber / NILAM"
       sub="Kurikulum · SK Darau, Kota Kinabalu"
       stats={[
         { ico:"📚", val:3200, lbl:"Koleksi Buku" },
-        { ico:"👦", val:312, lbl:"Murid Berdaftar" },
+        { ico:"👦", val:data.length, lbl:"Murid Berdaftar" },
         { ico:"📖", val:totalBuku, lbl:"Buku Dibaca" },
         { ico:"🏆", val:capai, lbl:"Capai Sasaran" },
       ]}
     >
       <div className="sec-hd" style={{marginTop:0}}>
         <div className="sec-title">🏆 Pembaca Terbaik NILAM</div>
-        <span className="sec-sub">Sasaran: 8 buku / murid</span>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span className="sec-sub">Sasaran: 8 buku / murid</span>
+          <button className="btn-add" onClick={()=>setShowAdd(true)}>+ Tambah Murid</button>
+        </div>
       </div>
-      <div className="kur-table-wrap">
-        <table className="kur-table">
-          <thead>
-            <tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>Buku Dibaca</th><th>Sasaran</th><th>Status</th></tr>
-          </thead>
-          <tbody>
-            {NILAM_DATA.map((r,i)=>(
-              <tr key={i}>
-                <td style={{fontWeight:900,color:"var(--accent)"}}>{i+1}</td>
-                <td style={{fontWeight:800}}>{r.nama}</td>
-                <td>{r.kelas}</td>
-                <td>
-                  <div style={{fontWeight:900,color:"var(--accent)",marginBottom:4}}>{r.buku}</div>
-                  <div className="nilam-bar-wrap">
-                    <div className="nilam-bar" style={{width:`${Math.min(100,r.buku/r.sasaran*100)}%`}}/>
-                  </div>
-                </td>
-                <td style={{color:"var(--text3)"}}>{r.sasaran}</td>
-                <td><span className={`badge ${r.buku>=r.sasaran?"b-green":"b-yellow"}`}>{r.buku>=r.sasaran?"Capai ✓":"Dalam Proses"}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading ? <div className="kur-loading">Memuatkan...</div> : (
+        <div className="kur-table-wrap">
+          <table className="kur-table">
+            <thead>
+              <tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>Buku Dibaca</th><th>Sasaran</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              {data.map((r,i)=>(
+                <tr key={r.id}>
+                  <td style={{fontWeight:900,color:"var(--accent)"}}>{i+1}</td>
+                  <td style={{fontWeight:800}}>{r.nama}</td>
+                  <td>{r.kelas}</td>
+                  <td>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                      <button onClick={()=>adjustBuku(r.id,r.buku_dibaca,-1)} style={{border:"1px solid var(--border)",background:"var(--surface)",borderRadius:4,width:22,height:22,cursor:"pointer",color:"var(--text)",fontWeight:900,lineHeight:1}}>-</button>
+                      <span style={{fontWeight:900,color:"var(--accent)",minWidth:20,textAlign:"center"}}>{r.buku_dibaca}</span>
+                      <button onClick={()=>adjustBuku(r.id,r.buku_dibaca,1)} style={{border:"1px solid var(--border)",background:"var(--surface)",borderRadius:4,width:22,height:22,cursor:"pointer",color:"var(--text)",fontWeight:900,lineHeight:1}}>+</button>
+                    </div>
+                    <div className="nilam-bar-wrap">
+                      <div className="nilam-bar" style={{width:`${Math.min(100,(r.buku_dibaca/r.sasaran)*100)}%`}}/>
+                    </div>
+                  </td>
+                  <td style={{color:"var(--text3)"}}>{r.sasaran}</td>
+                  <td><span className={`badge ${r.buku_dibaca>=r.sasaran?"b-green":"b-yellow"}`}>{r.buku_dibaca>=r.sasaran?"Capai ✓":"Dalam Proses"}</span></td>
+                  <td><button className="btn-del" onClick={()=>handleDel(r.id)}>Padam</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showAdd && (
+        <Modal title="Tambah Rekod NILAM" onClose={()=>setShowAdd(false)}>
+          <div className="form-row">
+            <label className="form-label">Nama Murid</label>
+            <input className="form-input" value={form.nama} onChange={e=>setForm({...form,nama:e.target.value})} placeholder="Nama penuh murid" />
+          </div>
+          <div className="form-row">
+            <label className="form-label">Kelas</label>
+            <input className="form-input" value={form.kelas} onChange={e=>setForm({...form,kelas:e.target.value})} placeholder="cth: Thn 4 Angsana" />
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <div className="form-row">
+              <label className="form-label">Buku Dibaca</label>
+              <input className="form-input" type="number" min="0" value={form.buku_dibaca} onChange={e=>setForm({...form,buku_dibaca:e.target.value})} />
+            </div>
+            <div className="form-row">
+              <label className="form-label">Sasaran</label>
+              <input className="form-input" type="number" min="1" value={form.sasaran} onChange={e=>setForm({...form,sasaran:e.target.value})} />
+            </div>
+          </div>
+          <button className="form-submit" onClick={handleAdd}>Simpan</button>
+        </Modal>
+      )}
     </KurPage>
   );
 }
 
 // ─── 7. PERKEMBANGAN STAF ────────────────────────────────────────────────────
 function PerkembanganStaf() {
-  const selesai = STAF_DATA.filter(s=>s.status==="Selesai").length;
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ peserta:"", kursus:"", tarikh:"", penganjur:"", status:"Akan Datang" });
+
+  const load = async () => {
+    setLoading(true);
+    await seedOnce('perkembangan_staf', STAF_DATA.map(s=>({ peserta:s.nama, kursus:s.kursus, tarikh:s.tarikh, penganjur:s.anjur, status:s.status })));
+    const { data: rows } = await supabase.from('perkembangan_staf').select('*').order('created_at');
+    setData(rows || []);
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async () => {
+    if (!form.peserta.trim() || !form.kursus.trim()) return;
+    await supabase.from('perkembangan_staf').insert([{ peserta:form.peserta, kursus:form.kursus, tarikh:form.tarikh, penganjur:form.penganjur, status:form.status }]);
+    setShowAdd(false);
+    setForm({ peserta:"", kursus:"", tarikh:"", penganjur:"", status:"Akan Datang" });
+    load();
+  };
+
+  const handleDel = async (id) => {
+    await supabase.from('perkembangan_staf').delete().eq('id', id);
+    load();
+  };
+
+  const toggleStatus = async (id, cur) => {
+    const next = cur === "Selesai" ? "Akan Datang" : "Selesai";
+    await supabase.from('perkembangan_staf').update({ status: next }).eq('id', id);
+    load();
+  };
+
+  const selesai = data.filter(s=>s.status==="Selesai").length;
+  const badgeFor = s => s.status==="Selesai" ? "b-green" : s.status==="Dalam Proses" ? "b-blue" : "b-yellow";
+
   return (
     <KurPage
       title="Perkembangan Staf"
       sub="Kurikulum · SK Darau, Kota Kinabalu"
       stats={[
-        { ico:"📋", val:STAF_DATA.length, lbl:"Jumlah Kursus" },
+        { ico:"📋", val:data.length, lbl:"Jumlah Kursus" },
         { ico:"✅", val:selesai, lbl:"Selesai" },
-        { ico:"⏳", val:STAF_DATA.length-selesai, lbl:"Akan Datang" },
+        { ico:"⏳", val:data.length-selesai, lbl:"Akan Datang" },
         { ico:"👩‍🏫", val:34, lbl:"Guru Terlibat" },
       ]}
     >
-      <div className="kur-table-wrap">
-        <table className="kur-table">
-          <thead>
-            <tr><th>Peserta</th><th>Kursus / Bengkel</th><th>Tarikh</th><th>Penganjur</th><th>Status</th></tr>
-          </thead>
-          <tbody>
-            {STAF_DATA.map((s,i)=>(
-              <tr key={i}>
-                <td style={{fontWeight:800,fontSize:12}}>{s.nama}</td>
-                <td style={{fontWeight:700}}>{s.kursus}</td>
-                <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{s.tarikh}</td>
-                <td><span className="badge b-gray">{s.anjur}</span></td>
-                <td><span className={`badge ${s.badge}`}>{s.status}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="sec-hd" style={{marginTop:0}}>
+        <div className="sec-title">📋 Rekod Kursus & Bengkel</div>
+        <button className="btn-add" onClick={()=>setShowAdd(true)}>+ Tambah Kursus</button>
       </div>
+      {loading ? <div className="kur-loading">Memuatkan...</div> : (
+        <div className="kur-table-wrap">
+          <table className="kur-table">
+            <thead>
+              <tr><th>Peserta</th><th>Kursus / Bengkel</th><th>Tarikh</th><th>Penganjur</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              {data.map((s)=>(
+                <tr key={s.id}>
+                  <td style={{fontWeight:800,fontSize:12}}>{s.peserta}</td>
+                  <td style={{fontWeight:700}}>{s.kursus}</td>
+                  <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{s.tarikh}</td>
+                  <td><span className="badge b-gray">{s.penganjur}</span></td>
+                  <td>
+                    <span className={`badge ${badgeFor(s)}`} style={{cursor:"pointer"}} onClick={()=>toggleStatus(s.id,s.status)}>
+                      {s.status}
+                    </span>
+                  </td>
+                  <td><button className="btn-del" onClick={()=>handleDel(s.id)}>Padam</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showAdd && (
+        <Modal title="Tambah Kursus Staf" onClose={()=>setShowAdd(false)}>
+          <div className="form-row">
+            <label className="form-label">Peserta</label>
+            <input className="form-input" value={form.peserta} onChange={e=>setForm({...form,peserta:e.target.value})} placeholder="cth: Semua Guru / Pn. Ramlah" />
+          </div>
+          <div className="form-row">
+            <label className="form-label">Kursus / Bengkel</label>
+            <input className="form-input" value={form.kursus} onChange={e=>setForm({...form,kursus:e.target.value})} placeholder="Nama kursus" />
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <div className="form-row">
+              <label className="form-label">Tarikh</label>
+              <input className="form-input" value={form.tarikh} onChange={e=>setForm({...form,tarikh:e.target.value})} placeholder="cth: 15 Jun 2025" />
+            </div>
+            <div className="form-row">
+              <label className="form-label">Penganjur</label>
+              <input className="form-input" value={form.penganjur} onChange={e=>setForm({...form,penganjur:e.target.value})} placeholder="cth: JPN Sabah" />
+            </div>
+          </div>
+          <div className="form-row">
+            <label className="form-label">Status</label>
+            <select className="form-input" value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>
+              <option>Akan Datang</option>
+              <option>Dalam Proses</option>
+              <option>Selesai</option>
+            </select>
+          </div>
+          <button className="form-submit" onClick={handleAdd}>Simpan</button>
+        </Modal>
+      )}
     </KurPage>
   );
 }
