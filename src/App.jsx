@@ -2314,6 +2314,1029 @@ function PerkembanganStaf() {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  HEM — HAL EHWAL MURID (8 sub-modules)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── HEM 1. PENDAFTARAN & DATA MURID (APDM) ──────────────────────────────────
+function HemMurid() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const blank = { nama:"", kelas:"", ic:"", jantina:"Lelaki", telefon_wali:"", status:"Aktif" };
+  const [form, setForm] = useState(blank);
+
+  const load = async () => {
+    setLoading(true);
+    const { data: rows } = await supabase.from('hem_murid').select('*').order('created_at');
+    setData(rows || []); setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(() => supabase.from('hem_murid').insert([form]));
+    if (!ok) return;
+    toast("Murid ditambah!", "success");
+    setShowAdd(false); setForm(blank); load();
+  };
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const { nama, kelas, ic, jantina, telefon_wali, status } = editItem;
+    const ok = await dbRun(() => supabase.from('hem_murid').update({ nama, kelas, ic, jantina, telefon_wali, status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success"); setEditItem(null); load();
+  };
+  const handleDel = async (id) => {
+    const ok = await dbRun(() => supabase.from('hem_murid').delete().eq('id', id));
+    if (ok) setData(d => d.filter(r => r.id !== id));
+  };
+
+  const aktif = data.filter(r => r.status === "Aktif").length;
+  return (
+    <KurPage title="Pendaftaran & Data Murid" sub="HEM · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"👦", val:data.length, lbl:"Jumlah Murid" },
+        { ico:"✅", val:aktif, lbl:"Aktif" },
+        { ico:"👧", val:data.filter(r=>r.jantina==="Perempuan").length, lbl:"Perempuan" },
+        { ico:"👦", val:data.filter(r=>r.jantina==="Lelaki").length, lbl:"Lelaki" },
+      ]}>
+      <div className="kur-header">
+        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Murid</button>
+      </div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+        <div className="kur-table-wrap">
+          <table className="kur-table">
+            <thead><tr><th>#</th><th>Nama</th><th>Kelas</th><th>IC</th><th>Jantina</th><th>Tel. Wali</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {data.map((r, i) => (
+                <tr key={r.id}>
+                  <td style={{fontWeight:900,color:"var(--accent)"}}>{i+1}</td>
+                  <td style={{fontWeight:800}}>{r.nama}</td>
+                  <td>{r.kelas}</td>
+                  <td style={{fontSize:12,color:"var(--text3)"}}>{r.ic}</td>
+                  <td><span className={`badge ${r.jantina==="Perempuan"?"b-purple":"b-blue"}`}>{r.jantina}</span></td>
+                  <td style={{color:"var(--text3)"}}>{r.telefon_wali}</td>
+                  <td><span className={`badge ${r.status==="Aktif"?"b-green":"b-gray"}`}>{r.status}</span></td>
+                  <td style={{display:"flex",gap:4}}>
+                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {showAdd && (
+        <Modal title="Tambah Murid" onClose={() => setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <div className="form-field"><label className="form-label">Nama Penuh</label><input className="form-input" required value={form.nama} onChange={e=>setForm(f=>({...f,nama:e.target.value}))} placeholder="Nama penuh murid"/></div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))} placeholder="cth: Tahun 4 Angsana"/></div>
+              <div className="form-field"><label className="form-label">No. IC</label><input className="form-input" value={form.ic} onChange={e=>setForm(f=>({...f,ic:e.target.value}))} placeholder="cth: 120304-12-0011"/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Jantina</label>
+                <select className="form-input" value={form.jantina} onChange={e=>setForm(f=>({...f,jantina:e.target.value}))}>
+                  <option>Lelaki</option><option>Perempuan</option>
+                </select>
+              </div>
+              <div className="form-field"><label className="form-label">Status</label>
+                <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                  <option>Aktif</option><option>Tidak Aktif</option><option>Berpindah</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-field"><label className="form-label">Tel. Wali</label><input className="form-input" value={form.telefon_wali} onChange={e=>setForm(f=>({...f,telefon_wali:e.target.value}))} placeholder="cth: 011-2345678"/></div>
+            <button className="btn-primary" type="submit">+ Tambah</button>
+          </form>
+        </Modal>
+      )}
+      {editItem && (
+        <Modal title={`Edit — ${editItem.nama}`} onClose={() => setEditItem(null)}>
+          <form onSubmit={handleEdit}>
+            <div className="form-field"><label className="form-label">Nama Penuh</label><input className="form-input" required value={editItem.nama} onChange={e=>setEditItem(f=>({...f,nama:e.target.value}))}/></div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">No. IC</label><input className="form-input" value={editItem.ic} onChange={e=>setEditItem(f=>({...f,ic:e.target.value}))}/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Jantina</label>
+                <select className="form-input" value={editItem.jantina} onChange={e=>setEditItem(f=>({...f,jantina:e.target.value}))}>
+                  <option>Lelaki</option><option>Perempuan</option>
+                </select>
+              </div>
+              <div className="form-field"><label className="form-label">Status</label>
+                <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
+                  <option>Aktif</option><option>Tidak Aktif</option><option>Berpindah</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-field"><label className="form-label">Tel. Wali</label><input className="form-input" value={editItem.telefon_wali} onChange={e=>setEditItem(f=>({...f,telefon_wali:e.target.value}))}/></div>
+            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+          </form>
+        </Modal>
+      )}
+    </KurPage>
+  );
+}
+
+// ─── HEM 2. DISIPLIN ─────────────────────────────────────────────────────────
+function HemDisiplin() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const blank = { nama_murid:"", kelas:"", tarikh:"", kesalahan:"", tindakan:"", status:"Dalam Proses" };
+  const [form, setForm] = useState(blank);
+  const badgeMap = { "Selesai":"b-green","Dalam Proses":"b-yellow","Dirujuk":"b-red" };
+
+  const load = async () => {
+    setLoading(true);
+    const { data: rows } = await supabase.from('hem_disiplin').select('*').order('created_at', { ascending: false });
+    setData(rows || []); setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(() => supabase.from('hem_disiplin').insert([form]));
+    if (!ok) return;
+    toast("Rekod ditambah!", "success"); setShowAdd(false); setForm(blank); load();
+  };
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const { nama_murid, kelas, tarikh, kesalahan, tindakan, status } = editItem;
+    const ok = await dbRun(() => supabase.from('hem_disiplin').update({ nama_murid, kelas, tarikh, kesalahan, tindakan, status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success"); setEditItem(null); load();
+  };
+  const handleDel = async (id) => {
+    const ok = await dbRun(() => supabase.from('hem_disiplin').delete().eq('id', id));
+    if (ok) setData(d => d.filter(r => r.id !== id));
+  };
+
+  const selesai = data.filter(r => r.status === "Selesai").length;
+  return (
+    <KurPage title="Disiplin" sub="HEM · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"📋", val:data.length, lbl:"Jumlah Kes" },
+        { ico:"✅", val:selesai, lbl:"Selesai" },
+        { ico:"⏳", val:data.filter(r=>r.status==="Dalam Proses").length, lbl:"Dalam Proses" },
+        { ico:"🚨", val:data.filter(r=>r.status==="Dirujuk").length, lbl:"Dirujuk" },
+      ]}>
+      <div className="kur-header">
+        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Kes</button>
+      </div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+        <div className="kur-table-wrap">
+          <table className="kur-table">
+            <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Kesalahan</th><th>Tindakan</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {data.map(r => (
+                <tr key={r.id}>
+                  <td style={{fontWeight:800}}>{r.nama_murid}</td>
+                  <td style={{color:"var(--text3)"}}>{r.kelas}</td>
+                  <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
+                  <td>{r.kesalahan}</td>
+                  <td style={{fontSize:12,color:"var(--text2)"}}>{r.tindakan}</td>
+                  <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
+                  <td style={{display:"flex",gap:4}}>
+                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {showAdd && (
+        <Modal title="Tambah Kes Disiplin" onClose={() => setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" required value={form.nama_murid} onChange={e=>setForm(f=>({...f,nama_murid:e.target.value}))} placeholder="Nama penuh"/></div>
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))} placeholder="cth: Tahun 4"/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={form.tarikh} onChange={e=>setForm(f=>({...f,tarikh:e.target.value}))} placeholder="cth: 5 Mei 2025"/></div>
+              <div className="form-field"><label className="form-label">Status</label>
+                <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                  <option>Dalam Proses</option><option>Selesai</option><option>Dirujuk</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-field"><label className="form-label">Kesalahan</label><input className="form-input" value={form.kesalahan} onChange={e=>setForm(f=>({...f,kesalahan:e.target.value}))} placeholder="Jenis kesalahan"/></div>
+            <div className="form-field"><label className="form-label">Tindakan</label><textarea className="form-input" rows={2} value={form.tindakan} onChange={e=>setForm(f=>({...f,tindakan:e.target.value}))}/></div>
+            <button className="btn-primary" type="submit">+ Tambah</button>
+          </form>
+        </Modal>
+      )}
+      {editItem && (
+        <Modal title={`Edit — ${editItem.nama_murid}`} onClose={() => setEditItem(null)}>
+          <form onSubmit={handleEdit}>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" value={editItem.nama_murid} onChange={e=>setEditItem(f=>({...f,nama_murid:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={editItem.tarikh} onChange={e=>setEditItem(f=>({...f,tarikh:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Status</label>
+                <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
+                  <option>Dalam Proses</option><option>Selesai</option><option>Dirujuk</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-field"><label className="form-label">Kesalahan</label><input className="form-input" value={editItem.kesalahan} onChange={e=>setEditItem(f=>({...f,kesalahan:e.target.value}))}/></div>
+            <div className="form-field"><label className="form-label">Tindakan</label><textarea className="form-input" rows={2} value={editItem.tindakan} onChange={e=>setEditItem(f=>({...f,tindakan:e.target.value}))}/></div>
+            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+          </form>
+        </Modal>
+      )}
+    </KurPage>
+  );
+}
+
+// ─── HEM 3. BIMBINGAN & KAUNSELING ───────────────────────────────────────────
+function HemKaunseling() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const blank = { nama_murid:"", kelas:"", tarikh:"", jenis_kes:"", kaunselor:"", status:"Dalam Proses" };
+  const [form, setForm] = useState(blank);
+  const badgeMap = { "Selesai":"b-green","Dalam Proses":"b-blue","Dirujuk":"b-red" };
+
+  const load = async () => {
+    setLoading(true);
+    const { data: rows } = await supabase.from('hem_kaunseling').select('*').order('created_at', { ascending: false });
+    setData(rows || []); setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(() => supabase.from('hem_kaunseling').insert([form]));
+    if (!ok) return;
+    toast("Sesi ditambah!", "success"); setShowAdd(false); setForm(blank); load();
+  };
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const { nama_murid, kelas, tarikh, jenis_kes, kaunselor, status } = editItem;
+    const ok = await dbRun(() => supabase.from('hem_kaunseling').update({ nama_murid, kelas, tarikh, jenis_kes, kaunselor, status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success"); setEditItem(null); load();
+  };
+  const handleDel = async (id) => {
+    const ok = await dbRun(() => supabase.from('hem_kaunseling').delete().eq('id', id));
+    if (ok) setData(d => d.filter(r => r.id !== id));
+  };
+
+  const selesai = data.filter(r => r.status === "Selesai").length;
+  return (
+    <KurPage title="Bimbingan & Kaunseling" sub="HEM · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"💬", val:data.length, lbl:"Jumlah Sesi" },
+        { ico:"✅", val:selesai, lbl:"Selesai" },
+        { ico:"⏳", val:data.filter(r=>r.status==="Dalam Proses").length, lbl:"Dalam Proses" },
+        { ico:"👩‍💼", val:[...new Set(data.map(r=>r.kaunselor))].filter(Boolean).length, lbl:"Kaunselor" },
+      ]}>
+      <div className="kur-header">
+        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Sesi</button>
+      </div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+        <div className="kur-table-wrap">
+          <table className="kur-table">
+            <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Jenis Kes</th><th>Kaunselor</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {data.map(r => (
+                <tr key={r.id}>
+                  <td style={{fontWeight:800}}>{r.nama_murid}</td>
+                  <td style={{color:"var(--text3)"}}>{r.kelas}</td>
+                  <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
+                  <td>{r.jenis_kes}</td>
+                  <td><span className="badge b-gray">{r.kaunselor}</span></td>
+                  <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
+                  <td style={{display:"flex",gap:4}}>
+                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {showAdd && (
+        <Modal title="Tambah Sesi Kaunseling" onClose={() => setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" required value={form.nama_murid} onChange={e=>setForm(f=>({...f,nama_murid:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))}/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={form.tarikh} onChange={e=>setForm(f=>({...f,tarikh:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kaunselor</label><input className="form-input" value={form.kaunselor} onChange={e=>setForm(f=>({...f,kaunselor:e.target.value}))}/></div>
+            </div>
+            <div className="form-field"><label className="form-label">Jenis Kes</label><input className="form-input" value={form.jenis_kes} onChange={e=>setForm(f=>({...f,jenis_kes:e.target.value}))} placeholder="cth: Masalah Akademik"/></div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                <option>Dalam Proses</option><option>Selesai</option><option>Dirujuk</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">+ Tambah</button>
+          </form>
+        </Modal>
+      )}
+      {editItem && (
+        <Modal title={`Edit — ${editItem.nama_murid}`} onClose={() => setEditItem(null)}>
+          <form onSubmit={handleEdit}>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" value={editItem.nama_murid} onChange={e=>setEditItem(f=>({...f,nama_murid:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={editItem.tarikh} onChange={e=>setEditItem(f=>({...f,tarikh:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kaunselor</label><input className="form-input" value={editItem.kaunselor} onChange={e=>setEditItem(f=>({...f,kaunselor:e.target.value}))}/></div>
+            </div>
+            <div className="form-field"><label className="form-label">Jenis Kes</label><input className="form-input" value={editItem.jenis_kes} onChange={e=>setEditItem(f=>({...f,jenis_kes:e.target.value}))}/></div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
+                <option>Dalam Proses</option><option>Selesai</option><option>Dirujuk</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+          </form>
+        </Modal>
+      )}
+    </KurPage>
+  );
+}
+
+// ─── HEM 4. KESIHATAN MURID ───────────────────────────────────────────────────
+function HemKesihatan() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const blank = { nama_murid:"", kelas:"", tarikh:"", jenis_pemeriksaan:"", catatan:"", status:"Normal" };
+  const [form, setForm] = useState(blank);
+  const badgeMap = { "Normal":"b-green","Perlu Perhatian":"b-yellow","Dirujuk":"b-red" };
+
+  const load = async () => {
+    setLoading(true);
+    const { data: rows } = await supabase.from('hem_kesihatan').select('*').order('created_at', { ascending: false });
+    setData(rows || []); setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(() => supabase.from('hem_kesihatan').insert([form]));
+    if (!ok) return;
+    toast("Rekod ditambah!", "success"); setShowAdd(false); setForm(blank); load();
+  };
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const { nama_murid, kelas, tarikh, jenis_pemeriksaan, catatan, status } = editItem;
+    const ok = await dbRun(() => supabase.from('hem_kesihatan').update({ nama_murid, kelas, tarikh, jenis_pemeriksaan, catatan, status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success"); setEditItem(null); load();
+  };
+  const handleDel = async (id) => {
+    const ok = await dbRun(() => supabase.from('hem_kesihatan').delete().eq('id', id));
+    if (ok) setData(d => d.filter(r => r.id !== id));
+  };
+
+  const normal = data.filter(r => r.status === "Normal").length;
+  return (
+    <KurPage title="Kesihatan Murid" sub="HEM · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"🏥", val:data.length, lbl:"Rekod" },
+        { ico:"✅", val:normal, lbl:"Normal" },
+        { ico:"⚠️", val:data.filter(r=>r.status==="Perlu Perhatian").length, lbl:"Perlu Perhatian" },
+        { ico:"🚑", val:data.filter(r=>r.status==="Dirujuk").length, lbl:"Dirujuk" },
+      ]}>
+      <div className="kur-header">
+        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Rekod</button>
+      </div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+        <div className="kur-table-wrap">
+          <table className="kur-table">
+            <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Pemeriksaan</th><th>Catatan</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {data.map(r => (
+                <tr key={r.id}>
+                  <td style={{fontWeight:800}}>{r.nama_murid}</td>
+                  <td style={{color:"var(--text3)"}}>{r.kelas}</td>
+                  <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
+                  <td>{r.jenis_pemeriksaan}</td>
+                  <td style={{fontSize:12,color:"var(--text2)"}}>{r.catatan}</td>
+                  <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
+                  <td style={{display:"flex",gap:4}}>
+                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {showAdd && (
+        <Modal title="Tambah Rekod Kesihatan" onClose={() => setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" required value={form.nama_murid} onChange={e=>setForm(f=>({...f,nama_murid:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))}/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={form.tarikh} onChange={e=>setForm(f=>({...f,tarikh:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Jenis Pemeriksaan</label><input className="form-input" value={form.jenis_pemeriksaan} onChange={e=>setForm(f=>({...f,jenis_pemeriksaan:e.target.value}))} placeholder="cth: Pemeriksaan Gigi"/></div>
+            </div>
+            <div className="form-field"><label className="form-label">Catatan</label><textarea className="form-input" rows={2} value={form.catatan} onChange={e=>setForm(f=>({...f,catatan:e.target.value}))}/></div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                <option>Normal</option><option>Perlu Perhatian</option><option>Dirujuk</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">+ Tambah</button>
+          </form>
+        </Modal>
+      )}
+      {editItem && (
+        <Modal title={`Edit — ${editItem.nama_murid}`} onClose={() => setEditItem(null)}>
+          <form onSubmit={handleEdit}>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" value={editItem.nama_murid} onChange={e=>setEditItem(f=>({...f,nama_murid:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={editItem.tarikh} onChange={e=>setEditItem(f=>({...f,tarikh:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Jenis Pemeriksaan</label><input className="form-input" value={editItem.jenis_pemeriksaan} onChange={e=>setEditItem(f=>({...f,jenis_pemeriksaan:e.target.value}))}/></div>
+            </div>
+            <div className="form-field"><label className="form-label">Catatan</label><textarea className="form-input" rows={2} value={editItem.catatan} onChange={e=>setEditItem(f=>({...f,catatan:e.target.value}))}/></div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
+                <option>Normal</option><option>Perlu Perhatian</option><option>Dirujuk</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+          </form>
+        </Modal>
+      )}
+    </KurPage>
+  );
+}
+
+// ─── HEM 5. BANTUAN PELAJARAN ─────────────────────────────────────────────────
+function HemBantuan() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const blank = { nama_murid:"", kelas:"", jenis_bantuan:"RMT", tahun:"2025", status:"Aktif" };
+  const [form, setForm] = useState(blank);
+
+  const load = async () => {
+    setLoading(true);
+    const { data: rows } = await supabase.from('hem_bantuan').select('*').order('created_at');
+    setData(rows || []); setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(() => supabase.from('hem_bantuan').insert([form]));
+    if (!ok) return;
+    toast("Bantuan ditambah!", "success"); setShowAdd(false); setForm(blank); load();
+  };
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const { nama_murid, kelas, jenis_bantuan, tahun, status } = editItem;
+    const ok = await dbRun(() => supabase.from('hem_bantuan').update({ nama_murid, kelas, jenis_bantuan, tahun, status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success"); setEditItem(null); load();
+  };
+  const handleDel = async (id) => {
+    const ok = await dbRun(() => supabase.from('hem_bantuan').delete().eq('id', id));
+    if (ok) setData(d => d.filter(r => r.id !== id));
+  };
+
+  const JENIS = ["RMT","BAP","KWAPM","Zakat","Lain-lain"];
+  const aktif = data.filter(r => r.status === "Aktif").length;
+  return (
+    <KurPage title="Bantuan Pelajaran" sub="HEM · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"🎒", val:data.length, lbl:"Penerima" },
+        { ico:"✅", val:aktif, lbl:"Aktif" },
+        { ico:"🍱", val:data.filter(r=>r.jenis_bantuan==="RMT").length, lbl:"RMT" },
+        { ico:"💰", val:data.filter(r=>r.jenis_bantuan==="BAP").length, lbl:"BAP" },
+      ]}>
+      <div className="kur-header">
+        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Penerima</button>
+      </div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+        <div className="kur-table-wrap">
+          <table className="kur-table">
+            <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Jenis Bantuan</th><th>Tahun</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {data.map(r => (
+                <tr key={r.id}>
+                  <td style={{fontWeight:800}}>{r.nama_murid}</td>
+                  <td style={{color:"var(--text3)"}}>{r.kelas}</td>
+                  <td><span className="badge b-blue">{r.jenis_bantuan}</span></td>
+                  <td style={{color:"var(--text3)"}}>{r.tahun}</td>
+                  <td><span className={`badge ${r.status==="Aktif"?"b-green":"b-gray"}`}>{r.status}</span></td>
+                  <td style={{display:"flex",gap:4}}>
+                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {showAdd && (
+        <Modal title="Tambah Penerima Bantuan" onClose={() => setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" required value={form.nama_murid} onChange={e=>setForm(f=>({...f,nama_murid:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))}/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Jenis Bantuan</label>
+                <select className="form-input" value={form.jenis_bantuan} onChange={e=>setForm(f=>({...f,jenis_bantuan:e.target.value}))}>
+                  {JENIS.map(j=><option key={j}>{j}</option>)}
+                </select>
+              </div>
+              <div className="form-field"><label className="form-label">Tahun</label><input className="form-input" value={form.tahun} onChange={e=>setForm(f=>({...f,tahun:e.target.value}))}/></div>
+            </div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                <option>Aktif</option><option>Tidak Aktif</option><option>Tamat</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">+ Tambah</button>
+          </form>
+        </Modal>
+      )}
+      {editItem && (
+        <Modal title={`Edit — ${editItem.nama_murid}`} onClose={() => setEditItem(null)}>
+          <form onSubmit={handleEdit}>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" value={editItem.nama_murid} onChange={e=>setEditItem(f=>({...f,nama_murid:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Jenis Bantuan</label>
+                <select className="form-input" value={editItem.jenis_bantuan} onChange={e=>setEditItem(f=>({...f,jenis_bantuan:e.target.value}))}>
+                  {JENIS.map(j=><option key={j}>{j}</option>)}
+                </select>
+              </div>
+              <div className="form-field"><label className="form-label">Tahun</label><input className="form-input" value={editItem.tahun} onChange={e=>setEditItem(f=>({...f,tahun:e.target.value}))}/></div>
+            </div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
+                <option>Aktif</option><option>Tidak Aktif</option><option>Tamat</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+          </form>
+        </Modal>
+      )}
+    </KurPage>
+  );
+}
+
+// ─── HEM 6. KESELAMATAN & 3K ──────────────────────────────────────────────────
+function Hem3K() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const blank = { tajuk:"", tarikh:"", jenis:"Kebersihan", lokasi:"", status:"Akan Datang" };
+  const [form, setForm] = useState(blank);
+  const badgeMap = { "Selesai":"b-green","Akan Datang":"b-yellow","Dalam Proses":"b-blue" };
+
+  const load = async () => {
+    setLoading(true);
+    const { data: rows } = await supabase.from('hem_3k').select('*').order('created_at', { ascending: false });
+    setData(rows || []); setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(() => supabase.from('hem_3k').insert([form]));
+    if (!ok) return;
+    toast("Aktiviti ditambah!", "success"); setShowAdd(false); setForm(blank); load();
+  };
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const { tajuk, tarikh, jenis, lokasi, status } = editItem;
+    const ok = await dbRun(() => supabase.from('hem_3k').update({ tajuk, tarikh, jenis, lokasi, status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success"); setEditItem(null); load();
+  };
+  const handleDel = async (id) => {
+    const ok = await dbRun(() => supabase.from('hem_3k').delete().eq('id', id));
+    if (ok) setData(d => d.filter(r => r.id !== id));
+  };
+
+  const JENIS_3K = ["Kebersihan","Keselamatan","Kesihatan","Gotong-royong","Lain-lain"];
+  const selesai = data.filter(r => r.status === "Selesai").length;
+  return (
+    <KurPage title="Keselamatan & 3K" sub="HEM · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"🛡️", val:data.length, lbl:"Aktiviti" },
+        { ico:"✅", val:selesai, lbl:"Selesai" },
+        { ico:"📅", val:data.filter(r=>r.status==="Akan Datang").length, lbl:"Akan Datang" },
+        { ico:"🔄", val:data.filter(r=>r.status==="Dalam Proses").length, lbl:"Dalam Proses" },
+      ]}>
+      <div className="kur-header">
+        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Aktiviti</button>
+      </div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+        <div className="kur-table-wrap">
+          <table className="kur-table">
+            <thead><tr><th>Tajuk</th><th>Tarikh</th><th>Jenis</th><th>Lokasi</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {data.map(r => (
+                <tr key={r.id}>
+                  <td style={{fontWeight:800}}>{r.tajuk}</td>
+                  <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
+                  <td><span className="badge b-blue">{r.jenis}</span></td>
+                  <td style={{color:"var(--text2)"}}>{r.lokasi}</td>
+                  <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
+                  <td style={{display:"flex",gap:4}}>
+                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {showAdd && (
+        <Modal title="Tambah Aktiviti 3K" onClose={() => setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <div className="form-field"><label className="form-label">Tajuk Aktiviti</label><input className="form-input" required value={form.tajuk} onChange={e=>setForm(f=>({...f,tajuk:e.target.value}))} placeholder="cth: Gotong-royong Bulanan"/></div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={form.tarikh} onChange={e=>setForm(f=>({...f,tarikh:e.target.value}))} placeholder="cth: 15 Mei 2025"/></div>
+              <div className="form-field"><label className="form-label">Jenis</label>
+                <select className="form-input" value={form.jenis} onChange={e=>setForm(f=>({...f,jenis:e.target.value}))}>
+                  {JENIS_3K.map(j=><option key={j}>{j}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="form-field"><label className="form-label">Lokasi</label><input className="form-input" value={form.lokasi} onChange={e=>setForm(f=>({...f,lokasi:e.target.value}))} placeholder="cth: Padang sekolah"/></div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                <option>Akan Datang</option><option>Dalam Proses</option><option>Selesai</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">+ Tambah</button>
+          </form>
+        </Modal>
+      )}
+      {editItem && (
+        <Modal title={`Edit — ${editItem.tajuk}`} onClose={() => setEditItem(null)}>
+          <form onSubmit={handleEdit}>
+            <div className="form-field"><label className="form-label">Tajuk Aktiviti</label><input className="form-input" value={editItem.tajuk} onChange={e=>setEditItem(f=>({...f,tajuk:e.target.value}))}/></div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={editItem.tarikh} onChange={e=>setEditItem(f=>({...f,tarikh:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Jenis</label>
+                <select className="form-input" value={editItem.jenis} onChange={e=>setEditItem(f=>({...f,jenis:e.target.value}))}>
+                  {JENIS_3K.map(j=><option key={j}>{j}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="form-field"><label className="form-label">Lokasi</label><input className="form-input" value={editItem.lokasi} onChange={e=>setEditItem(f=>({...f,lokasi:e.target.value}))}/></div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
+                <option>Akan Datang</option><option>Dalam Proses</option><option>Selesai</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+          </form>
+        </Modal>
+      )}
+    </KurPage>
+  );
+}
+
+// ─── HEM 7. PENGAWAS SEKOLAH ──────────────────────────────────────────────────
+function HemPengawas() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const blank = { nama:"", kelas:"", jawatan:"Pengawas Biasa", tarikh_lantik:"", status:"Aktif" };
+  const [form, setForm] = useState(blank);
+
+  const load = async () => {
+    setLoading(true);
+    const { data: rows } = await supabase.from('hem_pengawas').select('*').order('created_at');
+    setData(rows || []); setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(() => supabase.from('hem_pengawas').insert([form]));
+    if (!ok) return;
+    toast("Pengawas ditambah!", "success"); setShowAdd(false); setForm(blank); load();
+  };
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const { nama, kelas, jawatan, tarikh_lantik, status } = editItem;
+    const ok = await dbRun(() => supabase.from('hem_pengawas').update({ nama, kelas, jawatan, tarikh_lantik, status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success"); setEditItem(null); load();
+  };
+  const handleDel = async (id) => {
+    const ok = await dbRun(() => supabase.from('hem_pengawas').delete().eq('id', id));
+    if (ok) setData(d => d.filter(r => r.id !== id));
+  };
+
+  const JAWATAN = ["Ketua Pengawas","Penolong Ketua","Pengawas Biasa"];
+  const aktif = data.filter(r => r.status === "Aktif").length;
+  return (
+    <KurPage title="Pengawas Sekolah" sub="HEM · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"🎖️", val:data.length, lbl:"Pengawas" },
+        { ico:"✅", val:aktif, lbl:"Aktif" },
+        { ico:"👑", val:data.filter(r=>r.jawatan==="Ketua Pengawas").length, lbl:"Ketua" },
+        { ico:"🏅", val:data.filter(r=>r.jawatan==="Pengawas Biasa").length, lbl:"Biasa" },
+      ]}>
+      <div className="kur-header">
+        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Pengawas</button>
+      </div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+        <div className="kur-table-wrap">
+          <table className="kur-table">
+            <thead><tr><th>#</th><th>Nama</th><th>Kelas</th><th>Jawatan</th><th>Tarikh Lantik</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {data.map((r, i) => (
+                <tr key={r.id}>
+                  <td style={{fontWeight:900,color:"var(--accent)"}}>{i+1}</td>
+                  <td style={{fontWeight:800}}>{r.nama}</td>
+                  <td style={{color:"var(--text3)"}}>{r.kelas}</td>
+                  <td><span className={`badge ${r.jawatan==="Ketua Pengawas"?"b-purple":r.jawatan==="Penolong Ketua"?"b-blue":"b-gray"}`}>{r.jawatan}</span></td>
+                  <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh_lantik}</td>
+                  <td><span className={`badge ${r.status==="Aktif"?"b-green":"b-gray"}`}>{r.status}</span></td>
+                  <td style={{display:"flex",gap:4}}>
+                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {showAdd && (
+        <Modal title="Tambah Pengawas" onClose={() => setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Nama</label><input className="form-input" required value={form.nama} onChange={e=>setForm(f=>({...f,nama:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))}/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Jawatan</label>
+                <select className="form-input" value={form.jawatan} onChange={e=>setForm(f=>({...f,jawatan:e.target.value}))}>
+                  {JAWATAN.map(j=><option key={j}>{j}</option>)}
+                </select>
+              </div>
+              <div className="form-field"><label className="form-label">Tarikh Lantik</label><input className="form-input" value={form.tarikh_lantik} onChange={e=>setForm(f=>({...f,tarikh_lantik:e.target.value}))} placeholder="cth: 1 Jan 2025"/></div>
+            </div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                <option>Aktif</option><option>Tidak Aktif</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">+ Tambah</button>
+          </form>
+        </Modal>
+      )}
+      {editItem && (
+        <Modal title={`Edit — ${editItem.nama}`} onClose={() => setEditItem(null)}>
+          <form onSubmit={handleEdit}>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Nama</label><input className="form-input" value={editItem.nama} onChange={e=>setEditItem(f=>({...f,nama:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}/></div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Jawatan</label>
+                <select className="form-input" value={editItem.jawatan} onChange={e=>setEditItem(f=>({...f,jawatan:e.target.value}))}>
+                  {JAWATAN.map(j=><option key={j}>{j}</option>)}
+                </select>
+              </div>
+              <div className="form-field"><label className="form-label">Tarikh Lantik</label><input className="form-input" value={editItem.tarikh_lantik} onChange={e=>setEditItem(f=>({...f,tarikh_lantik:e.target.value}))}/></div>
+            </div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
+                <option>Aktif</option><option>Tidak Aktif</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+          </form>
+        </Modal>
+      )}
+    </KurPage>
+  );
+}
+
+// ─── HEM 8. KOPERASI ──────────────────────────────────────────────────────────
+function HemKoperasi() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const blank = { nama_produk:"", kategori:"Alat Tulis", stok:0, harga:0, status:"Tersedia" };
+  const [form, setForm] = useState(blank);
+
+  const load = async () => {
+    setLoading(true);
+    const { data: rows } = await supabase.from('hem_koperasi').select('*').order('created_at');
+    setData(rows || []); setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(() => supabase.from('hem_koperasi').insert([{ ...form, stok:Number(form.stok), harga:Number(form.harga) }]));
+    if (!ok) return;
+    toast("Produk ditambah!", "success"); setShowAdd(false); setForm(blank); load();
+  };
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const { nama_produk, kategori, status } = editItem;
+    const stok = Number(editItem.stok); const harga = Number(editItem.harga);
+    const ok = await dbRun(() => supabase.from('hem_koperasi').update({ nama_produk, kategori, stok, harga, status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success"); setEditItem(null); load();
+  };
+  const handleDel = async (id) => {
+    const ok = await dbRun(() => supabase.from('hem_koperasi').delete().eq('id', id));
+    if (ok) setData(d => d.filter(r => r.id !== id));
+  };
+  const adjustStok = async (id, cur, delta) => {
+    const val = Math.max(0, cur + delta);
+    const ok = await dbRun(() => supabase.from('hem_koperasi').update({ stok: val }).eq('id', id));
+    if (ok) setData(d => d.map(r => r.id === id ? {...r, stok:val} : r));
+  };
+
+  const KAT = ["Alat Tulis","Pakaian","Makanan & Minuman","Buku","Lain-lain"];
+  const tersedia = data.filter(r => r.status === "Tersedia").length;
+  const totalStok = data.reduce((a, r) => a + (r.stok || 0), 0);
+  return (
+    <KurPage title="Koperasi Sekolah" sub="HEM · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"🏪", val:data.length, lbl:"Produk" },
+        { ico:"✅", val:tersedia, lbl:"Tersedia" },
+        { ico:"📦", val:totalStok, lbl:"Jumlah Stok" },
+        { ico:"🚫", val:data.filter(r=>r.stok===0).length, lbl:"Kehabisan" },
+      ]}>
+      <div className="kur-header">
+        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Produk</button>
+      </div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+        <div className="kur-table-wrap">
+          <table className="kur-table">
+            <thead><tr><th>Nama Produk</th><th>Kategori</th><th>Stok</th><th>Harga (RM)</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {data.map(r => (
+                <tr key={r.id}>
+                  <td style={{fontWeight:800}}>{r.nama_produk}</td>
+                  <td><span className="badge b-blue">{r.kategori}</span></td>
+                  <td>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <button onClick={() => adjustStok(r.id, r.stok, -1)} style={{border:"1px solid var(--border)",background:"var(--surface)",borderRadius:4,width:22,height:22,cursor:"pointer",color:"var(--text)",fontWeight:900,lineHeight:1}}>-</button>
+                      <span style={{fontWeight:900,color:"var(--accent)",minWidth:24,textAlign:"center"}}>{r.stok}</span>
+                      <button onClick={() => adjustStok(r.id, r.stok, 1)} style={{border:"1px solid var(--border)",background:"var(--surface)",borderRadius:4,width:22,height:22,cursor:"pointer",color:"var(--text)",fontWeight:900,lineHeight:1}}>+</button>
+                    </div>
+                  </td>
+                  <td style={{fontWeight:700}}>RM {Number(r.harga).toFixed(2)}</td>
+                  <td><span className={`badge ${r.stok===0?"b-red":r.stok<10?"b-yellow":"b-green"}`}>{r.stok===0?"Habis":r.stok<10?"Sedikit":"Tersedia"}</span></td>
+                  <td style={{display:"flex",gap:4}}>
+                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {showAdd && (
+        <Modal title="Tambah Produk Koperasi" onClose={() => setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <div className="form-field"><label className="form-label">Nama Produk</label><input className="form-input" required value={form.nama_produk} onChange={e=>setForm(f=>({...f,nama_produk:e.target.value}))} placeholder="cth: Buku Tulis A4"/></div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Kategori</label>
+                <select className="form-input" value={form.kategori} onChange={e=>setForm(f=>({...f,kategori:e.target.value}))}>
+                  {KAT.map(k=><option key={k}>{k}</option>)}
+                </select>
+              </div>
+              <div className="form-field"><label className="form-label">Status</label>
+                <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                  <option>Tersedia</option><option>Tidak Tersedia</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Stok</label><input className="form-input" type="number" min="0" value={form.stok} onChange={e=>setForm(f=>({...f,stok:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Harga (RM)</label><input className="form-input" type="number" min="0" step="0.01" value={form.harga} onChange={e=>setForm(f=>({...f,harga:e.target.value}))}/></div>
+            </div>
+            <button className="btn-primary" type="submit">+ Tambah</button>
+          </form>
+        </Modal>
+      )}
+      {editItem && (
+        <Modal title={`Edit — ${editItem.nama_produk}`} onClose={() => setEditItem(null)}>
+          <form onSubmit={handleEdit}>
+            <div className="form-field"><label className="form-label">Nama Produk</label><input className="form-input" value={editItem.nama_produk} onChange={e=>setEditItem(f=>({...f,nama_produk:e.target.value}))}/></div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Kategori</label>
+                <select className="form-input" value={editItem.kategori} onChange={e=>setEditItem(f=>({...f,kategori:e.target.value}))}>
+                  {KAT.map(k=><option key={k}>{k}</option>)}
+                </select>
+              </div>
+              <div className="form-field"><label className="form-label">Status</label>
+                <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
+                  <option>Tersedia</option><option>Tidak Tersedia</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-field"><label className="form-label">Stok</label><input className="form-input" type="number" min="0" value={editItem.stok} onChange={e=>setEditItem(f=>({...f,stok:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Harga (RM)</label><input className="form-input" type="number" min="0" step="0.01" value={editItem.harga} onChange={e=>setEditItem(f=>({...f,harga:e.target.value}))}/></div>
+            </div>
+            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+          </form>
+        </Modal>
+      )}
+    </KurPage>
+  );
+}
+
+// ─── HEM ROUTER ───────────────────────────────────────────────────────────────
+function HEMPage({ subId, onNav }) {
+  const m = MODULES.find(x => x.id === "hem");
+  const idx = m?.ids.indexOf(subId) ?? -1;
+  const sName = idx >= 0 ? m.subs[idx] : "";
+
+  const views = {
+    apdm:      <HemMurid />,
+    disiplin:  <HemDisiplin />,
+    kaunseling:<HemKaunseling />,
+    kesihatan: <HemKesihatan />,
+    bantuan:   <HemBantuan />,
+    "3k":      <Hem3K />,
+    pengawas:  <HemPengawas />,
+    koperasi:  <HemKoperasi />,
+  };
+
+  return (
+    <div>
+      <div className="pg-top" style={{marginBottom:14}}>
+        <div className="pg-chip" style={{color:"#2563eb",borderColor:"#bfdbfe"}}
+          onClick={() => onNav(null, null)}>🏠 Papan Pemuka</div>
+        <span className="pg-sep">›</span>
+        <div className="pg-chip" style={{color:m.color,borderColor:`${m.color}40`}}>{m.icon} {m.label}</div>
+        {sName && <><span className="pg-sep">›</span>
+        <div className="pg-chip" style={{color:m.color,borderColor:`${m.color}40`,background:m.light}}>{sName}</div></>}
+      </div>
+
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
+        {m.subs.map((s, i) => (
+          <button key={m.ids[i]}
+            onClick={() => onNav("hem", m.ids[i])}
+            style={{
+              padding:"7px 14px", borderRadius:12,
+              border:`1.5px solid ${subId===m.ids[i]?m.color:"var(--border)"}`,
+              background:subId===m.ids[i]?m.color:"var(--surface)",
+              color:subId===m.ids[i]?"white":"var(--text2)",
+              fontSize:12, fontWeight:800,
+              fontFamily:"'Nunito',sans-serif",
+              cursor:"pointer", transition:"all 0.15s",
+            }}>
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {views[subId] || <div style={{color:"var(--text2)",padding:40,textAlign:"center"}}>Pilih sub-modul</div>}
+    </div>
+  );
+}
+
 // ─── KURIKULUM ROUTER ─────────────────────────────────────────────────────────
 function KurikulumPage({ subId, onNav }) {
   const m = MODULES.find(x=>x.id==="kurikulum");
@@ -2470,7 +3493,9 @@ export default function App() {
               ? <Overview onNav={onNav} user={user}/>
               : actMod==="kurikulum"
                 ? <KurikulumPage subId={actSub} onNav={onNav}/>
-                : <Page modId={actMod} subId={actSub}/>}
+                : actMod==="hem"
+                  ? <HEMPage subId={actSub} onNav={onNav}/>
+                  : <Page modId={actMod} subId={actSub}/>}
           </div>
         </div>
       </div>
