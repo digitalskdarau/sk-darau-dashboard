@@ -192,12 +192,17 @@ function Toast() {
 
 // ─── DB HELPER ───────────────────────────────────────────────────────────────
 async function dbRun(fn) {
-  const result = await fn();
-  if (result?.error) {
-    toast(result.error.message || "Ralat Supabase — semak RLS policy");
+  try {
+    const result = await fn();
+    if (result?.error) {
+      toast(result.error.message || "Ralat Supabase — semak RLS policy");
+      return false;
+    }
+    return true;
+  } catch (e) {
+    toast(e?.message || "Gagal sambung ke pelayan — semak internet");
     return false;
   }
-  return true;
 }
 
 // ─── ANIMATED COUNT ──────────────────────────────────────────────────────────
