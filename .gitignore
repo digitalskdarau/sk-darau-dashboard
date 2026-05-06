@@ -25,3 +25,4 @@ SchoolDashboardV5.jsx
 *.njsproj
 *.sln
 *.sw?
+.vercel

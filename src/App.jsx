@@ -57,12 +57,12 @@ function Wave({ color = "#eff6ff", flip = false }) {
 
 // ─── CSS ─────────────────────────────────────────────────────────────────────
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Poppins:wght@700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
 html { font-size: 16px; }
 body {
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   background: #f0f5ff;
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
@@ -134,16 +134,16 @@ body {
   box-shadow: 0 6px 20px rgba(37,99,235,0.35);
   animation: pulse-ring 2.5s ease-in-out infinite;
 }
-.lc-name { font-family:'Poppins',sans-serif; font-size:18px; font-weight:900; color:#0f172a; }
-.lc-school { font-size:12px; color:#64748b; font-weight:600; margin-top:1px; }
+.lc-name { font-family:'Playfair Display',serif; font-size:18px; font-weight:900; color:#0f172a; }
+.lc-school { font-size:12px; color:#64748b; font-weight:600; margin-top:1px; font-style:italic; }
 
 .lc-greet { margin-bottom:22px; padding-bottom:22px; border-bottom:2.5px dashed #dbeafe; }
 .lc-greet h1 {
-  font-family:'Poppins',sans-serif;
+  font-family:'Playfair Display',serif;
   font-size:24px; font-weight:900; color:#0f172a;
   margin-bottom:4px; line-height:1.2;
 }
-.lc-greet p { font-size:14px; color:#64748b; font-weight:600; }
+.lc-greet p { font-size:14px; color:#64748b; font-weight:600; font-style:italic; }
 
 .lc-hint {
   background: linear-gradient(135deg,#f0fdf4,#dcfce7);
@@ -166,7 +166,7 @@ body {
   width:100%; padding:13px 16px;
   background:#f8faff; border:2.5px solid #dbeafe; border-radius:14px;
   font-size:15px; font-weight:700;
-  font-family:'Nunito',sans-serif; color:#0f172a;
+  font-family:'Plus Jakarta Sans',sans-serif; color:#0f172a;
   outline:none; transition: all 0.2s;
 }
 .lc-input:focus { border-color:#3b82f6; box-shadow:0 0 0 4px rgba(59,130,246,0.13); background:white; }
@@ -192,7 +192,7 @@ body {
   background: linear-gradient(135deg,#1d4ed8,#3b82f6);
   border:none; border-radius:16px;
   color:white; font-size:16px; font-weight:900;
-  font-family:'Nunito',sans-serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
   cursor:pointer; margin-top:4px;
   box-shadow: 0 6px 24px rgba(37,99,235,0.38);
   transition: all 0.22s; letter-spacing:0.02em;
@@ -239,8 +239,8 @@ body {
   display:flex; align-items:center; justify-content:center;
   font-size:20px; box-shadow:0 4px 14px rgba(37,99,235,0.3);
 }
-.sb-name { font-family:'Poppins',sans-serif; font-size:13.5px; font-weight:900; color:#0f172a; }
-.sb-school { font-size:11px; color:#64748b; font-weight:600; margin-top:1px; }
+.sb-name { font-family:'Playfair Display',serif; font-size:13.5px; font-weight:900; color:#0f172a; }
+.sb-school { font-size:11px; color:#64748b; font-weight:600; margin-top:1px; font-style:italic; }
 
 /* fun mood strip */
 .sb-mood {
@@ -264,7 +264,7 @@ body {
   padding:10px 12px; border-radius:14px; margin-bottom:3px;
   background:transparent; border:none; cursor:pointer;
   color:#475569; font-size:13.5px; font-weight:700;
-  font-family:'Nunito',sans-serif; text-align:left;
+  font-family:'Plus Jakarta Sans',sans-serif; text-align:left;
   transition: all 0.18s;
 }
 .sb-btn:hover { background:#eff6ff; color:#2563eb; transform:translateX(2px); }
@@ -280,7 +280,7 @@ body {
   padding:8px 10px; border-radius:10px; margin-bottom:2px;
   background:transparent; border:none; cursor:pointer;
   color:#64748b; font-size:13px; font-weight:600;
-  font-family:'Nunito',sans-serif; text-align:left; transition:all 0.12s;
+  font-family:'Plus Jakarta Sans',sans-serif; text-align:left; transition:all 0.12s;
 }
 .sub-btn:hover { color:#2563eb; background:#eff6ff; }
 .sub-btn.act { color:#1d4ed8; background:#dbeafe; font-weight:800; }
@@ -305,7 +305,7 @@ body {
   padding:9px 12px; border-radius:10px;
   background:transparent; border:none; cursor:pointer;
   color:#94a3b8; font-size:13.5px; font-weight:700;
-  font-family:'Nunito',sans-serif; transition:all 0.15s;
+  font-family:'Plus Jakarta Sans',sans-serif; transition:all 0.15s;
 }
 .sb-out:hover { background:#fef2f2; color:#ef4444; }
 
@@ -384,11 +384,11 @@ body {
 .hero-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
 .hero-emoji { font-size:52px; animation:float 4s ease-in-out infinite; line-height:1; }
 .hero-title {
-  font-family:'Poppins',sans-serif;
+  font-family:'Playfair Display',serif;
   font-size:22px; font-weight:900; margin-bottom:5px; line-height:1.2;
 }
-.hero-sub { font-size:14px; opacity:0.75; font-weight:600; }
-.hero-date { font-size:12px; opacity:0.5; margin-top:4px; font-weight:600; }
+.hero-sub { font-size:14px; opacity:0.75; font-weight:600; font-style:italic; }
+.hero-date { font-size:12px; opacity:0.5; margin-top:4px; font-weight:600; font-style:italic; }
 .hero-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
 .hero-tag {
   display:flex; align-items:center; gap:5px;
@@ -415,8 +415,8 @@ body {
   opacity:0.06;
 }
 .stat-ico { font-size:32px; margin-bottom:10px; display:block; }
-.stat-val { font-family:'Poppins',sans-serif; font-size:28px; font-weight:900; color:#0f172a; line-height:1; }
-.stat-lbl { font-size:13px; color:#64748b; font-weight:700; margin-top:3px; }
+.stat-val { font-family:'Playfair Display',serif; font-size:28px; font-weight:900; color:#0f172a; line-height:1; }
+.stat-lbl { font-size:13px; color:#64748b; font-weight:700; margin-top:3px; font-style:italic; }
 .stat-note {
   font-size:11.5px; font-weight:700; margin-top:10px;
   padding-top:10px; border-top:2px dashed #e0e7ff;
@@ -425,7 +425,7 @@ body {
 
 /* ── SECTION ── */
 .sec-hd { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; margin-top:22px; }
-.sec-title { font-family:'Poppins',sans-serif; font-size:17px; font-weight:900; color:#0f172a; display:flex; align-items:center; gap:8px; }
+.sec-title { font-family:'Playfair Display',serif; font-size:17px; font-weight:900; color:#0f172a; display:flex; align-items:center; gap:8px; }
 .sec-sub { font-size:12.5px; color:#94a3b8; font-weight:700; }
 
 /* ── UPDATES ── */
@@ -476,12 +476,12 @@ body {
 }
 .mc:hover .mc-ico { transform:scale(1.1) rotate(-5deg); }
 .mc-count {
-  font-family:'Poppins',sans-serif;
+  font-family:'Playfair Display',serif;
   font-size:13px; font-weight:900; color:#94a3b8;
   background:#f0f5ff; border:2px solid #dbeafe;
   border-radius:20px; padding:3px 10px;
 }
-.mc-name { font-family:'Poppins',sans-serif; font-weight:900; font-size:14px; color:#0f172a; margin-bottom:10px; }
+.mc-name { font-family:'Playfair Display',serif; font-weight:900; font-size:14px; color:#0f172a; margin-bottom:10px; }
 .mc-pills { display:flex; flex-wrap:wrap; gap:5px; }
 .mc-pill {
   padding:4px 10px; border-radius:9px;
@@ -500,8 +500,8 @@ body {
 }
 .pg-chip:hover { transform:scale(1.05); }
 .pg-sep { color:#93c5fd; font-weight:900; font-size:14px; }
-.pg-title { font-family:'Poppins',sans-serif; font-size:24px; font-weight:900; color:#0f172a; margin-bottom:4px; }
-.pg-sub { font-size:14px; color:#64748b; font-weight:600; margin-bottom:22px; }
+.pg-title { font-family:'Playfair Display',serif; font-size:24px; font-weight:900; color:#0f172a; margin-bottom:4px; }
+.pg-sub { font-size:14px; color:#64748b; font-weight:600; margin-bottom:22px; font-style:italic; }
 .pg-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
 .pgs {
   background:white; border-radius:18px; padding:18px 14px;
@@ -511,7 +511,7 @@ body {
 }
 .pgs:hover { transform:translateY(-3px); }
 .pgs-ico { font-size:28px; margin-bottom:8px; display:block; }
-.pgs-val { font-family:'Poppins',sans-serif; font-size:20px; font-weight:900; color:#0f172a; }
+.pgs-val { font-family:'Playfair Display',serif; font-size:20px; font-weight:900; color:#0f172a; }
 .pgs-lbl { font-size:12px; color:#94a3b8; font-weight:700; margin-top:3px; }
 
 .placeholder {
@@ -529,14 +529,14 @@ body {
   animation:float 3.5s ease-in-out infinite;
   box-shadow:0 8px 24px rgba(37,99,235,0.15);
 }
-.ph-title { font-family:'Poppins',sans-serif; font-size:20px; font-weight:900; color:#0f172a; margin-bottom:10px; }
-.ph-text { font-size:14.5px; color:#64748b; font-weight:600; line-height:1.7; max-width:340px; margin:0 auto 24px; }
+.ph-title { font-family:'Playfair Display',serif; font-size:20px; font-weight:900; color:#0f172a; margin-bottom:10px; }
+.ph-text { font-size:14.5px; color:#64748b; font-weight:600; line-height:1.7; max-width:340px; margin:0 auto 24px; font-style:italic; }
 .ph-btn {
   display:inline-flex; align-items:center; gap:8px;
   background:linear-gradient(135deg,#eff6ff,#e0e7ff);
   border:2.5px solid #bfdbfe; border-radius:14px;
   padding:12px 24px; font-size:14px; font-weight:900; color:#2563eb;
-  font-family:'Nunito',sans-serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
   animation:pulse-ring 2.5s ease-in-out infinite;
 }
 
