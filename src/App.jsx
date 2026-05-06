@@ -54,113 +54,7 @@ const WAKTU_SLOTS = [
 ];
 
 // each row = [Isnin, Selasa, Rabu, Khamis, Jumaat]
-const JADUAL_DB = {
-  "Tahun 4 Angsana": [
-    [{s:"BM",g:"Pn.Ramlah"},{s:"Math",g:"En.Azmi"},{s:"BI",g:"Pn.Susan"},{s:"Sains",g:"En.Hafiz"},{s:"BM",g:"Pn.Ramlah"}],
-    [{s:"BM",g:"Pn.Ramlah"},{s:"Math",g:"En.Azmi"},{s:"BI",g:"Pn.Susan"},{s:"BM",g:"Pn.Ramlah"},{s:"Math",g:"En.Azmi"}],
-    [{s:"Math",g:"En.Azmi"},{s:"BM",g:"Pn.Ramlah"},{s:"Sains",g:"En.Hafiz"},{s:"BI",g:"Pn.Susan"},{s:"Sejarah",g:"Pn.Kartini"}],
-    [{s:"Sains",g:"En.Hafiz"},{s:"BI",g:"Pn.Susan"},{s:"Math",g:"En.Azmi"},{s:"Math",g:"En.Azmi"},{s:"BI",g:"Pn.Susan"}],
-    [{s:"PI",g:"Ust.Fadzli"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"},{s:"PI",g:"Ust.Fadzli"},{s:"PI",g:"Ust.Fadzli"}],
-    null, // REHAT
-    [{s:"BI",g:"Pn.Susan"},{s:"Sains",g:"En.Hafiz"},{s:"BM",g:"Pn.Ramlah"},{s:"Sejarah",g:"Pn.Kartini"},{s:"Sains",g:"En.Hafiz"}],
-    [{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"},{s:"PJ",g:"En.Rahman"},{s:"PSV",g:"Pn.Liza"},{s:"PJ",g:"En.Rahman"}],
-    [{s:"PJ",g:"En.Rahman"},{s:"PSV",g:"Pn.Liza"},{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"},{s:"PSV",g:"Pn.Liza"}],
-    [{s:"RBT",g:"En.Jefri"},{s:"Muzik",g:"En.Farid"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PJ",g:"En.Rahman"},{s:"Muzik",g:"En.Farid"}],
-    [{s:"PSV",g:"Pn.Liza"},{s:"RBT",g:"En.Jefri"},{s:"RBT",g:"En.Jefri"},{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"}],
-  ],
-  "Tahun 5 Seroja": [
-    [{s:"Math",g:"En.Azmi"},{s:"BM",g:"Pn.Ramlah"},{s:"Sains",g:"En.Hafiz"},{s:"BI",g:"Pn.Susan"},{s:"Math",g:"En.Azmi"}],
-    [{s:"Math",g:"En.Azmi"},{s:"BM",g:"Pn.Ramlah"},{s:"Sains",g:"En.Hafiz"},{s:"BM",g:"Pn.Ramlah"},{s:"BM",g:"Pn.Ramlah"}],
-    [{s:"BI",g:"Pn.Susan"},{s:"Sains",g:"En.Hafiz"},{s:"BM",g:"Pn.Ramlah"},{s:"Math",g:"En.Azmi"},{s:"BI",g:"Pn.Susan"}],
-    [{s:"BM",g:"Pn.Ramlah"},{s:"Math",g:"En.Azmi"},{s:"BI",g:"Pn.Susan"},{s:"Sains",g:"En.Hafiz"},{s:"Sains",g:"En.Hafiz"}],
-    [{s:"PI",g:"Ust.Fadzli"},{s:"PI",g:"Ust.Fadzli"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"},{s:"PI",g:"Ust.Fadzli"}],
-    null,
-    [{s:"Sains",g:"En.Hafiz"},{s:"BI",g:"Pn.Susan"},{s:"Math",g:"En.Azmi"},{s:"BM",g:"Pn.Ramlah"},{s:"Sejarah",g:"Pn.Kartini"}],
-    [{s:"Sejarah",g:"Pn.Kartini"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PJ",g:"En.Rahman"}],
-    [{s:"PSV",g:"Pn.Liza"},{s:"PJ",g:"En.Rahman"},{s:"PSV",g:"Pn.Liza"},{s:"PJ",g:"En.Rahman"},{s:"RBT",g:"En.Jefri"}],
-    [{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"},{s:"RBT",g:"En.Jefri"},{s:"PSV",g:"Pn.Liza"},{s:"PSV",g:"Pn.Liza"}],
-    [{s:"RBT",g:"En.Jefri"},{s:"Muzik",g:"En.Farid"},{s:"Muzik",g:"En.Farid"},{s:"Muzik",g:"En.Farid"},{s:"Muzik",g:"En.Farid"}],
-  ],
-  "Tahun 6 Emas": [
-    [{s:"BM",g:"Pn.Ramlah"},{s:"BI",g:"Pn.Susan"},{s:"Math",g:"En.Azmi"},{s:"BM",g:"Pn.Ramlah"},{s:"BI",g:"Pn.Susan"}],
-    [{s:"BM",g:"Pn.Ramlah"},{s:"BI",g:"Pn.Susan"},{s:"Sains",g:"En.Hafiz"},{s:"BM",g:"Pn.Ramlah"},{s:"Math",g:"En.Azmi"}],
-    [{s:"Math",g:"En.Azmi"},{s:"Math",g:"En.Azmi"},{s:"BM",g:"Pn.Ramlah"},{s:"Sains",g:"En.Hafiz"},{s:"BM",g:"Pn.Ramlah"}],
-    [{s:"Sains",g:"En.Hafiz"},{s:"Sains",g:"En.Hafiz"},{s:"BI",g:"Pn.Susan"},{s:"Math",g:"En.Azmi"},{s:"Sains",g:"En.Hafiz"}],
-    [{s:"PI",g:"Ust.Fadzli"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"}],
-    null,
-    [{s:"BI",g:"Pn.Susan"},{s:"BM",g:"Pn.Ramlah"},{s:"Sains",g:"En.Hafiz"},{s:"BI",g:"Pn.Susan"},{s:"Math",g:"En.Azmi"}],
-    [{s:"Sejarah",g:"Pn.Kartini"},{s:"Math",g:"En.Azmi"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"},{s:"Sejarah",g:"Pn.Kartini"}],
-    [{s:"PJ",g:"En.Rahman"},{s:"PSV",g:"Pn.Liza"},{s:"PJ",g:"En.Rahman"},{s:"PSV",g:"Pn.Liza"},{s:"PJ",g:"En.Rahman"}],
-    [{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"},{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"},{s:"PSV",g:"Pn.Liza"}],
-    [{s:"RBT",g:"En.Jefri"},{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"},{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"}],
-  ],
-};
-// Default same jadual for other classes
-["Tahun 1 Mawar","Tahun 2 Cempaka","Tahun 3 Kenanga"].forEach(k => { JADUAL_DB[k] = JADUAL_DB["Tahun 4 Angsana"]; });
 
-const PANITIA_DATA = [
-  { sub:"Bahasa Malaysia",    ico:"📖", color:"#2563eb", bg:"#eff6ff", ketua:"Pn. Ramlah Ahmad",  ahli:5, mesyuarat:"15 Apr 2025", status:"Aktif" },
-  { sub:"Bahasa Inggeris",    ico:"🌍", color:"#0891b2", bg:"#ecfeff", ketua:"Pn. Susan Lim",     ahli:4, mesyuarat:"12 Apr 2025", status:"Aktif" },
-  { sub:"Matematik",          ico:"🔢", color:"#ea580c", bg:"#fff7ed", ketua:"En. Azmi Hassan",   ahli:5, mesyuarat:"10 Apr 2025", status:"Aktif" },
-  { sub:"Sains",              ico:"🔬", color:"#16a34a", bg:"#f0fdf4", ketua:"En. Hafiz Ibrahim", ahli:4, mesyuarat:"17 Apr 2025", status:"Aktif" },
-  { sub:"Sejarah",            ico:"📜", color:"#92400e", bg:"#fef3c7", ketua:"Pn. Kartini Mohd",  ahli:3, mesyuarat:"20 Apr 2025", status:"Aktif" },
-  { sub:"Pendidikan Islam",   ico:"🕌", color:"#a16207", bg:"#fefce8", ketua:"Ust. Fadzli Rahim", ahli:3, mesyuarat:"18 Apr 2025", status:"Aktif" },
-  { sub:"PJ & Kesihatan",     ico:"⚽", color:"#dc2626", bg:"#fef2f2", ketua:"En. Rahman Othman",  ahli:3, mesyuarat:"22 Apr 2025", status:"Aktif" },
-  { sub:"Pend. Seni & Muzik", ico:"🎨", color:"#db2777", bg:"#fdf2f8", ketua:"Pn. Liza Azman",    ahli:4, mesyuarat:"19 Apr 2025", status:"Aktif" },
-];
-
-const PEPX_DATA = [
-  { nama:"Ujian Bulan Mac",            tarikh:"14 – 16 Mac 2025",  kelas:"Tahun 1–6", status:"Selesai",  badge:"b-green"  },
-  { nama:"Penilaian 1 (PBS)",          tarikh:"28 Apr – 2 Mei 2025", kelas:"Tahun 1–6", status:"Selesai", badge:"b-green" },
-  { nama:"Peperiksaan Pertengahan Tahun", tarikh:"16 – 20 Jun 2025", kelas:"Tahun 1–6", status:"Akan Datang", badge:"b-yellow" },
-  { nama:"Ujian Bulan Ogos",           tarikh:"11 – 13 Ogos 2025", kelas:"Tahun 1–6",  status:"Akan Datang", badge:"b-yellow" },
-  { nama:"UPSR Percubaan",             tarikh:"1 – 5 Sep 2025",    kelas:"Tahun 6",    status:"Akan Datang", badge:"b-blue"  },
-  { nama:"Peperiksaan Akhir Tahun",    tarikh:"3 – 7 Nov 2025",    kelas:"Tahun 1–6",  status:"Akan Datang", badge:"b-purple" },
-  { nama:"UPSR",                       tarikh:"18 – 20 Nov 2025",  kelas:"Tahun 6",    status:"Akan Datang", badge:"b-red"   },
-];
-
-const RPH_DATA = [
-  { guru:"Pn. Ramlah Ahmad",   subj:"BM",      kelas:"Thn 4",  minggu:"Minggu 16", status:"Hantar",  badge:"b-green"  },
-  { guru:"Pn. Susan Lim",      subj:"BI",      kelas:"Thn 5",  minggu:"Minggu 16", status:"Hantar",  badge:"b-green"  },
-  { guru:"En. Azmi Hassan",    subj:"Math",    kelas:"Thn 6",  minggu:"Minggu 16", status:"Hantar",  badge:"b-green"  },
-  { guru:"En. Hafiz Ibrahim",  subj:"Sains",   kelas:"Thn 4",  minggu:"Minggu 16", status:"Hantar",  badge:"b-green"  },
-  { guru:"Pn. Kartini Mohd",   subj:"Sejarah", kelas:"Thn 5",  minggu:"Minggu 16", status:"Hantar",  badge:"b-green"  },
-  { guru:"Ust. Fadzli Rahim",  subj:"PI",      kelas:"Thn 4",  minggu:"Minggu 16", status:"Tertunggak", badge:"b-red" },
-  { guru:"En. Rahman Othman",  subj:"PJ",      kelas:"Thn 3",  minggu:"Minggu 16", status:"Tertunggak", badge:"b-red" },
-  { guru:"Pn. Liza Azman",     subj:"PSV",     kelas:"Thn 2",  minggu:"Minggu 16", status:"Hantar",  badge:"b-green"  },
-  { guru:"En. Farid Noor",     subj:"Muzik",   kelas:"Thn 1",  minggu:"Minggu 15", status:"Tertunggak", badge:"b-red" },
-  { guru:"En. Jefri Alias",    subj:"RBT",     kelas:"Thn 5",  minggu:"Minggu 16", status:"Semak",   badge:"b-yellow" },
-];
-
-const PROGRAM_DATA = [
-  { nama:"Program NILAM Sekolah",   tarikh:"Jan – Nov 2025",   desc:"Program membaca buku, sasaran 8 buku / murid.",  color:"#2563eb", badge:"b-green",  status:"Sedang Berjalan" },
-  { nama:"Bulan Bahasa Kebangsaan", tarikh:"Oktober 2025",     desc:"Pelbagai pertandingan bahasa melayu peringkat sekolah.", color:"#0891b2", badge:"b-yellow", status:"Akan Datang" },
-  { nama:"Minggu Sains & Matematik",tarikh:"Jun 2025",         desc:"Ekshibisi sains, kuiz matematik, lawatan ilmiah.", color:"#16a34a", badge:"b-yellow", status:"Akan Datang" },
-  { nama:"Hari Kecemerlangan Akademik", tarikh:"Dis 2025",    desc:"Anugerah pelajar cemerlang dan hadiah keputusan akhir tahun.", color:"#a16207", badge:"b-purple", status:"Akan Datang" },
-  { nama:"Program LINUS / PROTIM",  tarikh:"Feb – Nov 2025",  desc:"Intervensi bacaan, tulisan dan nombor untuk murid sasar.", color:"#7c3aed", badge:"b-green",  status:"Sedang Berjalan" },
-  { nama:"Program Mentor Mentee",   tarikh:"Mac – Okt 2025",  desc:"Pasangan guru-murid untuk sokong peningkatan akademik.", color:"#dc2626", badge:"b-green",  status:"Sedang Berjalan" },
-];
-
-const NILAM_DATA = [
-  { nama:"Ahmad Fariz",    kelas:"Thn 6 Emas",  buku:14, sasaran:8 },
-  { nama:"Nurul Aina",     kelas:"Thn 5 Seroja",buku:12, sasaran:8 },
-  { nama:"Haziq Danial",   kelas:"Thn 6 Emas",  buku:11, sasaran:8 },
-  { nama:"Siti Mariam",    kelas:"Thn 4 Angsana",buku:10, sasaran:8 },
-  { nama:"Zulaikha",       kelas:"Thn 5 Seroja",buku:9,  sasaran:8 },
-  { nama:"Irfan Haiqal",   kelas:"Thn 6 Emas",  buku:9,  sasaran:8 },
-  { nama:"Aisyah Batrisyia",kelas:"Thn 3 Kenanga",buku:8, sasaran:8 },
-  { nama:"Muhammad Amir",  kelas:"Thn 4 Angsana",buku:7, sasaran:8 },
-];
-
-const STAF_DATA = [
-  { nama:"Semua Guru",            kursus:"Bengkel PBS & Pentaksiran Bilik Darjah", tarikh:"18 Jan 2025",  anjur:"JPN Sabah",    status:"Selesai",  badge:"b-green"  },
-  { nama:"Pn. Ramlah, Pn. Susan", kursus:"Penulisan Buku Teks KSSR Semakan",       tarikh:"5 Feb 2025",   anjur:"KPM",          status:"Selesai",  badge:"b-green"  },
-  { nama:"En. Azmi, En. Hafiz",   kursus:"STEM dalam PdP Matematik & Sains",        tarikh:"20 Mac 2025",  anjur:"IAB",          status:"Selesai",  badge:"b-green"  },
-  { nama:"Semua Guru",            kursus:"PLC Sekolah (Lesson Study)",              tarikh:"10 Apr 2025",  anjur:"Dalaman",      status:"Selesai",  badge:"b-green"  },
-  { nama:"En. Jefri, En. Farid",  kursus:"Kursus ICT & Pembelajaran Digital",       tarikh:"15 Mei 2025",  anjur:"BTPN Sabah",   status:"Akan Datang", badge:"b-yellow" },
-  { nama:"Semua Guru",            kursus:"Bengkel Penulisan RPH Berkualiti",         tarikh:"7 Jun 2025",   anjur:"Dalaman",      status:"Akan Datang", badge:"b-yellow" },
-  { nama:"Pn. Liza, Ust. Fadzli", kursus:"Kursus Penilaian Prestasi PSV & PI",     tarikh:"2 Julai 2025", anjur:"JPN Sabah",    status:"Akan Datang", badge:"b-blue"   },
-];
 
 // ─── TOAST NOTIFICATION ──────────────────────────────────────────────────────
 let _setToast = null;
@@ -1531,10 +1425,6 @@ function Overview({ onNav, user }) {
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
-async function seedOnce(table, rows) {
-  const { count } = await supabase.from(table).select('*', { count:'exact', head:true });
-  if (count === 0) await supabase.from(table).insert(rows);
-}
 
 // ─── MODAL ───────────────────────────────────────────────────────────────────
 function Modal({ title, onClose, children }) {
@@ -1582,25 +1472,6 @@ function JadualWaktu() {
   const [q, setQ] = useState("");
   const [editCell, setEditCell] = useState(null);
 
-  useEffect(() => {
-    const init = async () => {
-      const { count } = await supabase.from('jadual_waktu').select('*',{count:'exact',head:true});
-      if (count === 0) {
-        const jadualRows = [];
-        KELAS_LIST.forEach(k => {
-          const slots = JADUAL_DB[k]; if (!slots) return;
-          slots.forEach((row, ri) => {
-            if (!row) return;
-            row.forEach((cell, ci) => {
-              jadualRows.push({ kelas:k, hari:HARI[ci], waktu_slot:ri, subjek:cell.s, guru:cell.g });
-            });
-          });
-        });
-        await supabase.from('jadual_waktu').insert(jadualRows);
-      }
-    };
-    init();
-  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -1740,7 +1611,7 @@ function PanitiaMP() {
 
   const load = async () => {
     setLoading(true);
-    await seedOnce('panitia', PANITIA_DATA.map(p=>({ subjek:p.sub, icon:p.ico, color:p.color, bg:p.bg, ketua:p.ketua, jumlah_ahli:p.ahli, tarikh_mesyuarat:p.mesyuarat, status:p.status })));
+
     const { data: rows } = await supabase.from('panitia').select('*').order('created_at');
     setData(rows||[]); setLoading(false);
   };
@@ -1854,7 +1725,7 @@ function Peperiksaan() {
 
   const load = async () => {
     setLoading(true);
-    await seedOnce('peperiksaan', PEPX_DATA.map(p=>({ nama:p.nama, tarikh:p.tarikh, kelas:p.kelas, status:p.status })));
+
     const { data: rows } = await supabase.from('peperiksaan').select('*').order('created_at');
     setData(rows||[]); setLoading(false);
   };
@@ -1967,7 +1838,7 @@ function RPHRekod() {
 
   const load = async () => {
     setLoading(true);
-    await seedOnce('rph', RPH_DATA.map(r=>({ guru:r.guru, subjek:r.subj, kelas:r.kelas, minggu:r.minggu, status:r.status })));
+
     const { data: rows } = await supabase.from('rph').select('*').order('created_at');
     setData(rows||[]); setLoading(false);
   };
@@ -2067,7 +1938,7 @@ function ProgramAkademik() {
 
   const load = async () => {
     setLoading(true);
-    await seedOnce('program_akademik', PROGRAM_DATA.map(p=>({ nama:p.nama, tarikh:p.tarikh, deskripsi:p.desc, color:p.color, status:p.status })));
+
     const { data: rows } = await supabase.from('program_akademik').select('*').order('created_at');
     setData(rows||[]); setLoading(false);
   };
@@ -2167,7 +2038,7 @@ function PusatSumber() {
 
   const load = async () => {
     setLoading(true);
-    await seedOnce('nilam', NILAM_DATA.map(r=>({ nama:r.nama, kelas:r.kelas, buku_dibaca:r.buku, sasaran:r.sasaran })));
+
     const { data: rows } = await supabase.from('nilam').select('*').order('buku_dibaca', { ascending:false });
     setData(rows || []);
     setLoading(false);
@@ -2322,7 +2193,7 @@ function PerkembanganStaf() {
 
   const load = async () => {
     setLoading(true);
-    await seedOnce('perkembangan_staf', STAF_DATA.map(s=>({ peserta:s.nama, kursus:s.kursus, tarikh:s.tarikh, penganjur:s.anjur, status:s.status })));
+
     const { data: rows } = await supabase.from('perkembangan_staf').select('*').order('created_at');
     setData(rows || []);
     setLoading(false);
