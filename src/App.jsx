@@ -29,6 +29,138 @@ const UPDATES = [
   { icon:"👦", text:"12 murid baharu didaftarkan minggu ini", tag:"Baharu", tc:"#2563eb", bg:"#eff6ff" },
 ];
 
+// ─── KURIKULUM DATA ──────────────────────────────────────────────────────────
+const SC = {
+  "BM":      { c:"#2563eb", bg:"#eff6ff",  i:"📖" },
+  "BI":      { c:"#0891b2", bg:"#ecfeff",  i:"🌍" },
+  "Math":    { c:"#ea580c", bg:"#fff7ed",  i:"🔢" },
+  "Sains":   { c:"#16a34a", bg:"#f0fdf4",  i:"🔬" },
+  "Sejarah": { c:"#92400e", bg:"#fef3c7",  i:"📜" },
+  "PI":      { c:"#a16207", bg:"#fefce8",  i:"🕌" },
+  "Moral":   { c:"#7c3aed", bg:"#f5f3ff",  i:"⭐" },
+  "PJ":      { c:"#dc2626", bg:"#fef2f2",  i:"⚽" },
+  "PSV":     { c:"#db2777", bg:"#fdf2f8",  i:"🎨" },
+  "Muzik":   { c:"#7c3aed", bg:"#f5f3ff",  i:"🎵" },
+  "RBT":     { c:"#475569", bg:"#f8fafc",  i:"🔧" },
+  "BK":      { c:"#0284c7", bg:"#e0f2fe",  i:"📚" },
+};
+
+const KELAS_LIST = ["Tahun 4 Angsana","Tahun 5 Seroja","Tahun 6 Emas","Tahun 1 Mawar","Tahun 2 Cempaka","Tahun 3 Kenanga"];
+
+const WAKTU_SLOTS = [
+  "7:30 – 8:00","8:00 – 8:30","8:30 – 9:00","9:00 – 9:30","9:30 – 10:00",
+  "REHAT","10:30 – 11:00","11:00 – 11:30","11:30 – 12:00","12:00 – 12:30","12:30 – 1:00"
+];
+
+// each row = [Isnin, Selasa, Rabu, Khamis, Jumaat]
+const JADUAL_DB = {
+  "Tahun 4 Angsana": [
+    [{s:"BM",g:"Pn.Ramlah"},{s:"Math",g:"En.Azmi"},{s:"BI",g:"Pn.Susan"},{s:"Sains",g:"En.Hafiz"},{s:"BM",g:"Pn.Ramlah"}],
+    [{s:"BM",g:"Pn.Ramlah"},{s:"Math",g:"En.Azmi"},{s:"BI",g:"Pn.Susan"},{s:"BM",g:"Pn.Ramlah"},{s:"Math",g:"En.Azmi"}],
+    [{s:"Math",g:"En.Azmi"},{s:"BM",g:"Pn.Ramlah"},{s:"Sains",g:"En.Hafiz"},{s:"BI",g:"Pn.Susan"},{s:"Sejarah",g:"Pn.Kartini"}],
+    [{s:"Sains",g:"En.Hafiz"},{s:"BI",g:"Pn.Susan"},{s:"Math",g:"En.Azmi"},{s:"Math",g:"En.Azmi"},{s:"BI",g:"Pn.Susan"}],
+    [{s:"PI",g:"Ust.Fadzli"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"},{s:"PI",g:"Ust.Fadzli"},{s:"PI",g:"Ust.Fadzli"}],
+    null, // REHAT
+    [{s:"BI",g:"Pn.Susan"},{s:"Sains",g:"En.Hafiz"},{s:"BM",g:"Pn.Ramlah"},{s:"Sejarah",g:"Pn.Kartini"},{s:"Sains",g:"En.Hafiz"}],
+    [{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"},{s:"PJ",g:"En.Rahman"},{s:"PSV",g:"Pn.Liza"},{s:"PJ",g:"En.Rahman"}],
+    [{s:"PJ",g:"En.Rahman"},{s:"PSV",g:"Pn.Liza"},{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"},{s:"PSV",g:"Pn.Liza"}],
+    [{s:"RBT",g:"En.Jefri"},{s:"Muzik",g:"En.Farid"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PJ",g:"En.Rahman"},{s:"Muzik",g:"En.Farid"}],
+    [{s:"PSV",g:"Pn.Liza"},{s:"RBT",g:"En.Jefri"},{s:"RBT",g:"En.Jefri"},{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"}],
+  ],
+  "Tahun 5 Seroja": [
+    [{s:"Math",g:"En.Azmi"},{s:"BM",g:"Pn.Ramlah"},{s:"Sains",g:"En.Hafiz"},{s:"BI",g:"Pn.Susan"},{s:"Math",g:"En.Azmi"}],
+    [{s:"Math",g:"En.Azmi"},{s:"BM",g:"Pn.Ramlah"},{s:"Sains",g:"En.Hafiz"},{s:"BM",g:"Pn.Ramlah"},{s:"BM",g:"Pn.Ramlah"}],
+    [{s:"BI",g:"Pn.Susan"},{s:"Sains",g:"En.Hafiz"},{s:"BM",g:"Pn.Ramlah"},{s:"Math",g:"En.Azmi"},{s:"BI",g:"Pn.Susan"}],
+    [{s:"BM",g:"Pn.Ramlah"},{s:"Math",g:"En.Azmi"},{s:"BI",g:"Pn.Susan"},{s:"Sains",g:"En.Hafiz"},{s:"Sains",g:"En.Hafiz"}],
+    [{s:"PI",g:"Ust.Fadzli"},{s:"PI",g:"Ust.Fadzli"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"},{s:"PI",g:"Ust.Fadzli"}],
+    null,
+    [{s:"Sains",g:"En.Hafiz"},{s:"BI",g:"Pn.Susan"},{s:"Math",g:"En.Azmi"},{s:"BM",g:"Pn.Ramlah"},{s:"Sejarah",g:"Pn.Kartini"}],
+    [{s:"Sejarah",g:"Pn.Kartini"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PJ",g:"En.Rahman"}],
+    [{s:"PSV",g:"Pn.Liza"},{s:"PJ",g:"En.Rahman"},{s:"PSV",g:"Pn.Liza"},{s:"PJ",g:"En.Rahman"},{s:"RBT",g:"En.Jefri"}],
+    [{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"},{s:"RBT",g:"En.Jefri"},{s:"PSV",g:"Pn.Liza"},{s:"PSV",g:"Pn.Liza"}],
+    [{s:"RBT",g:"En.Jefri"},{s:"Muzik",g:"En.Farid"},{s:"Muzik",g:"En.Farid"},{s:"Muzik",g:"En.Farid"},{s:"Muzik",g:"En.Farid"}],
+  ],
+  "Tahun 6 Emas": [
+    [{s:"BM",g:"Pn.Ramlah"},{s:"BI",g:"Pn.Susan"},{s:"Math",g:"En.Azmi"},{s:"BM",g:"Pn.Ramlah"},{s:"BI",g:"Pn.Susan"}],
+    [{s:"BM",g:"Pn.Ramlah"},{s:"BI",g:"Pn.Susan"},{s:"Sains",g:"En.Hafiz"},{s:"BM",g:"Pn.Ramlah"},{s:"Math",g:"En.Azmi"}],
+    [{s:"Math",g:"En.Azmi"},{s:"Math",g:"En.Azmi"},{s:"BM",g:"Pn.Ramlah"},{s:"Sains",g:"En.Hafiz"},{s:"BM",g:"Pn.Ramlah"}],
+    [{s:"Sains",g:"En.Hafiz"},{s:"Sains",g:"En.Hafiz"},{s:"BI",g:"Pn.Susan"},{s:"Math",g:"En.Azmi"},{s:"Sains",g:"En.Hafiz"}],
+    [{s:"PI",g:"Ust.Fadzli"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"}],
+    null,
+    [{s:"BI",g:"Pn.Susan"},{s:"BM",g:"Pn.Ramlah"},{s:"Sains",g:"En.Hafiz"},{s:"BI",g:"Pn.Susan"},{s:"Math",g:"En.Azmi"}],
+    [{s:"Sejarah",g:"Pn.Kartini"},{s:"Math",g:"En.Azmi"},{s:"Sejarah",g:"Pn.Kartini"},{s:"PI",g:"Ust.Fadzli"},{s:"Sejarah",g:"Pn.Kartini"}],
+    [{s:"PJ",g:"En.Rahman"},{s:"PSV",g:"Pn.Liza"},{s:"PJ",g:"En.Rahman"},{s:"PSV",g:"Pn.Liza"},{s:"PJ",g:"En.Rahman"}],
+    [{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"},{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"},{s:"PSV",g:"Pn.Liza"}],
+    [{s:"RBT",g:"En.Jefri"},{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"},{s:"Muzik",g:"En.Farid"},{s:"RBT",g:"En.Jefri"}],
+  ],
+};
+// Default same jadual for other classes
+["Tahun 1 Mawar","Tahun 2 Cempaka","Tahun 3 Kenanga"].forEach(k => { JADUAL_DB[k] = JADUAL_DB["Tahun 4 Angsana"]; });
+
+const PANITIA_DATA = [
+  { sub:"Bahasa Malaysia",    ico:"📖", color:"#2563eb", bg:"#eff6ff", ketua:"Pn. Ramlah Ahmad",  ahli:5, mesyuarat:"15 Apr 2025", status:"Aktif" },
+  { sub:"Bahasa Inggeris",    ico:"🌍", color:"#0891b2", bg:"#ecfeff", ketua:"Pn. Susan Lim",     ahli:4, mesyuarat:"12 Apr 2025", status:"Aktif" },
+  { sub:"Matematik",          ico:"🔢", color:"#ea580c", bg:"#fff7ed", ketua:"En. Azmi Hassan",   ahli:5, mesyuarat:"10 Apr 2025", status:"Aktif" },
+  { sub:"Sains",              ico:"🔬", color:"#16a34a", bg:"#f0fdf4", ketua:"En. Hafiz Ibrahim", ahli:4, mesyuarat:"17 Apr 2025", status:"Aktif" },
+  { sub:"Sejarah",            ico:"📜", color:"#92400e", bg:"#fef3c7", ketua:"Pn. Kartini Mohd",  ahli:3, mesyuarat:"20 Apr 2025", status:"Aktif" },
+  { sub:"Pendidikan Islam",   ico:"🕌", color:"#a16207", bg:"#fefce8", ketua:"Ust. Fadzli Rahim", ahli:3, mesyuarat:"18 Apr 2025", status:"Aktif" },
+  { sub:"PJ & Kesihatan",     ico:"⚽", color:"#dc2626", bg:"#fef2f2", ketua:"En. Rahman Othman",  ahli:3, mesyuarat:"22 Apr 2025", status:"Aktif" },
+  { sub:"Pend. Seni & Muzik", ico:"🎨", color:"#db2777", bg:"#fdf2f8", ketua:"Pn. Liza Azman",    ahli:4, mesyuarat:"19 Apr 2025", status:"Aktif" },
+];
+
+const PEPX_DATA = [
+  { nama:"Ujian Bulan Mac",            tarikh:"14 – 16 Mac 2025",  kelas:"Tahun 1–6", status:"Selesai",  badge:"b-green"  },
+  { nama:"Penilaian 1 (PBS)",          tarikh:"28 Apr – 2 Mei 2025", kelas:"Tahun 1–6", status:"Selesai", badge:"b-green" },
+  { nama:"Peperiksaan Pertengahan Tahun", tarikh:"16 – 20 Jun 2025", kelas:"Tahun 1–6", status:"Akan Datang", badge:"b-yellow" },
+  { nama:"Ujian Bulan Ogos",           tarikh:"11 – 13 Ogos 2025", kelas:"Tahun 1–6",  status:"Akan Datang", badge:"b-yellow" },
+  { nama:"UPSR Percubaan",             tarikh:"1 – 5 Sep 2025",    kelas:"Tahun 6",    status:"Akan Datang", badge:"b-blue"  },
+  { nama:"Peperiksaan Akhir Tahun",    tarikh:"3 – 7 Nov 2025",    kelas:"Tahun 1–6",  status:"Akan Datang", badge:"b-purple" },
+  { nama:"UPSR",                       tarikh:"18 – 20 Nov 2025",  kelas:"Tahun 6",    status:"Akan Datang", badge:"b-red"   },
+];
+
+const RPH_DATA = [
+  { guru:"Pn. Ramlah Ahmad",   subj:"BM",      kelas:"Thn 4",  minggu:"Minggu 16", status:"Hantar",  badge:"b-green"  },
+  { guru:"Pn. Susan Lim",      subj:"BI",      kelas:"Thn 5",  minggu:"Minggu 16", status:"Hantar",  badge:"b-green"  },
+  { guru:"En. Azmi Hassan",    subj:"Math",    kelas:"Thn 6",  minggu:"Minggu 16", status:"Hantar",  badge:"b-green"  },
+  { guru:"En. Hafiz Ibrahim",  subj:"Sains",   kelas:"Thn 4",  minggu:"Minggu 16", status:"Hantar",  badge:"b-green"  },
+  { guru:"Pn. Kartini Mohd",   subj:"Sejarah", kelas:"Thn 5",  minggu:"Minggu 16", status:"Hantar",  badge:"b-green"  },
+  { guru:"Ust. Fadzli Rahim",  subj:"PI",      kelas:"Thn 4",  minggu:"Minggu 16", status:"Tertunggak", badge:"b-red" },
+  { guru:"En. Rahman Othman",  subj:"PJ",      kelas:"Thn 3",  minggu:"Minggu 16", status:"Tertunggak", badge:"b-red" },
+  { guru:"Pn. Liza Azman",     subj:"PSV",     kelas:"Thn 2",  minggu:"Minggu 16", status:"Hantar",  badge:"b-green"  },
+  { guru:"En. Farid Noor",     subj:"Muzik",   kelas:"Thn 1",  minggu:"Minggu 15", status:"Tertunggak", badge:"b-red" },
+  { guru:"En. Jefri Alias",    subj:"RBT",     kelas:"Thn 5",  minggu:"Minggu 16", status:"Semak",   badge:"b-yellow" },
+];
+
+const PROGRAM_DATA = [
+  { nama:"Program NILAM Sekolah",   tarikh:"Jan – Nov 2025",   desc:"Program membaca buku, sasaran 8 buku / murid.",  color:"#2563eb", badge:"b-green",  status:"Sedang Berjalan" },
+  { nama:"Bulan Bahasa Kebangsaan", tarikh:"Oktober 2025",     desc:"Pelbagai pertandingan bahasa melayu peringkat sekolah.", color:"#0891b2", badge:"b-yellow", status:"Akan Datang" },
+  { nama:"Minggu Sains & Matematik",tarikh:"Jun 2025",         desc:"Ekshibisi sains, kuiz matematik, lawatan ilmiah.", color:"#16a34a", badge:"b-yellow", status:"Akan Datang" },
+  { nama:"Hari Kecemerlangan Akademik", tarikh:"Dis 2025",    desc:"Anugerah pelajar cemerlang dan hadiah keputusan akhir tahun.", color:"#a16207", badge:"b-purple", status:"Akan Datang" },
+  { nama:"Program LINUS / PROTIM",  tarikh:"Feb – Nov 2025",  desc:"Intervensi bacaan, tulisan dan nombor untuk murid sasar.", color:"#7c3aed", badge:"b-green",  status:"Sedang Berjalan" },
+  { nama:"Program Mentor Mentee",   tarikh:"Mac – Okt 2025",  desc:"Pasangan guru-murid untuk sokong peningkatan akademik.", color:"#dc2626", badge:"b-green",  status:"Sedang Berjalan" },
+];
+
+const NILAM_DATA = [
+  { nama:"Ahmad Fariz",    kelas:"Thn 6 Emas",  buku:14, sasaran:8 },
+  { nama:"Nurul Aina",     kelas:"Thn 5 Seroja",buku:12, sasaran:8 },
+  { nama:"Haziq Danial",   kelas:"Thn 6 Emas",  buku:11, sasaran:8 },
+  { nama:"Siti Mariam",    kelas:"Thn 4 Angsana",buku:10, sasaran:8 },
+  { nama:"Zulaikha",       kelas:"Thn 5 Seroja",buku:9,  sasaran:8 },
+  { nama:"Irfan Haiqal",   kelas:"Thn 6 Emas",  buku:9,  sasaran:8 },
+  { nama:"Aisyah Batrisyia",kelas:"Thn 3 Kenanga",buku:8, sasaran:8 },
+  { nama:"Muhammad Amir",  kelas:"Thn 4 Angsana",buku:7, sasaran:8 },
+];
+
+const STAF_DATA = [
+  { nama:"Semua Guru",            kursus:"Bengkel PBS & Pentaksiran Bilik Darjah", tarikh:"18 Jan 2025",  anjur:"JPN Sabah",    status:"Selesai",  badge:"b-green"  },
+  { nama:"Pn. Ramlah, Pn. Susan", kursus:"Penulisan Buku Teks KSSR Semakan",       tarikh:"5 Feb 2025",   anjur:"KPM",          status:"Selesai",  badge:"b-green"  },
+  { nama:"En. Azmi, En. Hafiz",   kursus:"STEM dalam PdP Matematik & Sains",        tarikh:"20 Mac 2025",  anjur:"IAB",          status:"Selesai",  badge:"b-green"  },
+  { nama:"Semua Guru",            kursus:"PLC Sekolah (Lesson Study)",              tarikh:"10 Apr 2025",  anjur:"Dalaman",      status:"Selesai",  badge:"b-green"  },
+  { nama:"En. Jefri, En. Farid",  kursus:"Kursus ICT & Pembelajaran Digital",       tarikh:"15 Mei 2025",  anjur:"BTPN Sabah",   status:"Akan Datang", badge:"b-yellow" },
+  { nama:"Semua Guru",            kursus:"Bengkel Penulisan RPH Berkualiti",         tarikh:"7 Jun 2025",   anjur:"Dalaman",      status:"Akan Datang", badge:"b-yellow" },
+  { nama:"Pn. Liza, Ust. Fadzli", kursus:"Kursus Penilaian Prestasi PSV & PI",     tarikh:"2 Julai 2025", anjur:"JPN Sabah",    status:"Akan Datang", badge:"b-blue"   },
+];
+
 // ─── ANIMATED COUNT ──────────────────────────────────────────────────────────
 function Count({ to, suffix="" }) {
   const [v, setV] = useState(0);
@@ -817,6 +949,165 @@ body::before {
 @media (min-width:1200px) {
   .mods-grid { grid-template-columns:repeat(3,1fr); }
 }
+
+/* ══ KURIKULUM PAGES ══════════════════════════════════════════════════════ */
+.kur-header {
+  display:flex; align-items:center; gap:10px; margin-bottom:18px; flex-wrap:wrap;
+}
+.kur-select {
+  padding:9px 14px; border-radius:12px;
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--text); font-size:13px; font-weight:700;
+  font-family:'Plus Jakarta Sans',sans-serif; cursor:pointer;
+  outline:none; backdrop-filter:var(--blur); transition:all 0.2s;
+}
+.kur-select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-ring); }
+.kur-search-wrap { position:relative; flex:1; min-width:180px; }
+.kur-search-ico { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:15px; pointer-events:none; }
+.kur-search {
+  width:100%; padding:9px 14px 9px 38px;
+  border-radius:12px; background:var(--surface); border:1px solid var(--border);
+  color:var(--text); font-size:13px; font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  outline:none; backdrop-filter:var(--blur); transition:all 0.2s;
+}
+.kur-search:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-ring); }
+.kur-search::placeholder { color:var(--text3); }
+
+/* stats row */
+.kur-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:18px; }
+.kur-stat {
+  background:var(--surface); backdrop-filter:var(--blur);
+  border:1px solid var(--border); border-radius:16px;
+  padding:16px 14px; text-align:center;
+  box-shadow:var(--shadow); transition:all 0.2s;
+}
+.kur-stat:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.kur-stat-ico { font-size:24px; margin-bottom:6px; display:block; }
+.kur-stat-val { font-size:22px; font-weight:900; color:var(--text); font-family:'Plus Jakarta Sans',sans-serif; }
+.kur-stat-lbl { font-size:11px; color:var(--text3); font-weight:700; font-style:italic; margin-top:2px; }
+
+/* timetable */
+.jadual-wrap {
+  overflow-x:auto; border-radius:18px;
+  border:1px solid var(--border); box-shadow:var(--shadow);
+}
+.jadual-table { width:100%; border-collapse:collapse; min-width:640px; }
+.jadual-table th {
+  padding:11px 8px; text-align:center;
+  font-size:11.5px; font-weight:900; text-transform:uppercase;
+  letter-spacing:0.06em; color:var(--accent);
+  background:var(--accent-lt); border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+.jadual-table th:first-child { text-align:left; padding-left:16px; min-width:110px; }
+.jadual-table td {
+  padding:7px 5px; text-align:center; vertical-align:middle;
+  border-bottom:1px solid var(--divider);
+  background:var(--surface); transition:background 0.35s;
+}
+.jadual-table td:first-child {
+  text-align:left; padding-left:16px;
+  font-size:11.5px; font-weight:800; color:var(--text2);
+  white-space:nowrap; background:var(--accent-lt);
+  border-right:1px solid var(--border);
+}
+.jadual-table tr:last-child td { border-bottom:none; }
+.jadual-cell {
+  display:inline-flex; flex-direction:column; align-items:center;
+  padding:6px 8px; border-radius:10px; min-width:82px;
+  cursor:default; transition:all 0.15s;
+}
+.jadual-cell:hover { transform:scale(1.06); box-shadow:var(--shadow-md); }
+.jadual-cell-sub { font-size:11.5px; font-weight:800; color:var(--text); transition:color 0.35s; }
+.jadual-cell-guru { font-size:10px; font-weight:600; color:var(--text2); margin-top:1px; transition:color 0.35s; }
+.jadual-rehat td {
+  padding:6px 16px !important;
+  background:var(--divider) !important;
+  font-size:10.5px; font-weight:900; color:var(--text3) !important;
+  letter-spacing:0.1em; text-transform:uppercase;
+}
+.j-match .jadual-cell { outline:2px solid var(--accent); outline-offset:1px; }
+.j-dim { opacity:0.2; pointer-events:none; }
+
+/* panitia grid */
+.panitia-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.panitia-card {
+  background:var(--surface); backdrop-filter:var(--blur);
+  border:1px solid var(--border); border-radius:18px;
+  padding:18px 16px; box-shadow:var(--shadow); transition:all 0.22s;
+}
+.panitia-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-md); border-color:var(--accent); }
+.panitia-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.panitia-ico { width:42px; height:42px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:21px; flex-shrink:0; }
+.panitia-name { font-size:14px; font-weight:900; color:var(--text); transition:color 0.35s; }
+.panitia-ketua { font-size:12px; color:var(--text2); font-weight:600; font-style:italic; transition:color 0.35s; }
+.panitia-body { font-size:12.5px; color:var(--text2); margin-bottom:10px; transition:color 0.35s; }
+.panitia-foot { display:flex; gap:6px; flex-wrap:wrap; }
+
+/* generic table */
+.kur-table-wrap {
+  overflow-x:auto; border-radius:16px;
+  border:1px solid var(--border); box-shadow:var(--shadow);
+}
+.kur-table { width:100%; border-collapse:collapse; min-width:480px; }
+.kur-table th {
+  padding:11px 14px; text-align:left;
+  font-size:11px; font-weight:900; text-transform:uppercase;
+  letter-spacing:0.06em; color:var(--accent);
+  background:var(--accent-lt); border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+.kur-table td {
+  padding:11px 14px; font-size:13px; font-weight:600;
+  color:var(--text); border-bottom:1px solid var(--divider);
+  background:var(--surface); transition:background 0.35s, color 0.35s;
+}
+.kur-table tr:last-child td { border-bottom:none; }
+.kur-table tr:hover td { background:var(--accent-lt); }
+
+/* badges */
+.badge { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:800; white-space:nowrap; display:inline-block; }
+.b-green  { background:#f0fdf4; color:#15803d; }
+.b-yellow { background:#fffbeb; color:#a16207; }
+.b-red    { background:#fef2f2; color:#dc2626; }
+.b-blue   { background:#eff6ff; color:#1d4ed8; }
+.b-purple { background:#f5f3ff; color:#6d28d9; }
+.b-gray   { background:#f8fafc; color:#475569; }
+[data-theme="dark"] .b-green  { background:rgba(34,197,94,0.12);  color:#4ade80; }
+[data-theme="dark"] .b-yellow { background:rgba(234,179,8,0.12);  color:#facc15; }
+[data-theme="dark"] .b-red    { background:rgba(239,68,68,0.12);  color:#f87171; }
+[data-theme="dark"] .b-blue   { background:rgba(59,130,246,0.12); color:#60a5fa; }
+[data-theme="dark"] .b-purple { background:rgba(139,92,246,0.12); color:#a78bfa; }
+[data-theme="dark"] .b-gray   { background:rgba(71,85,105,0.18);  color:#94a3b8; }
+
+/* nilam/progress bar */
+.nilam-bar-wrap { width:100%; height:7px; border-radius:99px; background:var(--divider); overflow:hidden; margin-top:5px; }
+.nilam-bar { height:100%; border-radius:99px; background:linear-gradient(90deg,#2563eb,#6366f1); }
+
+/* program card */
+.prog-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.prog-card {
+  background:var(--surface); backdrop-filter:var(--blur);
+  border:1px solid var(--border); border-radius:18px;
+  padding:18px 16px; box-shadow:var(--shadow); transition:all 0.22s;
+  position:relative; overflow:hidden;
+}
+.prog-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-md); }
+.prog-card-accent { position:absolute; top:0; left:0; right:0; height:3px; border-radius:18px 18px 0 0; }
+.prog-title { font-size:14px; font-weight:900; color:var(--text); margin-bottom:5px; transition:color 0.35s; }
+.prog-date { font-size:12px; color:var(--text3); font-weight:600; margin-bottom:8px; font-style:italic; transition:color 0.35s; }
+.prog-desc { font-size:12.5px; color:var(--text2); line-height:1.6; transition:color 0.35s; }
+
+@media (min-width:769px) {
+  .panitia-grid { grid-template-columns:repeat(4,1fr); }
+  .kur-stats { grid-template-columns:repeat(4,1fr); }
+  .prog-grid { grid-template-columns:repeat(3,1fr); }
+}
+@media (max-width:600px) {
+  .panitia-grid { grid-template-columns:1fr 1fr; }
+  .prog-grid { grid-template-columns:1fr; }
+}
 `;
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
@@ -1123,6 +1414,408 @@ function Overview({ onNav, user }) {
   );
 }
 
+// ─── KURIKULUM — shared page wrapper ─────────────────────────────────────────
+function KurPage({ title, sub, stats, children }) {
+  return (
+    <div>
+      <div className="pg-title">{title}</div>
+      <div className="pg-sub">{sub}</div>
+      {stats && (
+        <div className="kur-stats">
+          {stats.map((s,i) => (
+            <div className="kur-stat" key={i}>
+              <span className="kur-stat-ico">{s.ico}</span>
+              <div className="kur-stat-val">{s.val}</div>
+              <div className="kur-stat-lbl">{s.lbl}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+// ─── 1. JADUAL WAKTU ─────────────────────────────────────────────────────────
+function JadualWaktu() {
+  const [kelas, setKelas] = useState("Tahun 4 Angsana");
+  const [q, setQ] = useState("");
+  const jadual = JADUAL_DB[kelas] || JADUAL_DB["Tahun 4 Angsana"];
+  const hari = ["Isnin","Selasa","Rabu","Khamis","Jumaat"];
+  const search = q.toLowerCase().trim();
+
+  const matchCell = (cell) => {
+    if (!search || !cell) return null;
+    return cell.s.toLowerCase().includes(search) || cell.g.toLowerCase().includes(search);
+  };
+
+  // count unique subjects for stats
+  const allCells = jadual.flat().filter(Boolean);
+  const uniqueSubj = [...new Set(allCells.map(c=>c.s))].length;
+  const uniqueGuru = [...new Set(allCells.map(c=>c.g))].length;
+
+  return (
+    <KurPage
+      title="Jadual Waktu"
+      sub="Kurikulum · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"🏫", val:KELAS_LIST.length, lbl:"Jumlah Kelas" },
+        { ico:"📚", val:uniqueSubj, lbl:"Mata Pelajaran" },
+        { ico:"👩‍🏫", val:uniqueGuru, lbl:"Guru Mengajar" },
+        { ico:"⏰", val:10, lbl:"Waktu / Hari" },
+      ]}
+    >
+      <div className="kur-header">
+        <select className="kur-select" value={kelas} onChange={e=>setKelas(e.target.value)}>
+          {KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+        </select>
+        <div className="kur-search-wrap">
+          <span className="kur-search-ico">🔍</span>
+          <input className="kur-search" placeholder="Cari subjek atau guru…"
+            value={q} onChange={e=>setQ(e.target.value)} />
+        </div>
+        {q && (
+          <button onClick={()=>setQ("")}
+            style={{padding:"8px 14px",borderRadius:10,border:"1px solid var(--border)",background:"var(--surface)",color:"var(--text2)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+            ✕ Bersih
+          </button>
+        )}
+      </div>
+
+      <div className="jadual-wrap">
+        <table className="jadual-table">
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              {hari.map(h=><th key={h}>{h}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {WAKTU_SLOTS.map((waktu, ri) => {
+              const row = jadual[ri];
+              if (!row) {
+                return (
+                  <tr key={ri} className="jadual-rehat">
+                    <td colSpan={6} style={{textAlign:"center"}}>— Rehat —</td>
+                  </tr>
+                );
+              }
+              return (
+                <tr key={ri}>
+                  <td>{waktu}</td>
+                  {row.map((cell, ci) => {
+                    const cfg = SC[cell.s] || { c:"#475569", bg:"#f8fafc", i:"📘" };
+                    const m = matchCell(cell);
+                    const cls = search ? (m ? "j-match" : "j-dim") : "";
+                    return (
+                      <td key={ci} className={cls}>
+                        <div className="jadual-cell" style={{background:cfg.bg}}>
+                          <span className="jadual-cell-sub" style={{color:cfg.c}}>{cfg.i} {cell.s}</span>
+                          <span className="jadual-cell-guru">{cell.g}</span>
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </KurPage>
+  );
+}
+
+// ─── 2. PANITIA MATA PELAJARAN ────────────────────────────────────────────────
+function PanitiaMP() {
+  return (
+    <KurPage
+      title="Panitia Mata Pelajaran"
+      sub="Kurikulum · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"📋", val:PANITIA_DATA.length, lbl:"Panitia Aktif" },
+        { ico:"👩‍🏫", val:34, lbl:"Jumlah Guru" },
+        { ico:"📅", val:"Apr", lbl:"Mesyuarat Terakhir" },
+        { ico:"✅", val:"100%", lbl:"Status Aktif" },
+      ]}
+    >
+      <div className="panitia-grid">
+        {PANITIA_DATA.map((p,i) => (
+          <div className="panitia-card" key={i}>
+            <div className="panitia-head">
+              <div className="panitia-ico" style={{background:p.bg}}>{p.ico}</div>
+              <div>
+                <div className="panitia-name">{p.sub}</div>
+                <div className="panitia-ketua">Ketua: {p.ketua}</div>
+              </div>
+            </div>
+            <div className="panitia-body">
+              👥 {p.ahli} ahli &nbsp;·&nbsp; 📅 Mesyuarat: {p.mesyuarat}
+            </div>
+            <div className="panitia-foot">
+              <span className="badge b-green">{p.status}</span>
+              <span className="badge b-blue">{p.ahli} Ahli</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </KurPage>
+  );
+}
+
+// ─── 3. PEPERIKSAAN & PENILAIAN ───────────────────────────────────────────────
+function Peperiksaan() {
+  const selesai = PEPX_DATA.filter(p=>p.status==="Selesai").length;
+  return (
+    <KurPage
+      title="Peperiksaan & Penilaian"
+      sub="Kurikulum · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"📝", val:PEPX_DATA.length, lbl:"Jumlah Peperiksaan" },
+        { ico:"✅", val:selesai, lbl:"Selesai" },
+        { ico:"⏳", val:PEPX_DATA.length-selesai, lbl:"Akan Datang" },
+        { ico:"🎓", val:"Nov", lbl:"Peperiksaan Akhir" },
+      ]}
+    >
+      <div className="kur-table-wrap">
+        <table className="kur-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Nama Peperiksaan</th><th>Tarikh</th><th>Kelas</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PEPX_DATA.map((p,i)=>(
+              <tr key={i}>
+                <td style={{color:"var(--text3)",fontWeight:800}}>{i+1}</td>
+                <td style={{fontWeight:800}}>{p.nama}</td>
+                <td style={{color:"var(--text2)"}}>{p.tarikh}</td>
+                <td>{p.kelas}</td>
+                <td><span className={`badge ${p.badge}`}>{p.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </KurPage>
+  );
+}
+
+// ─── 4. RPH / REKOD MENGAJAR ──────────────────────────────────────────────────
+function RPHRekod() {
+  const [q, setQ] = useState("");
+  const filtered = RPH_DATA.filter(r =>
+    !q || r.guru.toLowerCase().includes(q.toLowerCase()) ||
+    r.subj.toLowerCase().includes(q.toLowerCase())
+  );
+  const hantar = RPH_DATA.filter(r=>r.status==="Hantar").length;
+  return (
+    <KurPage
+      title="RPH / Rekod Mengajar"
+      sub="Kurikulum · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"📄", val:RPH_DATA.length, lbl:"Jumlah RPH" },
+        { ico:"✅", val:hantar, lbl:"Sudah Hantar" },
+        { ico:"⚠️", val:RPH_DATA.length-hantar, lbl:"Tertunggak / Semak" },
+        { ico:"📅", val:"Minggu 16", lbl:"Minggu Semasa" },
+      ]}
+    >
+      <div className="kur-header">
+        <div className="kur-search-wrap">
+          <span className="kur-search-ico">🔍</span>
+          <input className="kur-search" placeholder="Cari nama guru atau subjek…"
+            value={q} onChange={e=>setQ(e.target.value)} />
+        </div>
+      </div>
+      <div className="kur-table-wrap">
+        <table className="kur-table">
+          <thead>
+            <tr><th>Guru</th><th>Subjek</th><th>Kelas</th><th>Minggu</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {filtered.map((r,i)=>(
+              <tr key={i}>
+                <td style={{fontWeight:800}}>{r.guru}</td>
+                <td>{r.subj}</td>
+                <td>{r.kelas}</td>
+                <td style={{color:"var(--text3)"}}>{r.minggu}</td>
+                <td><span className={`badge ${r.badge}`}>{r.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </KurPage>
+  );
+}
+
+// ─── 5. PROGRAM AKADEMIK ──────────────────────────────────────────────────────
+function ProgramAkademik() {
+  const aktif = PROGRAM_DATA.filter(p=>p.status==="Sedang Berjalan").length;
+  return (
+    <KurPage
+      title="Program Akademik"
+      sub="Kurikulum · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"🎯", val:PROGRAM_DATA.length, lbl:"Jumlah Program" },
+        { ico:"🟢", val:aktif, lbl:"Sedang Berjalan" },
+        { ico:"📅", val:PROGRAM_DATA.length-aktif, lbl:"Akan Datang" },
+        { ico:"📆", val:"2025", lbl:"Tahun Semasa" },
+      ]}
+    >
+      <div className="prog-grid">
+        {PROGRAM_DATA.map((p,i)=>(
+          <div className="prog-card" key={i}>
+            <div className="prog-card-accent" style={{background:p.color}}/>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+              <div className="prog-title">{p.nama}</div>
+              <span className={`badge ${p.badge}`} style={{marginLeft:8,flexShrink:0}}>{p.status}</span>
+            </div>
+            <div className="prog-date">📅 {p.tarikh}</div>
+            <div className="prog-desc">{p.desc}</div>
+          </div>
+        ))}
+      </div>
+    </KurPage>
+  );
+}
+
+// ─── 6. PUSAT SUMBER / NILAM ──────────────────────────────────────────────────
+function PusatSumber() {
+  const totalBuku = NILAM_DATA.reduce((a,r)=>a+r.buku,0);
+  const capai = NILAM_DATA.filter(r=>r.buku>=r.sasaran).length;
+  return (
+    <KurPage
+      title="Pusat Sumber / NILAM"
+      sub="Kurikulum · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"📚", val:3200, lbl:"Koleksi Buku" },
+        { ico:"👦", val:312, lbl:"Murid Berdaftar" },
+        { ico:"📖", val:totalBuku, lbl:"Buku Dibaca" },
+        { ico:"🏆", val:capai, lbl:"Capai Sasaran" },
+      ]}
+    >
+      <div className="sec-hd" style={{marginTop:0}}>
+        <div className="sec-title">🏆 Pembaca Terbaik NILAM</div>
+        <span className="sec-sub">Sasaran: 8 buku / murid</span>
+      </div>
+      <div className="kur-table-wrap">
+        <table className="kur-table">
+          <thead>
+            <tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>Buku Dibaca</th><th>Sasaran</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {NILAM_DATA.map((r,i)=>(
+              <tr key={i}>
+                <td style={{fontWeight:900,color:"var(--accent)"}}>{i+1}</td>
+                <td style={{fontWeight:800}}>{r.nama}</td>
+                <td>{r.kelas}</td>
+                <td>
+                  <div style={{fontWeight:900,color:"var(--accent)",marginBottom:4}}>{r.buku}</div>
+                  <div className="nilam-bar-wrap">
+                    <div className="nilam-bar" style={{width:`${Math.min(100,r.buku/r.sasaran*100)}%`}}/>
+                  </div>
+                </td>
+                <td style={{color:"var(--text3)"}}>{r.sasaran}</td>
+                <td><span className={`badge ${r.buku>=r.sasaran?"b-green":"b-yellow"}`}>{r.buku>=r.sasaran?"Capai ✓":"Dalam Proses"}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </KurPage>
+  );
+}
+
+// ─── 7. PERKEMBANGAN STAF ────────────────────────────────────────────────────
+function PerkembanganStaf() {
+  const selesai = STAF_DATA.filter(s=>s.status==="Selesai").length;
+  return (
+    <KurPage
+      title="Perkembangan Staf"
+      sub="Kurikulum · SK Darau, Kota Kinabalu"
+      stats={[
+        { ico:"📋", val:STAF_DATA.length, lbl:"Jumlah Kursus" },
+        { ico:"✅", val:selesai, lbl:"Selesai" },
+        { ico:"⏳", val:STAF_DATA.length-selesai, lbl:"Akan Datang" },
+        { ico:"👩‍🏫", val:34, lbl:"Guru Terlibat" },
+      ]}
+    >
+      <div className="kur-table-wrap">
+        <table className="kur-table">
+          <thead>
+            <tr><th>Peserta</th><th>Kursus / Bengkel</th><th>Tarikh</th><th>Penganjur</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {STAF_DATA.map((s,i)=>(
+              <tr key={i}>
+                <td style={{fontWeight:800,fontSize:12}}>{s.nama}</td>
+                <td style={{fontWeight:700}}>{s.kursus}</td>
+                <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{s.tarikh}</td>
+                <td><span className="badge b-gray">{s.anjur}</span></td>
+                <td><span className={`badge ${s.badge}`}>{s.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </KurPage>
+  );
+}
+
+// ─── KURIKULUM ROUTER ─────────────────────────────────────────────────────────
+function KurikulumPage({ subId, onNav }) {
+  const m = MODULES.find(x=>x.id==="kurikulum");
+  const idx = m?.ids.indexOf(subId)??-1;
+  const sName = idx>=0 ? m.subs[idx] : "";
+
+  const views = {
+    jadual:      <JadualWaktu />,
+    panitia:     <PanitiaMP />,
+    peperiksaan: <Peperiksaan />,
+    rph:         <RPHRekod />,
+    program:     <ProgramAkademik />,
+    pss:         <PusatSumber />,
+    staf:        <PerkembanganStaf />,
+  };
+
+  return (
+    <div>
+      {/* breadcrumb */}
+      <div className="pg-top" style={{marginBottom:14}}>
+        <div className="pg-chip" style={{color:"#2563eb",borderColor:"#bfdbfe"}}
+          onClick={()=>onNav(null,null)}>🏠 Papan Pemuka</div>
+        <span className="pg-sep">›</span>
+        <div className="pg-chip" style={{color:m.color,borderColor:`${m.color}40`}}>{m.icon} {m.label}</div>
+        {sName&&<><span className="pg-sep">›</span>
+        <div className="pg-chip" style={{color:m.color,borderColor:`${m.color}40`,background:m.light}}>{sName}</div></>}
+      </div>
+
+      {/* sub-tab nav */}
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
+        {m.subs.map((s,i)=>(
+          <button key={m.ids[i]}
+            onClick={()=>onNav("kurikulum",m.ids[i])}
+            style={{
+              padding:"7px 14px", borderRadius:12,
+              border:`1.5px solid ${subId===m.ids[i]?m.color:"var(--border)"}`,
+              background:subId===m.ids[i]?m.color:"var(--surface)",
+              color:subId===m.ids[i]?"white":"var(--text2)",
+              fontSize:12, fontWeight:800,
+              fontFamily:"'Plus Jakarta Sans',sans-serif",
+              cursor:"pointer", transition:"all 0.15s",
+              backdropFilter:"blur(12px)",
+            }}>
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {views[subId] || <div style={{color:"var(--text2)",padding:40,textAlign:"center"}}>Pilih sub-modul</div>}
+    </div>
+  );
+}
+
 // ─── PAGE VIEW ────────────────────────────────────────────────────────────────
 function Page({ modId, subId }) {
   const m = MODULES.find(x=>x.id===modId);
@@ -1222,7 +1915,9 @@ export default function App() {
           <div className="content">
             {!actMod
               ? <Overview onNav={onNav} user={user}/>
-              : <Page modId={actMod} subId={actSub}/>}
+              : actMod==="kurikulum"
+                ? <KurikulumPage subId={actSub} onNav={onNav}/>
+                : <Page modId={actMod} subId={actSub}/>}
           </div>
         </div>
       </div>
