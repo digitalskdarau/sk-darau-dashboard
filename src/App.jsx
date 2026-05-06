@@ -92,6 +92,16 @@ body {
   0%,100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.3); }
   50% { box-shadow: 0 0 0 8px rgba(59,130,246,0); }
 }
+@keyframes cycleIn {
+  0%   { opacity:0; transform:translateY(10px); }
+  18%  { opacity:1; transform:translateY(0); }
+  78%  { opacity:1; transform:translateY(0); }
+  100% { opacity:0; transform:translateY(-10px); }
+}
+.cycle-text {
+  display:inline-block;
+  animation: cycleIn 3.8s cubic-bezier(.4,0,.2,1) forwards;
+}
 @keyframes spin-slow {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -730,6 +740,28 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
 }
 
 // ─── OVERVIEW ─────────────────────────────────────────────────────────────────
+const CYCLE_MSGS = [
+  "Sistem berjalan lancar — jom mulakan hari! ✅",
+  "Semua modul aktif dan bersedia 🚀",
+  "Mari tingkatkan prestasi sekolah bersama 💪",
+  "Hari yang produktif menanti, Cikgu! 🌟",
+  "Data sekolah sentiasa dikemaskini 📊",
+  "Teruskan kerja cemerlang, Cikgu! 🏆",
+];
+
+function CyclingText() {
+  const [idx, setIdx] = useState(0);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => {
+      setIdx(i => (i + 1) % CYCLE_MSGS.length);
+      setTick(k => k + 1);
+    }, 3800);
+    return () => clearInterval(t);
+  }, []);
+  return <span key={tick} className="cycle-text">{CYCLE_MSGS[idx]}</span>;
+}
+
 function Overview({ onNav, user }) {
   const today = new Date().toLocaleDateString("ms-MY",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   const initials = user.name.split(" ").map(w=>w[0]).join("").slice(0,2);
@@ -748,7 +780,7 @@ function Overview({ onNav, user }) {
           <div className="hero-top">
             <div style={{flex:1}}>
               <div className="hero-title">{greetWord}, Cikgu {user.name.split(" ")[0]}! 🎉</div>
-              <div className="hero-sub">Sistem berjalan lancar — jom mulakan hari!</div>
+              <div className="hero-sub"><CyclingText /></div>
               <div className="hero-date">{today}</div>
               <div className="hero-tags" style={{marginBottom:28}}>
                 <div className="hero-tag">✅ Semua Modul Aktif</div>
