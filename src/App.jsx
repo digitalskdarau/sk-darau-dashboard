@@ -1278,11 +1278,25 @@ function Overview({ onNav, user }) {
   const greetHour = new Date().getHours();
   const greetWord = greetHour < 12 ? "Selamat Pagi" : greetHour < 17 ? "Selamat Petang" : "Selamat Malam";
 
+  const [liveStats, setLiveStats] = useState({ murid:0, guru:0, aktiviti:0 });
+  useEffect(() => {
+    async function fetchStats() {
+      const [{ count: murid }, { data: guruRows }, { count: aktiviti }] = await Promise.all([
+        supabase.from('hem_murid').select('*', { count:'exact', head:true }).eq('status','Aktif'),
+        supabase.from('jadual_waktu').select('guru'),
+        supabase.from('program_akademik').select('*', { count:'exact', head:true }).eq('status','Akan Datang'),
+      ]);
+      const uniqueGuru = new Set((guruRows||[]).map(r=>r.guru)).size;
+      setLiveStats({ murid: murid||0, guru: uniqueGuru, aktiviti: aktiviti||0 });
+    }
+    fetchStats();
+  }, []);
+
   const STATS = [
-    { lbl:"Jumlah Murid",   val:387, ico:"👦",   color:"#2563eb", note:"📈 +12 tahun ini",       featured:true,  progress:77 },
-    { lbl:"Jumlah Guru",    val:34,  ico:"👩‍🏫",  color:"#0ea5e9", note:"🆕 2 baru bulan ini" },
-    { lbl:"Kehadiran",      val:94,  ico:"✅",    color:"#6366f1", note:"⬆️ Naik 2.1%",           suffix:"%" },
-    { lbl:"Aktiviti Minggu",val:8,   ico:"📅",    color:"#0284c7", note:"🏅 3 kokurikulum" },
+    { lbl:"Jumlah Murid",   val:liveStats.murid,    ico:"👦",   color:"#2563eb", featured:true },
+    { lbl:"Jumlah Guru",    val:liveStats.guru,     ico:"👩‍🏫",  color:"#0ea5e9" },
+    { lbl:"Jumlah Kelas",   val:KELAS_LIST.length,  ico:"🏫",   color:"#6366f1" },
+    { lbl:"Aktiviti Aktif", val:liveStats.aktiviti, ico:"📅",   color:"#0284c7" },
   ];
 
   return (
@@ -1320,30 +1334,11 @@ function Overview({ onNav, user }) {
           >
             <div className="bento-accent-bar" style={{background:s.color}}/>
             <div className="bento-bg-circle" style={{background:s.color}}/>
-            {s.featured ? (
-              <div className="bento-featured-inner">
-                <div className="bento-featured-left">
-                  <span className="bento-ico">{s.ico}</span>
-                  <div className="bento-val"><Count to={s.val} suffix={s.suffix||""}/></div>
-                  <div className="bento-lbl">{s.lbl}</div>
-                  <div className="bento-note" style={{color:s.color}}>{s.note}</div>
-                </div>
-                <div className="bento-featured-right">
-                  <div style={{fontSize:11,color:"var(--text3)",fontWeight:700,marginBottom:6,fontStyle:"italic"}}>Kapasiti sekolah</div>
-                  <div style={{fontSize:28,fontFamily:"'Fredoka One',cursive",fontWeight:900,color:s.color}}>77%</div>
-                  <div className="bento-progress">
-                    <div className="bento-progress-fill" style={{width:"77%"}}/>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <>
-                <span className="bento-ico">{s.ico}</span>
-                <div className="bento-val"><Count to={s.val} suffix={s.suffix||""}/></div>
-                <div className="bento-lbl">{s.lbl}</div>
-                <div className="bento-note" style={{color:s.color}}>{s.note}</div>
-              </>
-            )}
+            <>
+              <span className="bento-ico">{s.ico}</span>
+              <div className="bento-val"><Count to={s.val} suffix={s.suffix||""}/></div>
+              <div className="bento-lbl">{s.lbl}</div>
+            </>
           </div>
         ))}
       </div>
@@ -2216,7 +2211,7 @@ function PerkembanganStaf() {
         { ico:"📋", val:data.length, lbl:"Jumlah Kursus" },
         { ico:"✅", val:selesai, lbl:"Selesai" },
         { ico:"⏳", val:data.length-selesai, lbl:"Akan Datang" },
-        { ico:"👩‍🏫", val:34, lbl:"Guru Terlibat" },
+        { ico:"👩‍🏫", val:new Set(data.map(r=>r.peserta)).size, lbl:"Guru Terlibat" },
       ]}
     >
       <div className="sec-hd" style={{marginTop:0}}>
