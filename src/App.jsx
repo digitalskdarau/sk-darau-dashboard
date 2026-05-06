@@ -46,7 +46,14 @@ const SC = {
   "BK":      { c:"#0284c7", bg:"#e0f2fe",  i:"📚" },
 };
 
-const KELAS_LIST = ["Tahun 4 Angsana","Tahun 5 Seroja","Tahun 6 Emas","Tahun 1 Mawar","Tahun 2 Cempaka","Tahun 3 Kenanga"];
+const KELAS_LIST = [
+  "Tahun 1 Unik","Tahun 1 Aplikasi","Tahun 1 Revolusi","Tahun 1 Aspirasi","Tahun 1 Dedikasi",
+  "Tahun 2 Unik","Tahun 2 Aplikasi","Tahun 2 Revolusi","Tahun 2 Aspirasi","Tahun 2 Dedikasi",
+  "Tahun 3 Unik","Tahun 3 Aplikasi","Tahun 3 Revolusi","Tahun 3 Aspirasi","Tahun 3 Dedikasi",
+  "Tahun 4 Unik","Tahun 4 Aplikasi","Tahun 4 Revolusi","Tahun 4 Aspirasi","Tahun 4 Dedikasi",
+  "Tahun 5 Unik","Tahun 5 Aplikasi","Tahun 5 Revolusi","Tahun 5 Aspirasi","Tahun 5 Dedikasi",
+  "Tahun 6 Unik","Tahun 6 Aplikasi","Tahun 6 Revolusi","Tahun 6 Aspirasi","Tahun 6 Dedikasi",
+];
 
 const WAKTU_SLOTS = [
   "7:30 – 8:00","8:00 – 8:30","8:30 – 9:00","9:00 – 9:30","9:30 – 10:00",
@@ -1436,7 +1443,7 @@ function JadualWaktu() {
   const HARI = ["Isnin","Selasa","Rabu","Khamis","Jumaat"];
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [kelas, setKelas] = useState("Tahun 4 Angsana");
+  const [kelas, setKelas] = useState("Tahun 1 Unik");
   const [q, setQ] = useState("");
   const [editCell, setEditCell] = useState(null);
 
