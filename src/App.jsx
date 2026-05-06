@@ -617,10 +617,10 @@ body::before {
   margin-bottom:14px; margin-top:24px;
 }
 .sec-title {
-  font-family:'Playfair Display',serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
   font-size:17px; font-weight:900; color:var(--text);
   display:flex; align-items:center; gap:8px;
-  transition:color 0.35s;
+  transition:color 0.35s; letter-spacing:-0.01em;
 }
 .sec-sub { font-size:12.5px; color:var(--text3); font-weight:700; font-style:italic; transition:color 0.35s; }
 
@@ -700,9 +700,9 @@ body::before {
   transition:all 0.35s;
 }
 .mc-name {
-  font-family:'Playfair Display',serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
   font-weight:900; font-size:14px; color:var(--text);
-  margin-bottom:10px; transition:color 0.35s;
+  margin-bottom:10px; transition:color 0.35s; letter-spacing:-0.01em;
 }
 .mc-pills { display:flex; flex-wrap:wrap; gap:5px; }
 .mc-pill {
@@ -724,11 +724,11 @@ body::before {
 .pg-chip:hover { transform:scale(1.05); }
 .pg-sep { color:var(--text3); font-weight:900; font-size:14px; transition:color 0.35s; }
 .pg-title {
-  font-family:'Playfair Display',serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
   font-size:24px; font-weight:900; color:var(--text);
-  margin-bottom:4px; transition:color 0.35s;
+  margin-bottom:4px; transition:color 0.35s; letter-spacing:-0.01em;
 }
-.pg-sub { font-size:14px; color:var(--text2); font-weight:600; margin-bottom:22px; font-style:italic; transition:color 0.35s; }
+.pg-sub { font-size:14px; color:var(--text2); font-weight:700; margin-bottom:22px; transition:color 0.35s; }
 .pg-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
 .pgs {
   background:var(--surface);
@@ -765,9 +765,9 @@ body::before {
 }
 [data-theme="dark"] .ph-ico { filter:brightness(0.7); }
 .ph-title {
-  font-family:'Playfair Display',serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
   font-size:20px; font-weight:900; color:var(--text);
-  margin-bottom:10px; transition:color 0.35s;
+  margin-bottom:10px; transition:color 0.35s; letter-spacing:-0.01em;
 }
 .ph-text { font-size:14.5px; color:var(--text2); font-weight:600; line-height:1.7; max-width:340px; margin:0 auto 24px; font-style:italic; transition:color 0.35s; }
 .ph-btn {
