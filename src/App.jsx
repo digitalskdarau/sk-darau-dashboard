@@ -162,6 +162,44 @@ const STAF_DATA = [
   { nama:"Pn. Liza, Ust. Fadzli", kursus:"Kursus Penilaian Prestasi PSV & PI",     tarikh:"2 Julai 2025", anjur:"JPN Sabah",    status:"Akan Datang", badge:"b-blue"   },
 ];
 
+// ─── TOAST NOTIFICATION ──────────────────────────────────────────────────────
+let _setToast = null;
+function toast(msg, type = "error") { _setToast?.({ msg, type, id: Date.now() }); }
+
+function Toast() {
+  const [t, setT] = useState(null);
+  useEffect(() => { _setToast = setT; }, []);
+  useEffect(() => {
+    if (!t) return;
+    const id = setTimeout(() => setT(null), 4000);
+    return () => clearTimeout(id);
+  }, [t]);
+  if (!t) return null;
+  const isErr = t.type === "error";
+  return (
+    <div style={{
+      position:"fixed", bottom:28, right:28, zIndex:9999,
+      background: isErr ? "#ef4444" : "#22c55e",
+      color:"white", padding:"12px 20px", borderRadius:14,
+      fontWeight:700, fontSize:13, boxShadow:"0 4px 24px rgba(0,0,0,0.25)",
+      fontFamily:"'Plus Jakarta Sans',sans-serif", maxWidth:340,
+      animation:"fadeIn 0.2s ease",
+    }}>
+      {isErr ? "❌ " : "✅ "}{t.msg}
+    </div>
+  );
+}
+
+// ─── DB HELPER ───────────────────────────────────────────────────────────────
+async function dbRun(fn) {
+  const result = await fn();
+  if (result?.error) {
+    toast(result.error.message || "Ralat Supabase — semak RLS policy");
+    return false;
+  }
+  return true;
+}
+
 // ─── ANIMATED COUNT ──────────────────────────────────────────────────────────
 function Count({ to, suffix="" }) {
   const [v, setV] = useState(0);
@@ -1579,11 +1617,14 @@ function JadualWaktu() {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    let ok;
     if (editCell.id) {
-      await supabase.from('jadual_waktu').update({ subjek:editCell.subjek, guru:editCell.guru }).eq('id', editCell.id);
+      ok = await dbRun(() => supabase.from('jadual_waktu').update({ subjek:editCell.subjek, guru:editCell.guru }).eq('id', editCell.id));
     } else {
-      await supabase.from('jadual_waktu').insert([{ kelas, hari:editCell.hari, waktu_slot:editCell.ri, subjek:editCell.subjek, guru:editCell.guru }]);
+      ok = await dbRun(() => supabase.from('jadual_waktu').insert([{ kelas, hari:editCell.hari, waktu_slot:editCell.ri, subjek:editCell.subjek, guru:editCell.guru }]));
     }
+    if (!ok) return;
+    toast("Tersimpan!", "success");
     setEditCell(null);
     const { data } = await supabase.from('jadual_waktu').select('*').eq('kelas', kelas);
     setRows(data || []);
@@ -1591,7 +1632,8 @@ function JadualWaktu() {
 
   const handleDelCell = async () => {
     if (!editCell?.id) return;
-    await supabase.from('jadual_waktu').delete().eq('id', editCell.id);
+    const ok = await dbRun(() => supabase.from('jadual_waktu').delete().eq('id', editCell.id));
+    if (!ok) return;
     setEditCell(null);
     const { data } = await supabase.from('jadual_waktu').select('*').eq('kelas', kelas);
     setRows(data || []);
@@ -1701,16 +1743,21 @@ function PanitiaMP() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    await supabase.from('panitia').insert([form]);
+    const ok = await dbRun(() => supabase.from('panitia').insert([form]));
+    if (!ok) return;
+    toast("Panitia ditambah!", "success");
     setShowAdd(false); setForm(emptyForm); load();
   };
   const handleEdit = async (e) => {
     e.preventDefault();
-    await supabase.from('panitia').update({ subjek:editItem.subjek, icon:editItem.icon, ketua:editItem.ketua, jumlah_ahli:editItem.jumlah_ahli, tarikh_mesyuarat:editItem.tarikh_mesyuarat, status:editItem.status }).eq('id', editItem.id);
+    const ok = await dbRun(() => supabase.from('panitia').update({ subjek:editItem.subjek, icon:editItem.icon, ketua:editItem.ketua, jumlah_ahli:editItem.jumlah_ahli, tarikh_mesyuarat:editItem.tarikh_mesyuarat, status:editItem.status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success");
     setEditItem(null); load();
   };
   const handleDel = async (id) => {
-    await supabase.from('panitia').delete().eq('id',id);
+    const ok = await dbRun(() => supabase.from('panitia').delete().eq('id',id));
+    if (!ok) return;
     setData(d=>d.filter(r=>r.id!==id));
   };
 
@@ -1810,19 +1857,26 @@ function Peperiksaan() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    await supabase.from('peperiksaan').insert([form]);
+    const ok = await dbRun(() => supabase.from('peperiksaan').insert([form]));
+    if (!ok) return;
+    toast("Peperiksaan ditambah!", "success");
     setShowAdd(false); setForm({ nama:"", tarikh:"", kelas:"Tahun 1–6", status:"Akan Datang" }); load();
   };
   const handleEdit = async (e) => {
     e.preventDefault();
-    await supabase.from('peperiksaan').update({ nama:editItem.nama, tarikh:editItem.tarikh, kelas:editItem.kelas, status:editItem.status }).eq('id', editItem.id);
+    const ok = await dbRun(() => supabase.from('peperiksaan').update({ nama:editItem.nama, tarikh:editItem.tarikh, kelas:editItem.kelas, status:editItem.status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success");
     setEditItem(null); load();
   };
-  const handleDel = async (id) => { await supabase.from('peperiksaan').delete().eq('id',id); setData(d=>d.filter(r=>r.id!==id)); };
+  const handleDel = async (id) => {
+    const ok = await dbRun(() => supabase.from('peperiksaan').delete().eq('id',id));
+    if (ok) setData(d=>d.filter(r=>r.id!==id));
+  };
   const cycleStatus = async (p) => {
     const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(p.status)+1) % STATUS_CYCLE.length];
-    await supabase.from('peperiksaan').update({ status:next }).eq('id',p.id);
-    setData(d=>d.map(r=>r.id===p.id?{...r,status:next}:r));
+    const ok = await dbRun(() => supabase.from('peperiksaan').update({ status:next }).eq('id',p.id));
+    if (ok) setData(d=>d.map(r=>r.id===p.id?{...r,status:next}:r));
   };
 
   const selesai = data.filter(p=>p.status==="Selesai").length;
@@ -1916,13 +1970,18 @@ function RPHRekod() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    await supabase.from('rph').insert([form]);
+    const ok = await dbRun(() => supabase.from('rph').insert([form]));
+    if (!ok) return;
+    toast("RPH ditambah!", "success");
     setShowAdd(false); setForm({ guru:"", subjek:"", kelas:"", minggu:"Minggu 16", status:"Tertunggak" }); load();
   };
-  const handleDel = async (id) => { await supabase.from('rph').delete().eq('id',id); setData(d=>d.filter(r=>r.id!==id)); };
+  const handleDel = async (id) => {
+    const ok = await dbRun(() => supabase.from('rph').delete().eq('id',id));
+    if (ok) setData(d=>d.filter(r=>r.id!==id));
+  };
   const handleStatus = async (id, status) => {
-    await supabase.from('rph').update({ status }).eq('id',id);
-    setData(d=>d.map(r=>r.id===id?{...r,status}:r));
+    const ok = await dbRun(() => supabase.from('rph').update({ status }).eq('id',id));
+    if (ok) setData(d=>d.map(r=>r.id===id?{...r,status}:r));
   };
 
   const filtered = data.filter(r=>!q||r.guru?.toLowerCase().includes(q.toLowerCase())||r.subjek?.toLowerCase().includes(q.toLowerCase()));
@@ -2011,15 +2070,22 @@ function ProgramAkademik() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    await supabase.from('program_akademik').insert([form]);
+    const ok = await dbRun(() => supabase.from('program_akademik').insert([form]));
+    if (!ok) return;
+    toast("Program ditambah!", "success");
     setShowAdd(false); setForm({ nama:"", tarikh:"", deskripsi:"", color:"#2563eb", status:"Akan Datang" }); load();
   };
   const handleEdit = async (e) => {
     e.preventDefault();
-    await supabase.from('program_akademik').update({ nama:editItem.nama, tarikh:editItem.tarikh, deskripsi:editItem.deskripsi, color:editItem.color, status:editItem.status }).eq('id', editItem.id);
+    const ok = await dbRun(() => supabase.from('program_akademik').update({ nama:editItem.nama, tarikh:editItem.tarikh, deskripsi:editItem.deskripsi, color:editItem.color, status:editItem.status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success");
     setEditItem(null); load();
   };
-  const handleDel = async (id) => { await supabase.from('program_akademik').delete().eq('id',id); setData(d=>d.filter(r=>r.id!==id)); };
+  const handleDel = async (id) => {
+    const ok = await dbRun(() => supabase.from('program_akademik').delete().eq('id',id));
+    if (ok) setData(d=>d.filter(r=>r.id!==id));
+  };
 
   const aktif = data.filter(p=>p.status==="Sedang Berjalan").length;
   return (
@@ -2105,7 +2171,9 @@ function PusatSumber() {
 
   const handleAdd = async () => {
     if (!form.nama.trim() || !form.kelas.trim()) return;
-    await supabase.from('nilam').insert([{ nama:form.nama, kelas:form.kelas, buku_dibaca:Number(form.buku_dibaca), sasaran:Number(form.sasaran) }]);
+    const ok = await dbRun(() => supabase.from('nilam').insert([{ nama:form.nama, kelas:form.kelas, buku_dibaca:Number(form.buku_dibaca), sasaran:Number(form.sasaran) }]));
+    if (!ok) return;
+    toast("Murid ditambah!", "success");
     setShowAdd(false);
     setForm({ nama:"", kelas:"", buku_dibaca:0, sasaran:8 });
     load();
@@ -2113,19 +2181,21 @@ function PusatSumber() {
 
   const handleEdit = async (e) => {
     e.preventDefault();
-    await supabase.from('nilam').update({ nama:editItem.nama, kelas:editItem.kelas, buku_dibaca:Number(editItem.buku_dibaca), sasaran:Number(editItem.sasaran) }).eq('id', editItem.id);
+    const ok = await dbRun(() => supabase.from('nilam').update({ nama:editItem.nama, kelas:editItem.kelas, buku_dibaca:Number(editItem.buku_dibaca), sasaran:Number(editItem.sasaran) }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success");
     setEditItem(null); load();
   };
 
   const handleDel = async (id) => {
-    await supabase.from('nilam').delete().eq('id', id);
-    load();
+    const ok = await dbRun(() => supabase.from('nilam').delete().eq('id', id));
+    if (ok) load();
   };
 
   const adjustBuku = async (id, cur, delta) => {
     const val = Math.max(0, cur + delta);
-    await supabase.from('nilam').update({ buku_dibaca: val }).eq('id', id);
-    setData(d=>d.map(r=>r.id===id?{...r,buku_dibaca:val}:r));
+    const ok = await dbRun(() => supabase.from('nilam').update({ buku_dibaca: val }).eq('id', id));
+    if (ok) setData(d=>d.map(r=>r.id===id?{...r,buku_dibaca:val}:r));
   };
 
   const totalBuku = data.reduce((a,r)=>a+(r.buku_dibaca||0),0);
@@ -2256,7 +2326,9 @@ function PerkembanganStaf() {
 
   const handleAdd = async () => {
     if (!form.peserta.trim() || !form.kursus.trim()) return;
-    await supabase.from('perkembangan_staf').insert([{ peserta:form.peserta, kursus:form.kursus, tarikh:form.tarikh, penganjur:form.penganjur, status:form.status }]);
+    const ok = await dbRun(() => supabase.from('perkembangan_staf').insert([{ peserta:form.peserta, kursus:form.kursus, tarikh:form.tarikh, penganjur:form.penganjur, status:form.status }]));
+    if (!ok) return;
+    toast("Kursus ditambah!", "success");
     setShowAdd(false);
     setForm({ peserta:"", kursus:"", tarikh:"", penganjur:"", status:"Akan Datang" });
     load();
@@ -2264,20 +2336,22 @@ function PerkembanganStaf() {
 
   const handleEdit = async (e) => {
     e.preventDefault();
-    await supabase.from('perkembangan_staf').update({ peserta:editItem.peserta, kursus:editItem.kursus, tarikh:editItem.tarikh, penganjur:editItem.penganjur, status:editItem.status }).eq('id', editItem.id);
+    const ok = await dbRun(() => supabase.from('perkembangan_staf').update({ peserta:editItem.peserta, kursus:editItem.kursus, tarikh:editItem.tarikh, penganjur:editItem.penganjur, status:editItem.status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Dikemaskini!", "success");
     setEditItem(null); load();
   };
 
   const handleDel = async (id) => {
-    await supabase.from('perkembangan_staf').delete().eq('id', id);
-    load();
+    const ok = await dbRun(() => supabase.from('perkembangan_staf').delete().eq('id', id));
+    if (ok) load();
   };
 
   const toggleStatus = async (id, cur) => {
     const cycle = ["Akan Datang","Dalam Proses","Selesai"];
     const next = cycle[(cycle.indexOf(cur)+1) % cycle.length];
-    await supabase.from('perkembangan_staf').update({ status: next }).eq('id', id);
-    setData(d=>d.map(r=>r.id===id?{...r,status:next}:r));
+    const ok = await dbRun(() => supabase.from('perkembangan_staf').update({ status: next }).eq('id', id));
+    if (ok) setData(d=>d.map(r=>r.id===id?{...r,status:next}:r));
   };
 
   const selesai = data.filter(s=>s.status==="Selesai").length;
@@ -2554,6 +2628,7 @@ export default function App() {
           </div>
         </div>
       </div>
+      <Toast />
     </>
   );
 }
