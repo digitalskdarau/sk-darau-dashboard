@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a1a"/>
+      <stop offset="100%" style="stop-color:#0d1b3e"/>
+    </linearGradient>
+    <linearGradient id="dg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="50%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#06b6d4"/>
+    </linearGradient>
+    <filter id="gl">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="192" height="192" rx="38" fill="url(#bg)"/>
+  <polygon points="96,18 162,57 162,135 96,174 30,135 30,57" fill="none" stroke="url(#dg)" stroke-width="1.5" opacity="0.5"/>
+  <circle cx="96" cy="18" r="2.5" fill="#00ffff" filter="url(#gl)"/>
+  <circle cx="162" cy="57" r="2.5" fill="#a855f7" filter="url(#gl)"/>
+  <circle cx="162" cy="135" r="2.5" fill="#2563eb" filter="url(#gl)"/>
+  <circle cx="96" cy="174" r="2.5" fill="#00ffff" filter="url(#gl)"/>
+  <circle cx="30" cy="135" r="2.5" fill="#a855f7" filter="url(#gl)"/>
+  <circle cx="30" cy="57" r="2.5" fill="#2563eb" filter="url(#gl)"/>
+  <path d="M64 60 L84 60 Q124 60 127 96 Q124 132 84 132 L64 132 Z M80 76 L84 76 Q112 76 114 96 Q112 116 84 116 L80 116 Z" fill="url(#dg)" fill-rule="evenodd"/>
+  <line x1="64" y1="60" x2="64" y2="132" stroke="#00ffff" stroke-width="1.5" opacity="0.9" filter="url(#gl)"/>
+</svg>

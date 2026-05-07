@@ -1,1 +1,88 @@
 /* Global resets handled inside App.jsx via injected CSS string */
+
+/* ── PWA / Mobile global fixes ─────────────────────────────────────────── */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html {
+  /* Safe area for notch devices */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+body {
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevent horizontal scroll bleed */
+#root {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* ── Mobile touch improvements ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Larger tap targets */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Smooth momentum scrolling on iOS */
+  .content, .sb-nav, [style*="overflow"] {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Toast lower on mobile — above bottom nav */
+  .toast-fixed {
+    bottom: 80px !important;
+  }
+
+  /* Table horizontal scroll */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent text overflow in cards */
+  .mc, .bento-card, .pgs {
+    word-break: break-word;
+  }
+
+  /* Input zoom fix — iOS zooms on inputs < 16px */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Extra small (375px and below) ─────────────────────────────────────── */
+@media (max-width: 375px) {
+  .hero-title { font-size: 18px !important; }
+  .mods-grid { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* ── PWA standalone mode tweaks ─────────────────────────────────────────── */
+@media (display-mode: standalone) {
+  /* Add top padding for status bar */
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Bottom safe area for home indicator */
+  .content {
+    padding-bottom: calc(36px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ── Scrollbar styling (desktop) ────────────────────────────────────────── */
+@media (min-width: 769px) {
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.6); }
+}
