@@ -1213,26 +1213,29 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
             <span className="sb-ico">🏠</span> Papan Pemuka
           </button>
           <div className="sb-sec-lbl">Modul Sekolah</div>
-          {MODULES.map(m=>(
-            <div key={m.id}>
-              <button className={`sb-btn${actMod===m.id?" act":""}`}
-                onClick={()=>setExp(p=>p===m.id?"":m.id)}>
-                <span className="sb-ico">{m.icon}</span>
-                <span style={{flex:1}}>{m.label}</span>
-                <span className={`sb-chev${exp===m.id?" open":""}`}>▶</span>
-              </button>
-              {exp===m.id&&(
-                <div className="subnav">
-                  {m.subs.map((s,i)=>(
-                    <button key={m.ids[i]} className={`sub-btn${actSub===m.ids[i]?" act":""}`}
-                      onClick={()=>{onNav(m.id,m.ids[i]);onClose();}}>
-                      <div className="sub-dot"/> {s}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+          {MODULES.map(m=>{
+            const directNav = m.id==="ict";
+            return (
+              <div key={m.id}>
+                <button className={`sb-btn${actMod===m.id?" act":""}`}
+                  onClick={()=>{ if(directNav){onNav(m.id,null);onClose();} else setExp(p=>p===m.id?"":m.id); }}>
+                  <span className="sb-ico">{m.icon}</span>
+                  <span style={{flex:1}}>{m.label}</span>
+                  {!directNav&&<span className={`sb-chev${exp===m.id?" open":""}`}>▶</span>}
+                </button>
+                {!directNav&&exp===m.id&&(
+                  <div className="subnav">
+                    {m.subs.map((s,i)=>(
+                      <button key={m.ids[i]} className={`sub-btn${actSub===m.ids[i]?" act":""}`}
+                        onClick={()=>{onNav(m.id,m.ids[i]);onClose();}}>
+                        <div className="sub-dot"/> {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="sb-foot">
