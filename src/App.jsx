@@ -4348,7 +4348,10 @@ function EmbedFrame({ url, title }) {
           <iframe
             src={url}
             title={title}
-            style={{width:"100%",height:"calc(100vh - 320px)",minHeight:500,border:"none",display:"block"}}
+            width="100%"
+            height="600"
+            frameBorder="0"
+            style={{display:"block"}}
             onLoad={()=>setLoading(false)}
             onError={()=>{setLoading(false);setErrored(true);}}
           />
@@ -4418,32 +4421,18 @@ function LaporanKerosakanICT() {
 }
 
 // ─── ICT ROUTER ───────────────────────────────────────────────────────────────
-function ICTPage({ subId, onNav }) {
+function ICTPage({ onNav }) {
   const m = MODULES.find(x=>x.id==="ict");
-  const idx = m?.ids.indexOf(subId)??-1;
-  const sName = idx>=0 ? m.subs[idx] : "";
-  const views = {
-    inventori: <InventoriICT />,
-    makmal:    <PenjadualanMakmal />,
-    sistem:    <SistemAplikasi />,
-    kerosakan: <LaporanKerosakanICT />,
-  };
   return (
     <div>
       <div className="pg-top" style={{marginBottom:14}}>
         <div className="pg-chip" style={{color:"#2563eb",borderColor:"#bfdbfe"}} onClick={()=>onNav(null,null)}>🏠 Papan Pemuka</div>
         <span className="pg-sep">›</span>
         <div className="pg-chip" style={{color:m.color,borderColor:`${m.color}40`}}>{m.icon} {m.label}</div>
-        {sName&&<><span className="pg-sep">›</span><div className="pg-chip" style={{color:m.color,borderColor:`${m.color}40`,background:m.light}}>{sName}</div></>}
       </div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
-        {m.subs.map((s,i)=>(
-          <button key={m.ids[i]} onClick={()=>onNav("ict",m.ids[i])} style={{padding:"7px 14px",borderRadius:12,border:`1.5px solid ${subId===m.ids[i]?m.color:"var(--border)"}`,background:subId===m.ids[i]?m.color:"var(--surface)",color:subId===m.ids[i]?"white":"var(--text2)",fontSize:12,fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:"pointer",transition:"all 0.15s"}}>
-            {s}
-          </button>
-        ))}
-      </div>
-      {views[subId] || <div style={{color:"var(--text2)",padding:40,textAlign:"center"}}>Pilih sub-modul</div>}
+      <div className="pg-title">ICT / Makmal</div>
+      <div className="pg-sub">Modul ICT · SK Darau, Kota Kinabalu</div>
+      <EmbedFrame url={ICT_APP_URL} title="Dashboard ICT Sekolah" />
     </div>
   );
 }
