@@ -1049,6 +1049,8 @@ body {
   border-radius:20px; width:100%; max-width:440px;
   box-shadow:6px 6px 0 var(--border);
   animation:pop 0.3s cubic-bezier(.34,1.56,.64,1) both;
+  display:flex; flex-direction:column;
+  max-height:calc(100vh - 40px);
 }
 .modal-head {
   display:flex; align-items:center; justify-content:space-between;
@@ -1063,7 +1065,7 @@ body {
   display:flex; align-items:center; justify-content:center; transition:all 0.12s;
 }
 .modal-close:hover { transform:translate(-1px,-1px); box-shadow:3px 3px 0 var(--border); }
-.modal-body { padding:20px; }
+.modal-body { padding:20px; overflow-y:auto; flex:1; }
 
 /* Forms */
 .form-field { margin-bottom:12px; }
