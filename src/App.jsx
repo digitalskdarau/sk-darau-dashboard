@@ -195,19 +195,30 @@ const CSS = `
 /* ══ BASE ══════════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
 html { font-size:16px; }
+[data-theme="dark"] body {
+  background: linear-gradient(160deg,#0a1628 0%,#0d1526 40%,#0a1f3a 70%,#0d1526 100%) !important;
+}
+[data-theme="dark"] body::before {
+  background-image: radial-gradient(rgba(96,165,250,0.08) 1.5px, transparent 1.5px) !important;
+}
 
 body {
   font-family: 'Nunito', sans-serif;
-  background: var(--bg);
+  background: linear-gradient(160deg,#dbeafe 0%,#eff6ff 35%,#e0f2fe 65%,#f0f9ff 100%);
+  background-attachment: fixed;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
   min-height: 100vh;
   transition: background 0.35s, color 0.35s;
   position: relative;
-  background-image: radial-gradient(var(--divider) 1.5px, transparent 1.5px);
+}
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image: radial-gradient(rgba(37,99,235,0.12) 1.5px, transparent 1.5px);
   background-size: 28px 28px;
 }
+.app,.login-page { position:relative; z-index:1; }
 
 ::-webkit-scrollbar { width:6px; }
 ::-webkit-scrollbar-thumb { background:var(--accent); border-radius:99px; border:2px solid var(--bg); }
@@ -572,91 +583,123 @@ body {
 
 /* ── HERO ── */
 .hero {
-  border-radius:20px; margin-bottom:6px;
-  background:#2563eb;
+  border-radius:28px; margin-bottom:20px;
+  background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 25%,#2563eb 55%,#0ea5e9 82%,#06b6d4 100%);
   color:white; position:relative; overflow:hidden;
-  border:3px solid #0f172a;
-  box-shadow:5px 5px 0 #0f172a;
-  animation:slideUp 0.4s cubic-bezier(.34,1.56,.64,1) both;
+  border:2px solid rgba(255,255,255,0.22);
+  box-shadow:0 20px 60px rgba(30,58,138,0.38),0 8px 20px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.18);
+  animation:slideUp 0.5s cubic-bezier(.34,1.56,.64,1) both;
 }
-.hero-glow { display:none; }
+.hero::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(ellipse at 10% 55%,rgba(255,255,255,0.18) 0%,transparent 50%),
+    radial-gradient(ellipse at 88% 15%,rgba(6,182,212,0.32) 0%,transparent 45%),
+    radial-gradient(ellipse at 50% 110%,rgba(99,102,241,0.22) 0%,transparent 55%);
+}
+.hero-glow {
+  position:absolute; border-radius:50%;
+  filter:blur(55px); pointer-events:none;
+  animation:float 7s ease-in-out infinite; opacity:0.55;
+}
 .hero-dots {
   position:absolute; inset:0; pointer-events:none;
-  background-image:radial-gradient(rgba(255,255,255,0.15) 1.5px,transparent 1.5px);
-  background-size:18px 18px;
+  background-image:radial-gradient(rgba(255,255,255,0.2) 1.5px,transparent 1.5px);
+  background-size:22px 22px; opacity:0.55;
 }
-.hero-body { padding:26px 22px 0; position:relative; z-index:1; }
-.hero-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
-.hero-emoji { font-size:56px; animation:float 3.5s ease-in-out infinite; line-height:1; flex-shrink:0; }
+.hero-body { padding:32px 28px 10px; position:relative; z-index:1; }
+.hero-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+.hero-emoji {
+  font-size:78px; animation:float 4s ease-in-out infinite;
+  line-height:1; flex-shrink:0;
+  filter:drop-shadow(0 10px 20px rgba(0,0,0,0.22)); margin-top:4px;
+}
 .hero-title {
   font-family:'Fredoka One',cursive;
-  font-size:24px; margin-bottom:6px; line-height:1.2; letter-spacing:0.02em;
+  font-size:28px; margin-bottom:8px; line-height:1.2; letter-spacing:0.02em;
+  text-shadow:0 2px 10px rgba(0,0,0,0.12);
 }
-.hero-sub { font-size:14px; opacity:0.85; font-weight:700; min-height:22px; }
-.hero-date { font-size:12px; opacity:0.55; margin-top:5px; font-weight:700; }
-.hero-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; margin-bottom:26px; }
+.hero-sub { font-size:14.5px; opacity:0.9; font-weight:700; min-height:22px; }
+.hero-date { font-size:12.5px; opacity:0.62; margin-top:6px; font-weight:700; }
+.hero-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; margin-bottom:30px; }
 .hero-tag {
   display:flex; align-items:center; gap:5px;
   background:rgba(255,255,255,0.18);
-  border:2px solid rgba(255,255,255,0.35);
-  border-radius:30px; padding:5px 14px;
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  border:1.5px solid rgba(255,255,255,0.32);
+  border-radius:30px; padding:6px 16px;
   font-size:12px; font-weight:800;
-  transition:background 0.15s;
+  transition:all 0.22s cubic-bezier(.34,1.56,.64,1);
 }
-.hero-tag:hover { background:rgba(255,255,255,0.28); transform:scale(1.05); }
+.hero-tag:hover {
+  background:rgba(255,255,255,0.30);
+  transform:translateY(-2px) scale(1.06);
+  box-shadow:0 6px 16px rgba(0,0,0,0.12);
+}
 
 /* ── BENTO STATS ── */
 .bento-grid {
   display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px; margin-bottom:20px;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px; margin-bottom:24px;
 }
 .bento-card {
-  background:var(--surface);
-  border:2.5px solid var(--border);
-  border-radius:18px; padding:18px 16px;
+  background:rgba(255,255,255,0.72);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  border:1.5px solid rgba(255,255,255,0.88);
+  border-radius:22px; padding:22px 18px;
   position:relative; overflow:hidden;
-  box-shadow:var(--shadow);
-  transition:all 0.15s;
+  box-shadow:0 4px 24px rgba(37,99,235,0.09),0 1px 4px rgba(0,0,0,0.04);
+  transition:all 0.25s cubic-bezier(.34,1.56,.64,1);
   animation:slideUp 0.4s ease both;
 }
 .bento-card:hover {
-  transform:translate(-2px,-2px);
-  box-shadow:var(--shadow-lg);
+  transform:translateY(-5px) scale(1.015);
+  box-shadow:0 16px 44px rgba(37,99,235,0.2),0 4px 12px rgba(0,0,0,0.06);
+  border-color:rgba(255,255,255,1);
+}
+[data-theme="dark"] .bento-card {
+  background:rgba(17,28,53,0.78);
+  border-color:rgba(96,165,250,0.18);
+  box-shadow:0 4px 24px rgba(0,0,0,0.35);
+}
+[data-theme="dark"] .bento-card:hover {
+  box-shadow:0 16px 44px rgba(96,165,250,0.15);
 }
 .bento-accent-bar {
-  position:absolute; left:0; top:0; bottom:0; width:5px; border-radius:16px 0 0 16px;
+  position:absolute; left:0; top:0; bottom:0;
+  width:4px; border-radius:22px 0 0 22px;
 }
 .bento-bg-circle {
-  position:absolute; border-radius:50%; right:-18px; bottom:-18px;
-  width:80px; height:80px; opacity:0.08;
+  position:absolute; border-radius:50%;
+  right:-24px; bottom:-24px;
+  width:100px; height:100px; opacity:0.08;
 }
-.bento-ico { font-size:30px; margin-bottom:8px; display:block; }
+.bento-ico { font-size:34px; margin-bottom:10px; display:block; }
 .bento-val {
   font-family:'Fredoka One',cursive;
-  font-size:30px; color:var(--text); line-height:1; letter-spacing:0.02em;
+  font-size:34px; color:var(--text); line-height:1; letter-spacing:0.02em;
 }
-.bento-lbl { font-size:13px; color:var(--text2); font-weight:800; margin-top:4px; }
+.bento-lbl { font-size:13px; color:var(--text2); font-weight:800; margin-top:5px; }
 .bento-note {
   font-size:11.5px; font-weight:800; margin-top:10px;
-  padding-top:10px; border-top:2px dashed var(--divider);
+  padding-top:10px; border-top:1.5px dashed var(--divider);
   display:flex; align-items:center; gap:5px;
 }
 
 /* featured bento card — spans 2 cols */
 .bento-featured {
   grid-column:span 2;
-  padding:22px 20px;
-  background:#eff6ff;
-  border-color:#2563eb;
-  box-shadow:4px 4px 0 #2563eb;
+  padding:26px 22px;
+  background:linear-gradient(135deg,rgba(239,246,255,0.96) 0%,rgba(219,234,254,0.92) 100%);
+  border-color:rgba(147,197,253,0.65);
+  box-shadow:0 8px 32px rgba(37,99,235,0.14),0 2px 8px rgba(0,0,0,0.04);
 }
 [data-theme="dark"] .bento-featured {
-  background:rgba(37,99,235,0.1);
-  border-color:#60a5fa;
-  box-shadow:4px 4px 0 #60a5fa;
+  background:linear-gradient(135deg,rgba(37,99,235,0.18) 0%,rgba(30,64,175,0.22) 100%);
+  border-color:rgba(96,165,250,0.28);
+  box-shadow:0 8px 32px rgba(0,0,0,0.3);
 }
-.bento-featured .bento-val { font-size:40px; }
+.bento-featured .bento-val { font-size:44px; }
 .bento-featured .bento-lbl { font-size:14px; }
 .bento-featured-inner { display:flex; align-items:center; justify-content:space-between; }
 .bento-featured-left {}
@@ -664,11 +707,11 @@ body {
 .bento-progress {
   width:120px; height:10px; border-radius:99px;
   background:var(--divider); margin-top:8px; overflow:hidden;
-  margin-left:auto; border:2px solid var(--border);
+  margin-left:auto; border:1.5px solid rgba(147,197,253,0.4);
 }
 .bento-progress-fill {
   height:100%; border-radius:99px;
-  background:#22c55e;
+  background:linear-gradient(90deg,#22c55e,#86efac);
 }
 
 /* ── SECTION HEADER ── */
@@ -687,22 +730,28 @@ body {
 /* ── UPDATES ── */
 .updates { display:flex; flex-direction:column; gap:10px; margin-bottom:4px; }
 .upd-card {
-  background:var(--surface);
-  border:2.5px solid var(--border);
-  border-radius:14px; padding:13px 15px;
+  background:rgba(255,255,255,0.72);
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  border:1.5px solid rgba(255,255,255,0.88);
+  border-radius:16px; padding:13px 15px;
   display:flex; align-items:center; gap:12px;
-  box-shadow:var(--shadow);
-  transition:all 0.15s; animation:slideUp 0.4s ease both;
+  box-shadow:0 4px 16px rgba(37,99,235,0.07),0 1px 3px rgba(0,0,0,0.03);
+  transition:all 0.22s cubic-bezier(.34,1.56,.64,1); animation:slideUp 0.4s ease both;
+}
+[data-theme="dark"] .upd-card {
+  background:rgba(17,28,53,0.75);
+  border-color:rgba(96,165,250,0.15);
 }
 .upd-card:hover {
-  transform:translate(-2px,-2px);
-  box-shadow:var(--shadow-md);
+  transform:translateY(-3px) scale(1.01);
+  box-shadow:0 10px 30px rgba(37,99,235,0.14);
 }
 .upd-ico {
   width:42px; height:42px; border-radius:12px;
   display:flex; align-items:center; justify-content:center;
   font-size:20px; flex-shrink:0;
-  border:2px solid var(--border);
+  border:1.5px solid rgba(255,255,255,0.7);
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
   transition:transform 0.2s;
 }
 .upd-card:hover .upd-ico { transform:scale(1.15) rotate(-8deg); }
@@ -710,58 +759,79 @@ body {
 .upd-tag { font-size:11.5px; font-weight:900; padding:4px 11px; border-radius:20px; white-space:nowrap; flex-shrink:0; border:2px solid currentColor; }
 
 /* ── MODULE CARDS ── */
-.mods-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.mods-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
 .mc {
-  background:var(--surface);
-  border:2.5px solid var(--border);
-  border-radius:18px; padding:16px 15px;
-  cursor:pointer; box-shadow:var(--shadow);
-  transition:all 0.15s; position:relative; overflow:hidden;
+  background:rgba(255,255,255,0.75);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  border:1.5px solid rgba(255,255,255,0.9);
+  border-radius:22px; padding:20px 18px;
+  cursor:pointer;
+  box-shadow:0 4px 20px rgba(37,99,235,0.08),0 1px 4px rgba(0,0,0,0.03);
+  transition:all 0.25s cubic-bezier(.34,1.56,.64,1);
+  position:relative; overflow:hidden;
   animation:slideUp 0.4s ease both;
 }
 .mc:hover {
-  transform:translate(-3px,-3px);
-  box-shadow:var(--shadow-lg);
+  transform:translateY(-6px) scale(1.02);
+  box-shadow:0 20px 50px rgba(37,99,235,0.2),0 6px 16px rgba(0,0,0,0.06);
+  border-color:rgba(255,255,255,1);
+}
+[data-theme="dark"] .mc {
+  background:rgba(17,28,53,0.78);
+  border-color:rgba(96,165,250,0.15);
+  box-shadow:0 4px 20px rgba(0,0,0,0.3);
 }
 .mc-blob {
-  position:absolute; bottom:-20px; right:-20px;
-  width:90px; height:90px; border-radius:50%; opacity:0.08;
-  transition:transform 0.3s;
+  position:absolute; bottom:-30px; right:-30px;
+  width:120px; height:120px; border-radius:50%; opacity:0.09;
+  transition:transform 0.4s cubic-bezier(.34,1.56,.64,1);
 }
-.mc:hover .mc-blob { transform:scale(1.3); }
+.mc:hover .mc-blob { transform:scale(1.6); opacity:0.14; }
 .mc-tag {
   display:inline-flex; align-items:center; gap:4px;
-  font-size:10.5px; font-weight:900; padding:3px 10px;
-  border-radius:20px; margin-bottom:10px;
-  border:2px solid currentColor;
+  font-size:10.5px; font-weight:900; padding:4px 12px;
+  border-radius:20px; margin-bottom:12px;
+  background:rgba(37,99,235,0.06);
+  border:1.5px solid currentColor;
 }
-.mc-ico-wrap { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.mc-ico-wrap { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .mc-ico {
-  width:48px; height:48px; border-radius:14px;
-  font-size:24px; display:flex; align-items:center; justify-content:center;
-  border:2.5px solid var(--border); box-shadow:2px 2px 0 var(--border);
-  transition:transform 0.2s;
+  width:54px; height:54px; border-radius:18px;
+  font-size:28px; display:flex; align-items:center; justify-content:center;
+  border:1.5px solid rgba(255,255,255,0.7);
+  box-shadow:0 4px 14px rgba(0,0,0,0.09);
+  transition:transform 0.25s cubic-bezier(.34,1.56,.64,1);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
 }
-.mc:hover .mc-ico { transform:scale(1.1) rotate(-8deg); }
+.mc:hover .mc-ico { transform:scale(1.12) rotate(-7deg); }
 .mc-count {
   font-family:'Fredoka One',cursive;
   font-size:12px; color:var(--text2);
-  background:var(--accent-lt); border:2px solid var(--border);
-  border-radius:20px; padding:3px 10px;
+  background:rgba(239,246,255,0.85);
+  border:1.5px solid rgba(147,197,253,0.5);
+  border-radius:20px; padding:3px 12px;
+  backdrop-filter:blur(8px);
 }
 .mc-name {
   font-family:'Fredoka One',cursive;
-  font-size:15px; color:var(--text);
-  margin-bottom:10px; letter-spacing:0.02em;
+  font-size:16px; color:var(--text);
+  margin-bottom:12px; letter-spacing:0.02em;
 }
 .mc-pills { display:flex; flex-wrap:wrap; gap:5px; }
 .mc-pill {
-  padding:4px 10px; border-radius:8px;
+  padding:4px 11px; border-radius:10px;
   font-size:11.5px; font-weight:800; cursor:pointer;
-  transition:all 0.12s; border:1.5px solid transparent;
+  transition:all 0.2s cubic-bezier(.34,1.56,.64,1);
+  border:1.5px solid transparent;
+  backdrop-filter:blur(8px);
 }
-.mc-pill:hover { transform:scale(1.08) rotate(-2deg); }
-.mc-more { padding:4px 10px; border-radius:8px; font-size:11.5px; font-weight:800; background:var(--accent-lt); color:var(--accent); border:1.5px solid var(--accent); }
+.mc-pill:hover { transform:scale(1.1) rotate(-2deg); }
+.mc-more {
+  padding:4px 11px; border-radius:10px;
+  font-size:11.5px; font-weight:800;
+  background:rgba(239,246,255,0.85);
+  color:var(--accent); border:1.5px solid rgba(147,197,253,0.5);
+}
 
 /* ── PAGE VIEW ── */
 .pg-top { display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
@@ -834,26 +904,31 @@ body {
   .tb-hamburger { display:flex; }
   .tb-uname { display:none; }
   .content { padding:16px 12px 36px; }
-  .hero-body { padding:20px 16px 0; }
-  .hero-title { font-size:20px; }
-  .hero-emoji { font-size:40px; }
-  .bento-grid { gap:10px; }
+  .hero-body { padding:22px 18px 6px; }
+  .hero-title { font-size:22px; }
+  .hero-emoji { font-size:50px; }
+  .bento-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
   .bento-featured { grid-column:span 2; }
-  .bento-featured .bento-val { font-size:30px; }
+  .bento-featured .bento-val { font-size:32px; }
   .bento-progress { width:80px; }
-  .mods-grid { gap:10px; }
-  .mc { padding:14px 12px; }
+  .mods-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+  .mc { padding:16px 14px; }
   .pg-stats { gap:8px; }
   .pgs { padding:14px 10px; }
 }
-@media (max-width:380px) {
+@media (max-width:480px) {
   .login-card { padding:28px 16px 24px; }
+  .bento-grid { grid-template-columns:repeat(2,1fr); }
+  .bento-featured { grid-column:span 2; }
+  .mods-grid { grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:360px) {
   .bento-grid { grid-template-columns:1fr; }
   .bento-featured { grid-column:span 1; }
-  .mods-grid { grid-template-columns:1fr 1fr; }
+  .mods-grid { grid-template-columns:1fr; }
 }
 @media (min-width:769px) {
-  .bento-grid { grid-template-columns:repeat(4,1fr); }
+  .bento-grid { grid-template-columns:repeat(3,1fr); }
   .bento-featured { grid-column:span 2; }
   .mods-grid { grid-template-columns:repeat(3,1fr); }
   .updates { display:grid; grid-template-columns:1fr 1fr; }
@@ -1127,10 +1202,15 @@ function Login({ onLogin }) {
     setErr("");
     if (!email || !pass) { setErr("Sila isi emel dan kata laluan."); return; }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    if (email === "guru@sekolah.edu.my" && pass === "password") {
-      onLogin({ name: "Ahmad Khairulazwani", role: "Guru ICT" });
-    } else setErr("Emel atau kata laluan tidak sah.");
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (error) {
+      setErr("Emel atau kata laluan tidak sah. Sila hubungi pentadbir sistem.");
+    } else {
+      const u = data.user;
+      const name = u.user_metadata?.name || u.user_metadata?.full_name || u.email.split("@")[0];
+      const role = u.user_metadata?.role || "Guru";
+      onLogin({ name, role, email: u.email });
+    }
     setLoading(false);
   };
 
@@ -1161,16 +1241,8 @@ function Login({ onLogin }) {
         </div>
 
         <div className="lc-greet">
-          <h1>Hai, Cikgu! 👋</h1>
-          <p>Log masuk untuk akses sistem sekolah.</p>
-        </div>
-
-        <div className="lc-hint">
-          <span className="lc-hint-ico">💡</span>
-          <div className="lc-hint-body">
-            Akaun demo:
-            <small>guru@sekolah.edu.my &nbsp;·&nbsp; password</small>
-          </div>
+          <h1>Selamat Datang! 👋</h1>
+          <p>Log masuk dengan akaun sekolah anda.</p>
         </div>
 
         {err && <div className="lc-err">⚠️ {err}</div>}
@@ -1197,6 +1269,11 @@ function Login({ onLogin }) {
         </button>
 
         <div className="lc-foot">SK Darau · Sistem Pengurusan Sekolah 2025</div>
+        <div style={{marginTop:14,padding:"10px 14px",background:"rgba(239,246,255,0.8)",border:"1.5px solid rgba(147,197,253,0.6)",borderRadius:12,textAlign:"center"}}>
+          <div style={{fontSize:10,color:"#64748b",fontWeight:900,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:3}}>Pentadbir Sistem</div>
+          <div style={{fontSize:12,color:"#1d4ed8",fontWeight:900}}>En. Khairul Azwani bin Haji Ahinin</div>
+          <div style={{fontSize:11,color:"#64748b",fontWeight:700}}>Guru ICT · SK Darau, Kota Kinabalu</div>
+        </div>
       </div>
     </div>
   );
@@ -1265,6 +1342,11 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
             </div>
           </div>
           <button className="sb-out" onClick={onLogout}>🚪 &nbsp;Log Keluar</button>
+          <div style={{marginTop:10,padding:"9px 12px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,textAlign:"center"}}>
+            <div style={{fontSize:9.5,color:"rgba(255,255,255,0.45)",fontWeight:900,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>Pentadbir Sistem</div>
+            <div style={{fontSize:11.5,color:"rgba(255,255,255,0.82)",fontWeight:900}}>En. Khairul Azwani bin Hj. Ahinin</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",fontWeight:700,marginTop:1}}>Guru ICT SK Darau</div>
+          </div>
         </div>
       </aside>
     </>
@@ -1351,8 +1433,9 @@ function Overview({ onNav, user }) {
       {/* Hero */}
       <div className="hero">
         <div className="hero-dots"/>
-        <div className="hero-glow" style={{width:300,height:300,top:-100,right:-80,background:"#3b82f6"}}/>
-        <div className="hero-glow" style={{width:200,height:200,bottom:-60,left:60,background:"#6366f1",animationDelay:"2s"}}/>
+        <div className="hero-glow" style={{width:320,height:320,top:-120,right:-80,background:"#3b82f6",animationDelay:"0s"}}/>
+        <div className="hero-glow" style={{width:220,height:220,bottom:-70,left:40,background:"#6366f1",animationDelay:"2.2s"}}/>
+        <div className="hero-glow" style={{width:160,height:160,top:20,left:"35%",background:"#06b6d4",animationDelay:"1.1s"}}/>
         <div className="hero-body">
           <div className="hero-top">
             <div style={{flex:1}}>
@@ -1363,6 +1446,7 @@ function Overview({ onNav, user }) {
                 <div className="hero-tag">✅ Semua Modul Aktif</div>
                 <div className="hero-tag">📅 Penggal 2 · 2025</div>
                 <div className="hero-tag">👋 Hai, {initials}!</div>
+                <div className="hero-tag">🏫 SK Darau</div>
               </div>
             </div>
             <div className="hero-emoji">🏫</div>
@@ -1381,13 +1465,19 @@ function Overview({ onNav, user }) {
           >
             <div className="bento-accent-bar" style={{background:s.color}}/>
             <div className="bento-bg-circle" style={{background:s.color}}/>
-            <>
-              <span className="bento-ico">{s.ico}</span>
-              <div className="bento-val"><Count to={s.val} suffix={s.suffix||""}/></div>
-              <div className="bento-lbl">{s.lbl}</div>
-            </>
+            <span className="bento-ico">{s.ico}</span>
+            <div className="bento-val"><Count to={s.val} suffix={s.suffix||""}/></div>
+            <div className="bento-lbl">{s.lbl}</div>
           </div>
         ))}
+        {/* Admin info card */}
+        <div className="bento-card" style={{animationDelay:"0.32s",background:"linear-gradient(135deg,rgba(239,246,255,0.95) 0%,rgba(224,242,254,0.92) 100%)",border:"1.5px solid rgba(147,197,253,0.6)",display:"flex",flexDirection:"column",justifyContent:"center",gap:4}}>
+          <div className="bento-bg-circle" style={{background:"#0ea5e9"}}/>
+          <span style={{fontSize:28,marginBottom:6}}>👨‍💼</span>
+          <div style={{fontSize:11,fontWeight:900,color:"#64748b",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>Pentadbir Sistem</div>
+          <div style={{fontFamily:"'Fredoka One',cursive",fontSize:13.5,color:"#1d4ed8",lineHeight:1.3}}>En. Khairul Azwani<br/>bin Haji Ahinin</div>
+          <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginTop:3}}>Guru ICT · SK Darau</div>
+        </div>
       </div>
 
       {/* Updates */}
@@ -1449,7 +1539,7 @@ function Overview({ onNav, user }) {
       </div>
       <div className="mods-grid">
         {MODULES.map((m,i)=>(
-          <div className="mc" key={m.id} onClick={()=>onNav(m.id,m.ids[0])} style={{animationDelay:`${i*0.07}s`}}>
+          <div className="mc" key={m.id} onClick={()=>onNav(m.id,m.ids[0])} style={{animationDelay:`${i*0.07}s`,background:`linear-gradient(145deg,rgba(255,255,255,0.85) 0%,${m.light} 100%)`}}>
             <div className="mc-blob" style={{background:m.color}}/>
             <div className="mc-tag" style={{color:m.color}}>{m.icon} {m.tag}</div>
             <div className="mc-ico-wrap">
@@ -9807,7 +9897,7 @@ export default function App() {
       <div className="app">
         <Sidebar open={sbOpen} onClose={()=>setSbOpen(false)}
           exp={exp} setExp={setExp} actMod={actMod} actSub={actSub}
-          onNav={onNav} user={user} onLogout={()=>{ localStorage.removeItem("edu-user"); setUser(null); }}/>
+          onNav={onNav} user={user} onLogout={async ()=>{ await supabase.auth.signOut(); localStorage.removeItem("edu-user"); setUser(null); }}/>
 
         <div className="main">
           <div className="topbar">
