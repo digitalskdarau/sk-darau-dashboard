@@ -4239,79 +4239,384 @@ function PAJSKPage() {
   );
 }
 
+// jawatan options per category
+const JAWATAN_KELAB    = ['Ahli Biasa','AJK','Naib Pengerusi','Pengerusi'];
+const JAWATAN_UNIFORM  = ['Ahli','Penolong Ketua Pasukan','Ketua Pasukan'];
+const JAWATAN_SUKAN    = ['Ahli','Kapten','Jurulatih'];
+const GRED_COLOR       = { A:'b-green', B:'b-blue', C:'b-yellow', D:'b-red', E:'b-red' };
+
+// jawatan contributes bonus mark (0–2) on top of base markah
+function jawatanBonus(j, opts) {
+  const idx = opts.indexOf(j);
+  if (idx <= 0) return 0;
+  if (idx === 1) return 1;
+  return 2;
+}
+
 function ProfilMuridKoku() {
-  const SEED=[
-    {id:1,nama:"Ahmad Firdaus",kelas:"Tahun 5 Unik",kelab:"Kelab Sains & Alam Sekitar",uniform:"Pengakap",sukan:"Bola Sepak",mKelab:8,mUniform:9,mSukan:8},
-    {id:2,nama:"Nur Aisyah",kelas:"Tahun 5 Aplikasi",kelab:"Persatuan Matematik",uniform:"Puteri Islam",sukan:"Bola Jaring",mKelab:10,mUniform:9,mSukan:9},
-    {id:3,nama:"Lim Wei Xian",kelas:"Tahun 4 Revolusi",kelab:"Kelab Bahasa Melayu",uniform:"Bulan Sabit Merah",sukan:"Badminton",mKelab:6,mUniform:7,mSukan:6},
-    {id:4,nama:"Siti Amirah",kelas:"Tahun 4 Aspirasi",kelab:"Persatuan Bahasa Inggeris",uniform:"Pandu Puteri",sukan:"Olahraga",mKelab:9,mUniform:8,mSukan:9},
-    {id:5,nama:"Mohd Haziq",kelas:"Tahun 6 Unik",kelab:"Kelab Komputer",uniform:"Pengakap",sukan:"Ping Pong",mKelab:7,mUniform:8,mSukan:7},
-  ];
-  const BLANK={nama:"",kelas:"Tahun 1 Unik",kelab:"",uniform:"",sukan:"",mKelab:5,mUniform:5,mSukan:5};
-  const [data,setData]=useState(SEED);const [showAdd,setShowAdd]=useState(false);const [editItem,setEditItem]=useState(null);const [nid,setNid]=useState(6);
-  const [form,setForm]=useState(BLANK);const [q,setQ]=useState("");const [filterKelas,setFilterKelas]=useState("Semua");
-  const handleAdd=e=>{e.preventDefault();setData(d=>[...d,{...form,id:nid}]);setNid(n=>n+1);setForm(BLANK);setShowAdd(false);toast("Ditambah!","success");};
-  const handleEdit=e=>{e.preventDefault();setData(d=>d.map(r=>r.id===editItem.id?editItem:r));setEditItem(null);toast("Dikemaskini!","success");};
-  const handleDel=id=>{setData(d=>d.filter(r=>r.id!==id));toast("Dipadam!","success");};
-  const filtered=data.filter(d=>(filterKelas==="Semua"||d.kelas===filterKelas)&&(!q||d.nama.toLowerCase().includes(q.toLowerCase())));
-  const gc={A:"b-green",B:"b-blue",C:"b-yellow",D:"b-red",E:"b-red"};
-  return (
-    <KurPage title="Profil Murid Kokurikulum" sub="Kokurikulum · SK Darau"
-      stats={[{ico:"👦",val:data.length,lbl:"Jumlah Murid"},{ico:"🏛️",val:[...new Set(data.map(d=>d.kelab))].length,lbl:"Kelab Berbeza"},{ico:"🎖️",val:[...new Set(data.map(d=>d.uniform))].length,lbl:"Badan Beruniform"},{ico:"⚽",val:[...new Set(data.map(d=>d.sukan))].length,lbl:"Jenis Sukan"}]}>
-      <div className="kur-header" style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-        <input className="form-input" style={{flex:1,minWidth:150}} placeholder="Cari nama murid..." value={q} onChange={e=>setQ(e.target.value)}/>
-        <select className="form-input" style={{width:170}} value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}><option value="Semua">Semua Kelas</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}</select>
-        <button className="btn-add" onClick={()=>{setForm(BLANK);setShowAdd(true)}}>+ Tambah Profil</button>
+  const [subtab, setSubtab]         = useState(0);
+  const [data, setData]             = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [showAdd, setShowAdd]       = useState(false);
+  const [editItem, setEditItem]     = useState(null);
+  const [q, setQ]                   = useState('');
+  const [filterKelas, setFilterKelas] = useState('');
+  const [filterTahun, setFilterTahun] = useState(new Date().getFullYear().toString());
+  const [filterGred, setFilterGred]   = useState('');
+
+  const tahunNow = new Date().getFullYear().toString();
+  const blank = {
+    no_daftar:'', nama:'', kelas:'', tahun:tahunNow,
+    kelab:'', jawatan_kelab:'Ahli Biasa', m_kelab:5,
+    uniform:'', pangkat_uniform:'Ahli',   m_uniform:5,
+    sukan:'',  jawatan_sukan:'Ahli',       m_sukan:5,
+    catatan:'', status:'Aktif',
+  };
+  const [form, setForm] = useState(blank);
+
+  const load = async () => {
+    setLoading(true);
+    const { data: rows } = await supabase
+      .from('koku_profil_murid').select('*')
+      .neq('status','PADAM').order('kelas').order('nama');
+    setData(rows || []);
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(() => supabase.from('koku_profil_murid').insert([form]));
+    if (!ok) return;
+    toast('Profil ditambah!', 'success'); setShowAdd(false); setForm(blank); load();
+  };
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const { id, created_at, ...rest } = editItem;
+    const ok = await dbRun(() => supabase.from('koku_profil_murid').update(rest).eq('id', id));
+    if (!ok) return;
+    toast('Dikemaskini!', 'success'); setEditItem(null); load();
+  };
+  const handleDel = async (id) => {
+    const ok = await dbRun(() => supabase.from('koku_profil_murid').update({ status:'PADAM' }).eq('id', id));
+    if (ok) { setData(d => d.filter(r => r.id !== id)); toast('Dipadam.', 'success'); }
+  };
+
+  // computed
+  const jumlah = r => (r.m_kelab||0) + (r.m_uniform||0) + (r.m_sukan||0);
+
+  const filtered = data.filter(r =>
+    (!filterTahun  || r.tahun === filterTahun) &&
+    (!filterKelas  || r.kelas === filterKelas) &&
+    (!filterGred   || gradeOPR(jumlah(r)) === filterGred) &&
+    (!q || r.nama.toLowerCase().includes(q.toLowerCase()) || (r.no_daftar||'').toLowerCase().includes(q.toLowerCase()))
+  );
+
+  // stats
+  const aGred   = data.filter(r => gradeOPR(jumlah(r)) === 'A').length;
+  const bGred   = data.filter(r => gradeOPR(jumlah(r)) === 'B').length;
+  const lengkap = data.filter(r => r.kelab && r.uniform && r.sukan).length;
+  const avgMark = data.length ? (data.reduce((s,r) => s + jumlah(r), 0) / data.length).toFixed(1) : 0;
+
+  // kelas coverage for statistik tab
+  const kelasCoverage = KELAS_LIST.map(k => {
+    const yr = data.filter(r => r.kelas === k && r.tahun === filterTahun);
+    const grads = { A:0, B:0, C:0, D:0, E:0 };
+    yr.forEach(r => { grads[gradeOPR(jumlah(r))]++; });
+    return { kelas:k, total:yr.length, grads };
+  }).filter(c => c.total > 0);
+
+  const gradeDist = ['A','B','C','D','E'].map(g => ({
+    gred: g,
+    count: data.filter(r => r.tahun === filterTahun && gradeOPR(jumlah(r)) === g).length,
+    color: g==='A'?'#22c55e': g==='B'?'#3b82f6': g==='C'?'#f59e0b': '#ef4444',
+  }));
+  const distMax = Math.max(...gradeDist.map(g => g.count), 1);
+
+  const subTabStyle = (i) => ({
+    padding:'7px 14px', borderRadius:9, fontWeight:900, fontSize:12, cursor:'pointer',
+    border:'2.5px solid', fontFamily:"'Nunito',sans-serif",
+    background: subtab===i ? 'var(--accent)' : 'var(--surface)',
+    borderColor: subtab===i ? 'var(--accent)' : 'var(--border)',
+    color: subtab===i ? '#fff' : 'var(--text)', transition:'all 0.15s',
+  });
+
+  // shared form fields (reused for add & edit)
+  function ProfilFormFields({ val, set }) {
+    return (<>
+      <div className="form-row">
+        <div className="form-field"><label className="form-label">No. Daftar</label><input className="form-input" value={val.no_daftar||''} onChange={e=>set(f=>({...f,no_daftar:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Nama Murid *</label><input className="form-input" required value={val.nama||''} onChange={e=>set(f=>({...f,nama:e.target.value}))}/></div>
       </div>
-      <div className="kur-table-wrap"><table className="kur-table">
-        <thead><tr><th>#</th><th>Nama</th><th>Kelas</th><th>Kelab/Persatuan</th><th>Badan Beruniform</th><th>Sukan</th><th>Jml(30)</th><th>Gred</th><th></th></tr></thead>
-        <tbody>{filtered.map((p,i)=>{const j=p.mKelab+p.mUniform+p.mSukan;const g=gradeOPR(j);return(
-          <tr key={p.id}>
-            <td style={{color:"var(--text3)",fontWeight:800}}>{i+1}</td>
-            <td style={{fontWeight:800}}>{p.nama}</td><td style={{fontSize:12}}>{p.kelas}</td>
-            <td><span className="badge b-blue" style={{fontSize:10}}>{p.kelab}</span></td>
-            <td><span className="badge b-green" style={{fontSize:10}}>{p.uniform}</span></td>
-            <td><span className="badge b-yellow" style={{fontSize:10}}>{p.sukan}</span></td>
-            <td style={{fontWeight:800}}>{j}</td>
-            <td><span className={`badge ${gc[g]||"b-gray"}`}>{g}</span></td>
-            <td style={{display:"flex",gap:4}}>
-              <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={()=>setEditItem({...p})}>✏️</button>
-              <button className="btn-del" onClick={()=>handleDel(p.id)}>🗑</button>
-            </td>
-          </tr>
-        );})}
-        </tbody>
-      </table></div>
-      {showAdd&&<Modal title="Tambah Profil Murid" onClose={()=>setShowAdd(false)}><form onSubmit={handleAdd}>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" required value={form.nama} onChange={e=>setForm(f=>({...f,nama:e.target.value}))}/></div>
-          <div className="form-field"><label className="form-label">Kelas</label><select className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))}>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}</select></div>
+      <div className="form-row">
+        <div className="form-field"><label className="form-label">Kelas</label>
+          <select className="form-input" value={val.kelas||''} onChange={e=>set(f=>({...f,kelas:e.target.value}))}>
+            <option value="">—</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+          </select>
         </div>
-        <div className="form-field"><label className="form-label">Kelab/Persatuan</label><input className="form-input" required value={form.kelab} onChange={e=>setForm(f=>({...f,kelab:e.target.value}))}/></div>
-        <div className="form-field"><label className="form-label">Badan Beruniform</label><input className="form-input" required value={form.uniform} onChange={e=>setForm(f=>({...f,uniform:e.target.value}))}/></div>
-        <div className="form-field"><label className="form-label">Sukan</label><input className="form-input" required value={form.sukan} onChange={e=>setForm(f=>({...f,sukan:e.target.value}))}/></div>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Markah Kelab (/10)</label><input className="form-input" type="number" min="0" max="10" value={form.mKelab} onChange={e=>setForm(f=>({...f,mKelab:+e.target.value}))}/></div>
-          <div className="form-field"><label className="form-label">Markah Uniform (/10)</label><input className="form-input" type="number" min="0" max="10" value={form.mUniform} onChange={e=>setForm(f=>({...f,mUniform:+e.target.value}))}/></div>
-          <div className="form-field"><label className="form-label">Markah Sukan (/10)</label><input className="form-input" type="number" min="0" max="10" value={form.mSukan} onChange={e=>setForm(f=>({...f,mSukan:+e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Tahun</label>
+          <select className="form-input" value={val.tahun||tahunNow} onChange={e=>set(f=>({...f,tahun:e.target.value}))}>
+            {['2023','2024','2025','2026'].map(y=><option key={y}>{y}</option>)}
+          </select>
         </div>
-        <button className="btn-primary" type="submit">+ Tambah</button>
-      </form></Modal>}
-      {editItem&&<Modal title={`Edit — ${editItem.nama}`} onClose={()=>setEditItem(null)}><form onSubmit={handleEdit}>
+      </div>
+
+      {/* Kelab */}
+      <div style={{background:'var(--accent-lt)', borderRadius:10, padding:'10px 12px', marginBottom:10}}>
+        <div style={{fontWeight:900, fontSize:11, color:'var(--accent)', marginBottom:8, letterSpacing:'0.06em'}}>🏛️ KELAB / PERSATUAN</div>
+        <div className="form-field"><label className="form-label">Nama Kelab/Persatuan</label><input className="form-input" value={val.kelab||''} onChange={e=>set(f=>({...f,kelab:e.target.value}))}/></div>
         <div className="form-row">
-          <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" required value={editItem.nama} onChange={e=>setEditItem(f=>({...f,nama:e.target.value}))}/></div>
-          <div className="form-field"><label className="form-label">Kelas</label><select className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}</select></div>
+          <div className="form-field"><label className="form-label">Jawatan</label>
+            <select className="form-input" value={val.jawatan_kelab||'Ahli Biasa'} onChange={e=>set(f=>({...f,jawatan_kelab:e.target.value}))}>
+              {JAWATAN_KELAB.map(j=><option key={j}>{j}</option>)}
+            </select>
+          </div>
+          <div className="form-field"><label className="form-label">Markah (/10)</label>
+            <input className="form-input" type="number" min="0" max="10" value={val.m_kelab??5} onChange={e=>set(f=>({...f,m_kelab:+e.target.value}))}/>
+          </div>
         </div>
-        <div className="form-field"><label className="form-label">Kelab/Persatuan</label><input className="form-input" required value={editItem.kelab} onChange={e=>setEditItem(f=>({...f,kelab:e.target.value}))}/></div>
-        <div className="form-field"><label className="form-label">Badan Beruniform</label><input className="form-input" required value={editItem.uniform} onChange={e=>setEditItem(f=>({...f,uniform:e.target.value}))}/></div>
-        <div className="form-field"><label className="form-label">Sukan</label><input className="form-input" required value={editItem.sukan} onChange={e=>setEditItem(f=>({...f,sukan:e.target.value}))}/></div>
+      </div>
+
+      {/* Uniform */}
+      <div style={{background:'#f0fdf4', borderRadius:10, padding:'10px 12px', marginBottom:10}}>
+        <div style={{fontWeight:900, fontSize:11, color:'#15803d', marginBottom:8, letterSpacing:'0.06em'}}>🎖️ BADAN BERUNIFORM</div>
+        <div className="form-field"><label className="form-label">Nama Badan Beruniform</label><input className="form-input" value={val.uniform||''} onChange={e=>set(f=>({...f,uniform:e.target.value}))}/></div>
         <div className="form-row">
-          <div className="form-field"><label className="form-label">Markah Kelab (/10)</label><input className="form-input" type="number" min="0" max="10" value={editItem.mKelab} onChange={e=>setEditItem(f=>({...f,mKelab:+e.target.value}))}/></div>
-          <div className="form-field"><label className="form-label">Markah Uniform (/10)</label><input className="form-input" type="number" min="0" max="10" value={editItem.mUniform} onChange={e=>setEditItem(f=>({...f,mUniform:+e.target.value}))}/></div>
-          <div className="form-field"><label className="form-label">Markah Sukan (/10)</label><input className="form-input" type="number" min="0" max="10" value={editItem.mSukan} onChange={e=>setEditItem(f=>({...f,mSukan:+e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">Pangkat/Jawatan</label>
+            <select className="form-input" value={val.pangkat_uniform||'Ahli'} onChange={e=>set(f=>({...f,pangkat_uniform:e.target.value}))}>
+              {JAWATAN_UNIFORM.map(j=><option key={j}>{j}</option>)}
+            </select>
+          </div>
+          <div className="form-field"><label className="form-label">Markah (/10)</label>
+            <input className="form-input" type="number" min="0" max="10" value={val.m_uniform??5} onChange={e=>set(f=>({...f,m_uniform:+e.target.value}))}/>
+          </div>
         </div>
-        <button className="btn-primary" type="submit">💾 Simpan</button>
-      </form></Modal>}
+      </div>
+
+      {/* Sukan */}
+      <div style={{background:'#fffbeb', borderRadius:10, padding:'10px 12px', marginBottom:10}}>
+        <div style={{fontWeight:900, fontSize:11, color:'#b45309', marginBottom:8, letterSpacing:'0.06em'}}>⚽ SUKAN & PERMAINAN</div>
+        <div className="form-field"><label className="form-label">Jenis Sukan/Permainan</label><input className="form-input" value={val.sukan||''} onChange={e=>set(f=>({...f,sukan:e.target.value}))}/></div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Jawatan</label>
+            <select className="form-input" value={val.jawatan_sukan||'Ahli'} onChange={e=>set(f=>({...f,jawatan_sukan:e.target.value}))}>
+              {JAWATAN_SUKAN.map(j=><option key={j}>{j}</option>)}
+            </select>
+          </div>
+          <div className="form-field"><label className="form-label">Markah (/10)</label>
+            <input className="form-input" type="number" min="0" max="10" value={val.m_sukan??5} onChange={e=>set(f=>({...f,m_sukan:+e.target.value}))}/>
+          </div>
+        </div>
+      </div>
+
+      <div className="form-field"><label className="form-label">Catatan</label>
+        <input className="form-input" placeholder="Catatan tambahan (jika ada)" value={val.catatan||''} onChange={e=>set(f=>({...f,catatan:e.target.value}))}/>
+      </div>
+    </>);
+  }
+
+  const statsCards = [
+    { ico:'👦', val:data.length,  lbl:'Jumlah Rekod' },
+    { ico:'⭐', val:aGred,        lbl:'Gred A' },
+    { ico:'📊', val:avgMark,      lbl:'Purata Markah' },
+    { ico:'✅', val:lengkap,      lbl:'Profil Lengkap' },
+  ];
+
+  return (
+    <KurPage title="Profil Murid Kokurikulum" sub="Kokurikulum · SK Darau" stats={statsCards}>
+
+      {/* Sub-tab strip */}
+      <div style={{display:'flex', gap:6, marginBottom:16}}>
+        <button style={subTabStyle(0)} onClick={() => setSubtab(0)}>📋 Senarai Murid</button>
+        <button style={subTabStyle(1)} onClick={() => setSubtab(1)}>📊 Statistik</button>
+      </div>
+
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (<>
+
+        {/* ── SUBTAB 0: SENARAI ── */}
+        {subtab === 0 && (
+          <div>
+            <div className="kur-header" style={{flexWrap:'wrap', gap:8}}>
+              <button className="btn-add" onClick={() => { setForm(blank); setShowAdd(true); }}>+ Tambah Profil</button>
+              <div className="kur-search-wrap" style={{flex:1, minWidth:160}}>
+                <span className="kur-search-ico">🔍</span>
+                <input className="kur-search" placeholder="Cari nama / no. daftar…" value={q} onChange={e=>setQ(e.target.value)}/>
+              </div>
+              <select className="kur-select" value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}>
+                <option value="">Semua Kelas</option>
+                {KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+              </select>
+              <select className="kur-select" value={filterTahun} onChange={e=>setFilterTahun(e.target.value)}>
+                {['2023','2024','2025','2026'].map(y=><option key={y}>{y}</option>)}
+              </select>
+              <select className="kur-select" value={filterGred} onChange={e=>setFilterGred(e.target.value)}>
+                <option value="">Semua Gred</option>
+                {['A','B','C','D','E'].map(g=><option key={g}>{g}</option>)}
+              </select>
+            </div>
+
+            <div className="kur-table-wrap">
+              <table className="kur-table">
+                <thead>
+                  <tr>
+                    <th>#</th><th>Nama</th><th>Kelas</th>
+                    <th>Kelab / Jawatan</th>
+                    <th>Uniform / Pangkat</th>
+                    <th>Sukan / Jawatan</th>
+                    <th>Jml</th><th>Gred</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 && (
+                    <tr><td colSpan={9} style={{textAlign:'center', color:'var(--text3)', padding:28}}>Tiada rekod. Tambah profil murid.</td></tr>
+                  )}
+                  {filtered.map((r, i) => {
+                    const j = jumlah(r);
+                    const g = gradeOPR(j);
+                    return (
+                      <tr key={r.id}>
+                        <td style={{color:'var(--text3)', fontWeight:800}}>{i+1}</td>
+                        <td>
+                          <div style={{fontWeight:800}}>{r.nama}</div>
+                          {r.no_daftar && <div style={{fontSize:10, color:'var(--text3)', fontFamily:'monospace'}}>{r.no_daftar}</div>}
+                        </td>
+                        <td style={{fontSize:12, color:'var(--text3)'}}>{r.kelas}</td>
+                        <td>
+                          <div style={{fontSize:12, fontWeight:700}}>{r.kelab||'—'}</div>
+                          {r.jawatan_kelab && <span className="badge b-blue" style={{fontSize:9, marginTop:2}}>{r.jawatan_kelab}</span>}
+                          <div style={{fontSize:11, color:'var(--text3)', marginTop:2}}>Markah: <strong>{r.m_kelab??'—'}</strong>/10</div>
+                        </td>
+                        <td>
+                          <div style={{fontSize:12, fontWeight:700}}>{r.uniform||'—'}</div>
+                          {r.pangkat_uniform && <span className="badge b-green" style={{fontSize:9, marginTop:2}}>{r.pangkat_uniform}</span>}
+                          <div style={{fontSize:11, color:'var(--text3)', marginTop:2}}>Markah: <strong>{r.m_uniform??'—'}</strong>/10</div>
+                        </td>
+                        <td>
+                          <div style={{fontSize:12, fontWeight:700}}>{r.sukan||'—'}</div>
+                          {r.jawatan_sukan && <span className="badge b-yellow" style={{fontSize:9, marginTop:2}}>{r.jawatan_sukan}</span>}
+                          <div style={{fontSize:11, color:'var(--text3)', marginTop:2}}>Markah: <strong>{r.m_sukan??'—'}</strong>/10</div>
+                        </td>
+                        <td style={{fontWeight:900, fontSize:15}}>{j}<span style={{fontSize:10, color:'var(--text3)', fontWeight:400}}>/30</span></td>
+                        <td><span className={`badge ${GRED_COLOR[g]||'b-gray'}`}>{g}</span></td>
+                        <td style={{display:'flex', gap:4}}>
+                          <button className="btn-add" style={{padding:'4px 8px', fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                          <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── SUBTAB 1: STATISTIK ── */}
+        {subtab === 1 && (
+          <div>
+            <div style={{display:'flex', gap:8, marginBottom:16, flexWrap:'wrap', alignItems:'center'}}>
+              <span style={{fontSize:12, fontWeight:900, color:'var(--text3)'}}>Tahun:</span>
+              <select className="kur-select" value={filterTahun} onChange={e=>setFilterTahun(e.target.value)}>
+                {['2023','2024','2025','2026'].map(y=><option key={y}>{y}</option>)}
+              </select>
+            </div>
+
+            {/* Grade distribution bar chart */}
+            <div style={{background:'var(--surface)', border:'2px solid var(--border)', borderRadius:14, padding:20, marginBottom:16}}>
+              <div style={{fontWeight:900, fontSize:13, marginBottom:16}}>📊 Agihan Gred OPR — {filterTahun}</div>
+              <div style={{display:'flex', alignItems:'flex-end', gap:12, height:120}}>
+                {gradeDist.map(g => (
+                  <div key={g.gred} style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4}}>
+                    <div style={{fontSize:12, fontWeight:900, color:g.color}}>{g.count}</div>
+                    <div style={{
+                      width:'100%', borderRadius:'6px 6px 0 0',
+                      background:g.color, opacity:0.85,
+                      height: `${Math.max(g.count/distMax*90, g.count>0?8:0)}px`,
+                      transition:'height 0.4s',
+                    }}/>
+                    <div style={{fontSize:13, fontWeight:900, color:g.color}}>Gred {g.gred}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Coverage by kelas */}
+            <div style={{background:'var(--surface)', border:'2px solid var(--border)', borderRadius:14, padding:20}}>
+              <div style={{fontWeight:900, fontSize:13, marginBottom:14}}>🏫 Pecahan Gred Mengikut Kelas — {filterTahun}</div>
+              {kelasCoverage.length === 0 && <div style={{fontSize:12, color:'var(--text3)'}}>Tiada data untuk {filterTahun}.</div>}
+              {kelasCoverage.map(c => (
+                <div key={c.kelas} style={{marginBottom:12}}>
+                  <div style={{display:'flex', justifyContent:'space-between', marginBottom:4}}>
+                    <span style={{fontSize:12, fontWeight:800}}>{c.kelas}</span>
+                    <span style={{fontSize:11, color:'var(--text3)'}}>{c.total} murid</span>
+                  </div>
+                  <div style={{display:'flex', height:14, borderRadius:99, overflow:'hidden', gap:1}}>
+                    {['A','B','C','D','E'].map(g => {
+                      const clr = g==='A'?'#22c55e': g==='B'?'#3b82f6': g==='C'?'#f59e0b':'#ef4444';
+                      const pct = c.total ? c.grads[g]/c.total*100 : 0;
+                      return pct > 0 ? (
+                        <div key={g} style={{width:`${pct}%`, background:clr, minWidth:4}} title={`Gred ${g}: ${c.grads[g]}`}/>
+                      ) : null;
+                    })}
+                  </div>
+                  <div style={{display:'flex', gap:8, marginTop:4, flexWrap:'wrap'}}>
+                    {['A','B','C','D','E'].map(g => c.grads[g] > 0 && (
+                      <span key={g} style={{fontSize:10, color:'var(--text3)'}}>
+                        <strong>{g}</strong>: {c.grads[g]}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </>)}
+
+      {/* ── MODAL TAMBAH ── */}
+      {showAdd && (
+        <Modal title="Tambah Profil Murid Kokurikulum" onClose={() => setShowAdd(false)}>
+          <form onSubmit={handleAdd}>
+            <ProfilFormFields val={form} set={setForm}/>
+            <div style={{
+              background:'var(--surface)', border:'2px solid var(--border)', borderRadius:10,
+              padding:'10px 12px', marginBottom:12, textAlign:'center',
+            }}>
+              <div style={{fontSize:11, color:'var(--text3)', fontWeight:800, marginBottom:4}}>JUMLAH OPR</div>
+              <div style={{fontSize:24, fontWeight:900, fontFamily:"'Fredoka One',cursive", color:'var(--accent)'}}>
+                {(form.m_kelab||0)+(form.m_uniform||0)+(form.m_sukan||0)}<span style={{fontSize:14, color:'var(--text3)'}}>/30</span>
+              </div>
+              <div style={{fontSize:13, fontWeight:900}}>Gred: <span>{gradeOPR((form.m_kelab||0)+(form.m_uniform||0)+(form.m_sukan||0))}</span></div>
+            </div>
+            <button className="btn-primary" type="submit">+ Tambah Profil</button>
+          </form>
+        </Modal>
+      )}
+
+      {/* ── MODAL EDIT ── */}
+      {editItem && (
+        <Modal title={`Edit — ${editItem.nama}`} onClose={() => setEditItem(null)}>
+          <form onSubmit={handleEdit}>
+            <ProfilFormFields val={editItem} set={setEditItem}/>
+            <div style={{
+              background:'var(--surface)', border:'2px solid var(--border)', borderRadius:10,
+              padding:'10px 12px', marginBottom:12, textAlign:'center',
+            }}>
+              <div style={{fontSize:11, color:'var(--text3)', fontWeight:800, marginBottom:4}}>JUMLAH OPR</div>
+              <div style={{fontSize:24, fontWeight:900, fontFamily:"'Fredoka One',cursive", color:'var(--accent)'}}>
+                {(editItem.m_kelab||0)+(editItem.m_uniform||0)+(editItem.m_sukan||0)}<span style={{fontSize:14, color:'var(--text3)'}}>/30</span>
+              </div>
+              <div style={{fontSize:13, fontWeight:900}}>Gred: <span>{gradeOPR((editItem.m_kelab||0)+(editItem.m_uniform||0)+(editItem.m_sukan||0))}</span></div>
+            </div>
+            <div className="form-field"><label className="form-label">Status</label>
+              <select className="form-input" value={editItem.status||'Aktif'} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
+                <option>Aktif</option><option>Tidak Aktif</option>
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">💾 Simpan</button>
+          </form>
+        </Modal>
+      )}
     </KurPage>
   );
 }

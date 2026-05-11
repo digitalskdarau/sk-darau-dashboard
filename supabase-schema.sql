@@ -222,6 +222,30 @@ create table public.hem_koperasi (
 alter table public.hem_koperasi enable row level security;
 create policy "anon full access" on public.hem_koperasi for all to anon using (true) with check (true);
 
+-- ─── KOKURIKULUM — PROFIL MURID ─────────────────────────
+drop table if exists public.koku_profil_murid cascade;
+create table public.koku_profil_murid (
+  id               uuid primary key default gen_random_uuid(),
+  no_daftar        text,
+  nama             text not null,
+  kelas            text,
+  tahun            text default '2025',
+  kelab            text,
+  jawatan_kelab    text default 'Ahli Biasa',
+  m_kelab          int  default 5 check (m_kelab between 0 and 10),
+  uniform          text,
+  pangkat_uniform  text default 'Ahli',
+  m_uniform        int  default 5 check (m_uniform between 0 and 10),
+  sukan            text,
+  jawatan_sukan    text default 'Ahli',
+  m_sukan          int  default 5 check (m_sukan between 0 and 10),
+  catatan          text,
+  status           text default 'Aktif',
+  created_at       timestamptz default now()
+);
+alter table public.koku_profil_murid enable row level security;
+create policy "anon full access" on public.koku_profil_murid for all to anon using (true) with check (true);
+
 -- ─── BANTUAN PELAJARAN (Full System) ───────────────────
 drop table if exists public.bantuan_rmt cascade;
 drop table if exists public.bantuan_permohonan cascade;
