@@ -393,6 +393,78 @@ create table public.koku_kelab_pajsk (
 alter table public.koku_kelab_pajsk enable row level security;
 create policy "anon full access" on public.koku_kelab_pajsk for all to anon using (true) with check (true);
 
+-- ─── KOKURIKULUM — BADAN BERUNIFORM ────────────────────
+drop table if exists public.koku_uniform_pajsk cascade;
+drop table if exists public.koku_uniform_latihan cascade;
+drop table if exists public.koku_uniform_ahli cascade;
+drop table if exists public.koku_uniform cascade;
+
+create table public.koku_uniform (
+  id               uuid primary key default gen_random_uuid(),
+  nama             text not null,
+  jenis            text default 'Pengakap',
+  guru_penasihat   text,
+  guru_penasihat_2 text,
+  hari             text default 'Rabu',
+  masa             text default '2:00 PM',
+  lokasi           text,
+  min_latihan      int  default 10,
+  tahun            text default '2025',
+  status           text default 'Aktif',
+  created_at       timestamptz default now()
+);
+alter table public.koku_uniform enable row level security;
+create policy "anon full access" on public.koku_uniform for all to anon using (true) with check (true);
+
+create table public.koku_uniform_ahli (
+  id          uuid primary key default gen_random_uuid(),
+  uniform_id  uuid references public.koku_uniform(id) on delete cascade,
+  no_daftar   text,
+  nama_murid  text not null,
+  kelas       text,
+  pangkat     text default 'Ahli Biasa',
+  tahun       text default '2025',
+  status      text default 'Aktif',
+  created_at  timestamptz default now()
+);
+alter table public.koku_uniform_ahli enable row level security;
+create policy "anon full access" on public.koku_uniform_ahli for all to anon using (true) with check (true);
+
+create table public.koku_uniform_latihan (
+  id          uuid primary key default gen_random_uuid(),
+  uniform_id  uuid references public.koku_uniform(id) on delete cascade,
+  tarikh      text not null,
+  masa_mula   text,
+  masa_tamat  text,
+  aktiviti    text,
+  lokasi      text,
+  hadir       int  default 0,
+  guru_hadir  text,
+  catatan     text,
+  created_at  timestamptz default now()
+);
+alter table public.koku_uniform_latihan enable row level security;
+create policy "anon full access" on public.koku_uniform_latihan for all to anon using (true) with check (true);
+
+create table public.koku_uniform_pajsk (
+  id               uuid primary key default gen_random_uuid(),
+  uniform_id       uuid references public.koku_uniform(id) on delete cascade,
+  ahli_id          uuid references public.koku_uniform_ahli(id) on delete cascade,
+  nama_murid       text not null,
+  kelas            text,
+  pangkat          text default 'Ahli Biasa',
+  kehadiran_hadir  int  default 0,
+  kehadiran_total  int  default 10,
+  peringkat        text default 'Tiada',
+  pencapaian       text default 'Tiada',
+  komitmen         int  default 2,
+  khidmat          text default 'Ahli Biasa',
+  tahun            text default '2025',
+  created_at       timestamptz default now()
+);
+alter table public.koku_uniform_pajsk enable row level security;
+create policy "anon full access" on public.koku_uniform_pajsk for all to anon using (true) with check (true);
+
 -- ─── 16. NOTIS & KEMASKINI ──────────────────────────────
 drop table if exists public.notis cascade;
 create table public.notis (
