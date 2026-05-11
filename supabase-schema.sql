@@ -326,6 +326,73 @@ create table public.bantuan_rmt (
 alter table public.bantuan_rmt enable row level security;
 create policy "anon full access" on public.bantuan_rmt for all to anon using (true) with check (true);
 
+-- ─── KOKURIKULUM — KELAB & PERSATUAN ───────────────────
+drop table if exists public.koku_kelab_pajsk cascade;
+drop table if exists public.koku_kelab_perjumpaan cascade;
+drop table if exists public.koku_kelab_ahli cascade;
+drop table if exists public.koku_kelab cascade;
+
+create table public.koku_kelab (
+  id          uuid primary key default gen_random_uuid(),
+  nama        text not null,
+  kategori    text default 'Akademik',
+  penasihat   text,
+  sesi        text default '2025',
+  sesi_min    int  default 8,
+  status      text default 'Aktif',
+  created_at  timestamptz default now()
+);
+alter table public.koku_kelab enable row level security;
+create policy "anon full access" on public.koku_kelab for all to anon using (true) with check (true);
+
+create table public.koku_kelab_ahli (
+  id          uuid primary key default gen_random_uuid(),
+  kelab_id    uuid references public.koku_kelab(id) on delete cascade,
+  nama_kelab  text,
+  no_daftar   text,
+  nama        text not null,
+  kelas       text,
+  jawatan     text default 'Ahli Biasa',
+  status      text default 'Aktif',
+  created_at  timestamptz default now()
+);
+alter table public.koku_kelab_ahli enable row level security;
+create policy "anon full access" on public.koku_kelab_ahli for all to anon using (true) with check (true);
+
+create table public.koku_kelab_perjumpaan (
+  id          uuid primary key default gen_random_uuid(),
+  kelab_id    uuid references public.koku_kelab(id) on delete cascade,
+  nama_kelab  text,
+  tarikh      text not null,
+  masa        text,
+  lokasi      text,
+  aktiviti    text,
+  hadir       int  default 0,
+  catatan     text,
+  created_at  timestamptz default now()
+);
+alter table public.koku_kelab_perjumpaan enable row level security;
+create policy "anon full access" on public.koku_kelab_perjumpaan for all to anon using (true) with check (true);
+
+create table public.koku_kelab_pajsk (
+  id          uuid primary key default gen_random_uuid(),
+  kelab_id    uuid references public.koku_kelab(id) on delete cascade,
+  ahli_id     uuid references public.koku_kelab_ahli(id) on delete cascade,
+  nama_kelab  text,
+  nama        text not null,
+  kelas       text,
+  jawatan     text default 'Ahli Biasa',
+  kehadiran   int  default 0,
+  peringkat   text default 'Tiada',
+  pencapaian  text default 'Tiada',
+  komitmen    int  default 1,
+  khidmat     text default 'Ahli Biasa',
+  tahun       text default '2025',
+  created_at  timestamptz default now()
+);
+alter table public.koku_kelab_pajsk enable row level security;
+create policy "anon full access" on public.koku_kelab_pajsk for all to anon using (true) with check (true);
+
 -- ─── 16. NOTIS & KEMASKINI ──────────────────────────────
 drop table if exists public.notis cascade;
 create table public.notis (

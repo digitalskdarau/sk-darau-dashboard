@@ -3944,79 +3944,610 @@ ${rows.map((r,i)=>`<tr><td>${i+1}</td><td class="name">${r.nama}</td><td>${r.kel
   w.document.close(); w.focus();
 }
 
+// ── Kelab PAJSK helpers ──────────────────────────────────────────────────────
+const JWTN_KELAB = ['Pengerusi','Naib Pengerusi','Setiausaha','Bendahari','AJK','Ahli Aktif','Ahli Biasa'];
+const JWTN_KELAB_MK = {'Pengerusi':10,'Naib Pengerusi':8,'Setiausaha':7,'Bendahari':7,'AJK':6,'Ahli Aktif':4,'Ahli Biasa':1};
+const PRGKT_MK = {'Antarabangsa':20,'Kebangsaan':18,'Negeri':15,'Daerah':12,'Zon':10,'Sekolah':8,'Tiada':0};
+const PENCPN_MK = {
+  'Johan (Kebangsaan/Antbgs)':20,'Naib Johan (Kebangsaan/Antbgs)':18,
+  'Johan (Negeri)':16,'Naib Johan (Negeri)':14,
+  'Johan (Daerah/Zon)':12,'Naib Johan (Daerah/Zon)':10,
+  'Tempat 3 (Daerah/Zon)':8,'Penyertaan (Daerah ke atas)':5,
+  'Pencapaian Sekolah':3,'Tiada':0,
+};
+const KMTMN_MK = {1:3,2:5,3:8,4:10};
+const KHDMT_MK = {'Penganjur Utama':10,'AJK Penganjur':8,'Peserta Aktif':6,'Peserta':4,'Ahli Biasa':2};
+const KELAB_KATEGORI = ['Akademik','Bahasa','Sains & Matematik','Kebudayaan','Hobi','Agama','Kemasyarakatan'];
+
+function gradeKelabPAJSK(t){if(t>=88)return'A';if(t>=66)return'B';if(t>=44)return'C';if(t>=22)return'D';return'E';}
+function computePAJSKKelab(r){
+  const mJ=JWTN_KELAB_MK[r.jawatan]??1;
+  const mK=r.kehadiran_total>0?Math.round(r.kehadiran_hadir/r.kehadiran_total*40):0;
+  const mP=PRGKT_MK[r.peringkat]??0;
+  const mC=PENCPN_MK[r.pencapaian]??0;
+  const mKo=KMTMN_MK[r.komitmen]??5;
+  const mKh=KHDMT_MK[r.khidmat]??2;
+  const total=mJ+mK+mP+mC+mKo+mKh;
+  return{mJ,mK,mP,mC,mKo,mKh,total,gred:gradeKelabPAJSK(total)};
+}
+
 function KelabPersatuan() {
-  const SEED=[
-    {id:1,nama:"Kelab Bahasa Melayu",jenis:"Kelab",pengerusi:"Cikgu Rosnah Bt Ali",naib:"Cikgu Hafiz Bin Salleh",kelas:"Tahun 4",ahli:22,tarikhTubuh:"Jan 2020",status:"Aktif"},
-    {id:2,nama:"Persatuan Matematik",jenis:"Persatuan",pengerusi:"Cikgu Hafiz Bin Salleh",naib:"Cikgu Laila Bt Hamid",kelas:"Tahun 5",ahli:18,tarikhTubuh:"Jan 2019",status:"Aktif"},
-    {id:3,nama:"Kelab Sains & Alam Sekitar",jenis:"Kelab",pengerusi:"Cikgu Laila Bt Hamid",naib:"Cikgu Azman Bin Yusof",kelas:"Tahun 4",ahli:15,tarikhTubuh:"Jan 2021",status:"Aktif"},
-    {id:4,nama:"Persatuan Bahasa Inggeris",jenis:"Persatuan",pengerusi:"Cikgu Nora Bt Jamil",naib:"Cikgu Farid Bin Hassan",kelas:"Tahun 3",ahli:20,tarikhTubuh:"Jan 2022",status:"Aktif"},
-    {id:5,nama:"Kelab Komputer",jenis:"Kelab",pengerusi:"Cikgu Azhar Bin Daud",naib:"Cikgu Nordin Bin Musa",kelas:"Tahun 6",ahli:16,tarikhTubuh:"Jan 2023",status:"Aktif"},
-  ];
-  const BLANK={nama:"",jenis:"Kelab",pengerusi:GURU_KOKU[0],naib:GURU_KOKU[1],kelas:"Tahun 4",ahli:10,tarikhTubuh:"",status:"Aktif"};
-  const [data,setData]=useState(SEED);
-  const [showAdd,setShowAdd]=useState(false);const [editItem,setEditItem]=useState(null);const [nid,setNid]=useState(6);
-  const [form,setForm]=useState(BLANK);
-  const [q,setQ]=useState("");const [filterJenis,setFilterJenis]=useState("Semua");const [filterTahun,setFilterTahun]=useState("Semua");
-  const handleAdd=e=>{e.preventDefault();setData(d=>[...d,{...form,id:nid}]);setNid(n=>n+1);setForm(BLANK);setShowAdd(false);toast("Ditambah!","success");};
-  const handleEdit=e=>{e.preventDefault();setData(d=>d.map(r=>r.id===editItem.id?editItem:r));setEditItem(null);toast("Dikemaskini!","success");};
-  const handleDel=id=>{setData(d=>d.filter(r=>r.id!==id));toast("Dipadam!","success");};
-  const filtered=data.filter(d=>(filterJenis==="Semua"||d.jenis===filterJenis)&&(filterTahun==="Semua"||d.kelas===filterTahun)&&(!q||d.nama.toLowerCase().includes(q.toLowerCase())||d.pengerusi.toLowerCase().includes(q.toLowerCase())));
-  return (
-    <KurPage title="Kelab & Persatuan" sub="Kokurikulum · SK Darau"
-      stats={[{ico:"🏛️",val:data.filter(d=>d.jenis==="Kelab").length,lbl:"Kelab"},{ico:"📋",val:data.filter(d=>d.jenis==="Persatuan").length,lbl:"Persatuan"},{ico:"✅",val:data.filter(d=>d.status==="Aktif").length,lbl:"Aktif"},{ico:"👥",val:data.reduce((s,d)=>s+Number(d.ahli),0),lbl:"Jumlah Ahli"}]}>
-      <div className="kur-header" style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-        <input className="form-input" style={{flex:1,minWidth:160}} placeholder="Cari nama / guru..." value={q} onChange={e=>setQ(e.target.value)}/>
-        <select className="form-input" style={{width:130}} value={filterJenis} onChange={e=>setFilterJenis(e.target.value)}><option value="Semua">Semua Jenis</option><option>Kelab</option><option>Persatuan</option></select>
-        <select className="form-input" style={{width:130}} value={filterTahun} onChange={e=>setFilterTahun(e.target.value)}><option value="Semua">Semua Tahun</option>{TAHUN_LIST.map(t=><option key={t}>{t}</option>)}</select>
-        <button className="btn-add" onClick={()=>{setForm(BLANK);setShowAdd(true)}}>+ Tambah</button>
+  const [subtab, setSubtab]             = useState(0);
+  const [kelab, setKelab]               = useState([]);
+  const [ahli, setAhli]                 = useState([]);
+  const [perjumpaan, setPerjumpaan]     = useState([]);
+  const [pajsk, setPajsk]               = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [selectedId, setSelectedId]     = useState(null);
+  const [q, setQ]                       = useState('');
+  const [filterJenis, setFilterJenis]   = useState('');
+  const [showAddKelab, setShowAddKelab] = useState(false);
+  const [editKelab, setEditKelab]       = useState(null);
+  const [showAddAhli, setShowAddAhli]   = useState(false);
+  const [editAhli, setEditAhli]         = useState(null);
+  const [showAddPjp, setShowAddPjp]     = useState(false);
+  const [editPjp, setEditPjp]           = useState(null);
+  const [editPajsk, setEditPajsk]       = useState(null);
+
+  const tahunNow = new Date().getFullYear().toString();
+  const blankKelab = {nama:'',jenis:'Kelab',kategori:'Akademik',guru_penasihat:GURU_KOKU[0],guru_penasihat_2:'',guru_penasihat_3:'',hari:'Rabu',masa:'2:00 PM',lokasi:'',tarikh_tubuh:'',min_sesi:12,tahun:tahunNow,status:'Aktif'};
+  const blankAhli  = {no_daftar:'',nama_murid:'',kelas:'',jawatan:'Ahli Biasa',tarikh_sertai:'',status:'Aktif'};
+  const blankPjp   = {tarikh:'',masa_mula:'2:00 PM',masa_tamat:'4:00 PM',tajuk:'',aktiviti:'',hadir_murid:0,guru_hadir:'',status:'Selesai',catatan:''};
+  const blankPajsk = {jawatan:'Ahli Biasa',kehadiran_hadir:0,kehadiran_total:12,peringkat:'Sekolah',pencapaian:'Tiada',komitmen:2,khidmat:'Ahli Biasa'};
+
+  const [formKelab, setFormKelab] = useState(blankKelab);
+  const [formAhli,  setFormAhli]  = useState(blankAhli);
+  const [formPjp,   setFormPjp]   = useState(blankPjp);
+
+  const load = async () => {
+    setLoading(true);
+    const [k,a,p,pj] = await Promise.all([
+      supabase.from('koku_kelab').select('*').neq('status','PADAM').order('nama'),
+      supabase.from('koku_kelab_ahli').select('*').neq('status','PADAM').order('nama_murid'),
+      supabase.from('koku_kelab_perjumpaan').select('*').neq('status','PADAM').order('tarikh',{ascending:false}),
+      supabase.from('koku_kelab_pajsk').select('*').order('nama_murid'),
+    ]);
+    setKelab(k.data||[]); setAhli(a.data||[]);
+    setPerjumpaan(p.data||[]); setPajsk(pj.data||[]);
+    setLoading(false);
+  };
+  useEffect(()=>{load();},[]);
+
+  const selectedKelab = kelab.find(k=>k.id===selectedId);
+
+  // ── KELAB CRUD
+  const handleAddKelab = async e=>{
+    e.preventDefault();
+    const ok=await dbRun(()=>supabase.from('koku_kelab').insert([formKelab]));
+    if(!ok)return;
+    toast('Kelab ditambah!','success');setShowAddKelab(false);setFormKelab(blankKelab);load();
+  };
+  const handleEditKelab = async e=>{
+    e.preventDefault();
+    const{id,created_at,...rest}=editKelab;
+    const ok=await dbRun(()=>supabase.from('koku_kelab').update(rest).eq('id',id));
+    if(!ok)return;
+    toast('Dikemaskini!','success');setEditKelab(null);load();
+  };
+  const handleDelKelab = async id=>{
+    const ok=await dbRun(()=>supabase.from('koku_kelab').update({status:'PADAM'}).eq('id',id));
+    if(ok){setKelab(d=>d.filter(r=>r.id!==id));toast('Dipadam.','success');}
+  };
+
+  // ── AHLI CRUD
+  const handleAddAhli = async e=>{
+    e.preventDefault();
+    const ok=await dbRun(()=>supabase.from('koku_kelab_ahli').insert([{...formAhli,kelab_id:selectedId,tahun:tahunNow}]));
+    if(!ok)return;
+    toast('Ahli ditambah!','success');setShowAddAhli(false);setFormAhli(blankAhli);load();
+  };
+  const handleEditAhli = async e=>{
+    e.preventDefault();
+    const{id,created_at,...rest}=editAhli;
+    const ok=await dbRun(()=>supabase.from('koku_kelab_ahli').update(rest).eq('id',id));
+    if(!ok)return;
+    toast('Dikemaskini!','success');setEditAhli(null);load();
+  };
+  const handleDelAhli = async id=>{
+    const ok=await dbRun(()=>supabase.from('koku_kelab_ahli').update({status:'PADAM'}).eq('id',id));
+    if(ok){setAhli(d=>d.filter(r=>r.id!==id));toast('Dipadam.','success');}
+  };
+
+  // ── PERJUMPAAN CRUD
+  const handleAddPjp = async e=>{
+    e.preventDefault();
+    const ok=await dbRun(()=>supabase.from('koku_kelab_perjumpaan').insert([{...formPjp,kelab_id:selectedId}]));
+    if(!ok)return;
+    toast('Rekod ditambah!','success');setShowAddPjp(false);setFormPjp(blankPjp);load();
+  };
+  const handleEditPjp = async e=>{
+    e.preventDefault();
+    const{id,created_at,...rest}=editPjp;
+    const ok=await dbRun(()=>supabase.from('koku_kelab_perjumpaan').update(rest).eq('id',id));
+    if(!ok)return;
+    toast('Dikemaskini!','success');setEditPjp(null);load();
+  };
+  const handleDelPjp = async id=>{
+    const ok=await dbRun(()=>supabase.from('koku_kelab_perjumpaan').update({status:'PADAM'}).eq('id',id));
+    if(ok){setPerjumpaan(d=>d.filter(r=>r.id!==id));toast('Dipadam.','success');}
+  };
+
+  // ── PAJSK upsert
+  const handleSavePajsk = async e=>{
+    e.preventDefault();
+    const exists=pajsk.find(p=>p.ahli_id===editPajsk.ahli_id&&p.kelab_id===selectedId);
+    const payload={...editPajsk,kelab_id:selectedId};
+    let ok;
+    if(exists){
+      const{ahli_id,kelab_id,nama_murid,kelas,...upd}=payload;
+      ok=await dbRun(()=>supabase.from('koku_kelab_pajsk').update(upd).eq('id',exists.id));
+    } else {
+      ok=await dbRun(()=>supabase.from('koku_kelab_pajsk').insert([payload]));
+    }
+    if(!ok)return;
+    toast('Markah disimpan!','success');setEditPajsk(null);load();
+  };
+
+  // ── COMPUTED
+  const ahliByKelab   = id=>ahli.filter(a=>a.kelab_id===id);
+  const pjpByKelab    = id=>perjumpaan.filter(p=>p.kelab_id===id);
+  const pajskByKelab  = id=>pajsk.filter(p=>p.kelab_id===id);
+  const filteredKelab = kelab.filter(k=>
+    (!filterJenis||k.jenis===filterJenis)&&
+    (!q||k.nama.toLowerCase().includes(q.toLowerCase())||
+      (k.guru_penasihat||'').toLowerCase().includes(q.toLowerCase()))
+  );
+
+  const tabStyle=i=>({
+    padding:'7px 14px',borderRadius:9,fontWeight:900,fontSize:12,cursor:'pointer',
+    border:'2.5px solid',fontFamily:"'Nunito',sans-serif",
+    background:subtab===i?'var(--accent)':'var(--surface)',
+    borderColor:subtab===i?'var(--accent)':'var(--border)',
+    color:subtab===i?'#fff':'var(--text)',transition:'all 0.15s',
+  });
+
+  // Kelab selector pill (tabs 1-3)
+  function KelabPill(){
+    return(
+      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:14,padding:'10px 12px',background:'var(--surface)',border:'2px solid var(--border)',borderRadius:12}}>
+        <span style={{fontSize:11,fontWeight:900,color:'var(--text3)',alignSelf:'center',marginRight:4}}>KELAB:</span>
+        {kelab.map(k=>{
+          const cnt=ahliByKelab(k.id).length;
+          const active=selectedId===k.id;
+          return(
+            <button key={k.id} onClick={()=>setSelectedId(k.id)} style={{
+              padding:'4px 12px',borderRadius:20,fontSize:11,fontWeight:800,
+              border:'2px solid',cursor:'pointer',fontFamily:"'Nunito',sans-serif",transition:'all 0.12s',
+              background:active?'var(--accent)':'var(--surface)',
+              borderColor:active?'var(--accent)':'var(--border)',
+              color:active?'#fff':'var(--text)',
+            }}>{k.nama} <span style={{opacity:0.7,fontSize:10}}>({cnt})</span></button>
+          );
+        })}
+        {kelab.length===0&&<span style={{fontSize:12,color:'var(--text3)'}}>Tiada kelab. Tambah dalam tab Senarai.</span>}
       </div>
-      <div className="kur-table-wrap"><table className="kur-table">
-        <thead><tr><th>#</th><th>Nama</th><th>Jenis</th><th>Guru Pengerusi</th><th>Naib Pengerusi</th><th>Kelas</th><th>Ahli</th><th>Ditubuhkan</th><th>Status</th><th></th></tr></thead>
-        <tbody>{filtered.map((p,i)=>(
-          <tr key={p.id}>
-            <td style={{color:"var(--text3)",fontWeight:800}}>{i+1}</td>
-            <td style={{fontWeight:800}}>{p.nama}</td>
-            <td><span className={`badge ${p.jenis==="Kelab"?"b-blue":"b-green"}`}>{p.jenis}</span></td>
-            <td>{p.pengerusi}</td><td>{p.naib}</td><td>{p.kelas}</td><td>{p.ahli}</td>
-            <td style={{color:"var(--text2)",fontSize:12}}>{p.tarikhTubuh}</td>
-            <td><span className={`badge ${p.status==="Aktif"?"b-green":"b-red"}`}>{p.status}</span></td>
-            <td style={{display:"flex",gap:4}}>
-              <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={()=>setEditItem({...p})}>✏️</button>
-              <button className="btn-del" onClick={()=>handleDel(p.id)}>🗑</button>
-            </td>
-          </tr>
-        ))}</tbody>
-      </table></div>
-      {showAdd&&<Modal title="Tambah Kelab/Persatuan" onClose={()=>setShowAdd(false)}><form onSubmit={handleAdd}>
-        <div className="form-field"><label className="form-label">Nama</label><input className="form-input" required value={form.nama} onChange={e=>setForm(f=>({...f,nama:e.target.value}))}/></div>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Jenis</label><select className="form-input" value={form.jenis} onChange={e=>setForm(f=>({...f,jenis:e.target.value}))}><option>Kelab</option><option>Persatuan</option></select></div>
-          <div className="form-field"><label className="form-label">Kelas Utama</label><select className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))}>{TAHUN_LIST.map(t=><option key={t}>{t}</option>)}</select></div>
-        </div>
-        <div className="form-field"><label className="form-label">Guru Pengerusi</label><select className="form-input" value={form.pengerusi} onChange={e=>setForm(f=>({...f,pengerusi:e.target.value}))}>{GURU_KOKU.map(g=><option key={g}>{g}</option>)}</select></div>
-        <div className="form-field"><label className="form-label">Naib Pengerusi</label><select className="form-input" value={form.naib} onChange={e=>setForm(f=>({...f,naib:e.target.value}))}>{GURU_KOKU.map(g=><option key={g}>{g}</option>)}</select></div>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Jumlah Ahli</label><input className="form-input" type="number" min="1" value={form.ahli} onChange={e=>setForm(f=>({...f,ahli:+e.target.value}))}/></div>
-          <div className="form-field"><label className="form-label">Tarikh Tubuh</label><input className="form-input" placeholder="Jan 2020" value={form.tarikhTubuh} onChange={e=>setForm(f=>({...f,tarikhTubuh:e.target.value}))}/></div>
-        </div>
-        <div className="form-field"><label className="form-label">Status</label><select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}><option>Aktif</option><option>Tidak Aktif</option></select></div>
-        <button className="btn-primary" type="submit">+ Tambah</button>
-      </form></Modal>}
-      {editItem&&<Modal title={`Edit — ${editItem.nama}`} onClose={()=>setEditItem(null)}><form onSubmit={handleEdit}>
-        <div className="form-field"><label className="form-label">Nama</label><input className="form-input" required value={editItem.nama} onChange={e=>setEditItem(f=>({...f,nama:e.target.value}))}/></div>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Jenis</label><select className="form-input" value={editItem.jenis} onChange={e=>setEditItem(f=>({...f,jenis:e.target.value}))}><option>Kelab</option><option>Persatuan</option></select></div>
-          <div className="form-field"><label className="form-label">Kelas Utama</label><select className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}>{TAHUN_LIST.map(t=><option key={t}>{t}</option>)}</select></div>
-        </div>
-        <div className="form-field"><label className="form-label">Guru Pengerusi</label><select className="form-input" value={editItem.pengerusi} onChange={e=>setEditItem(f=>({...f,pengerusi:e.target.value}))}>{GURU_KOKU.map(g=><option key={g}>{g}</option>)}</select></div>
-        <div className="form-field"><label className="form-label">Naib Pengerusi</label><select className="form-input" value={editItem.naib} onChange={e=>setEditItem(f=>({...f,naib:e.target.value}))}>{GURU_KOKU.map(g=><option key={g}>{g}</option>)}</select></div>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Jumlah Ahli</label><input className="form-input" type="number" min="1" value={editItem.ahli} onChange={e=>setEditItem(f=>({...f,ahli:+e.target.value}))}/></div>
-          <div className="form-field"><label className="form-label">Tarikh Tubuh</label><input className="form-input" value={editItem.tarikhTubuh} onChange={e=>setEditItem(f=>({...f,tarikhTubuh:e.target.value}))}/></div>
-        </div>
-        <div className="form-field"><label className="form-label">Status</label><select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}><option>Aktif</option><option>Tidak Aktif</option></select></div>
-        <button className="btn-primary" type="submit">💾 Simpan</button>
-      </form></Modal>}
+    );
+  }
+
+  function NoSelection(){
+    return <div style={{textAlign:'center',padding:48,color:'var(--text3)',fontWeight:800,fontSize:14}}>
+      👆 Pilih kelab di atas untuk lihat rekod
+    </div>;
+  }
+
+  const sesiSelesai=id=>pjpByKelab(id).filter(p=>p.status==='Selesai').length;
+  const minSesi=selectedKelab?.min_sesi||12;
+
+  const statsCards=[
+    {ico:'🏛️',val:kelab.filter(k=>k.jenis==='Kelab').length,lbl:'Kelab'},
+    {ico:'📋',val:kelab.filter(k=>k.jenis==='Persatuan').length,lbl:'Persatuan'},
+    {ico:'✅',val:kelab.filter(k=>k.status==='Aktif').length,lbl:'Aktif'},
+    {ico:'👥',val:ahli.length,lbl:'Jumlah Ahli'},
+  ];
+
+  return(
+    <KurPage title="Kelab & Persatuan" sub="Kokurikulum · SK Darau" stats={statsCards}>
+      {/* tab strip */}
+      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:16}}>
+        {['🏛️ Senarai Kelab','👥 Ahli','📅 Rekod Perjumpaan','📊 Penilaian PAJSK'].map((t,i)=>(
+          <button key={i} style={tabStyle(i)} onClick={()=>setSubtab(i)}>{t}</button>
+        ))}
+      </div>
+
+      {loading?<div className="loading">⏳ Memuatkan…</div>:(<>
+
+        {/* ── SUB-TAB 0: SENARAI KELAB */}
+        {subtab===0&&(
+          <div>
+            <div className="kur-header" style={{flexWrap:'wrap',gap:8}}>
+              <button className="btn-add" onClick={()=>{setFormKelab(blankKelab);setShowAddKelab(true);}}>+ Tambah Kelab</button>
+              <div className="kur-search-wrap" style={{flex:1,minWidth:160}}>
+                <span className="kur-search-ico">🔍</span>
+                <input className="kur-search" placeholder="Cari nama / guru…" value={q} onChange={e=>setQ(e.target.value)}/>
+              </div>
+              <select className="kur-select" value={filterJenis} onChange={e=>setFilterJenis(e.target.value)}>
+                <option value="">Semua Jenis</option><option>Kelab</option><option>Persatuan</option>
+              </select>
+            </div>
+            <div className="kur-table-wrap">
+              <table className="kur-table">
+                <thead><tr><th>#</th><th>Nama</th><th>Jenis</th><th>Kategori</th><th>Guru Penasihat</th><th>Hari/Masa</th><th>Ahli</th><th>Sesi</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  {filteredKelab.length===0&&<tr><td colSpan={10} style={{textAlign:'center',color:'var(--text3)',padding:28}}>Tiada kelab/persatuan.</td></tr>}
+                  {filteredKelab.map((k,i)=>{
+                    const cnt=ahliByKelab(k.id).length;
+                    const sesi=sesiSelesai(k.id);
+                    return(
+                      <tr key={k.id} style={{cursor:'pointer'}} onClick={()=>{setSelectedId(k.id);setSubtab(1);}}>
+                        <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
+                        <td style={{fontWeight:800,color:'var(--accent)'}}>{k.nama}</td>
+                        <td><span className={`badge ${k.jenis==='Kelab'?'b-blue':'b-green'}`}>{k.jenis}</span></td>
+                        <td style={{fontSize:12}}>{k.kategori}</td>
+                        <td style={{fontSize:12}}>{k.guru_penasihat}</td>
+                        <td style={{fontSize:12,color:'var(--text3)'}}>{k.hari} {k.masa}</td>
+                        <td style={{fontWeight:800}}>{cnt}</td>
+                        <td>
+                          <span style={{fontSize:12,fontWeight:800,color:sesi>=k.min_sesi?'#16a34a':'#dc2626'}}>
+                            {sesi}/{k.min_sesi}
+                          </span>
+                        </td>
+                        <td><span className={`badge ${k.status==='Aktif'?'b-green':'b-gray'}`}>{k.status}</span></td>
+                        <td style={{display:'flex',gap:4}} onClick={e=>e.stopPropagation()}>
+                          <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditKelab({...k})}>✏️</button>
+                          <button className="btn-del" onClick={()=>handleDelKelab(k.id)}>🗑</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── SUB-TAB 1: AHLI */}
+        {subtab===1&&(
+          <div>
+            <KelabPill/>
+            {!selectedId?<NoSelection/>:(
+              <>
+                <div className="kur-header" style={{gap:8,marginBottom:10}}>
+                  <button className="btn-add" onClick={()=>{setFormAhli(blankAhli);setShowAddAhli(true);}}>+ Tambah Ahli</button>
+                  <span style={{fontSize:12,color:'var(--text3)',fontWeight:800,padding:'6px 0'}}>
+                    {ahliByKelab(selectedId).length} ahli — {selectedKelab?.nama}
+                  </span>
+                </div>
+                <div className="kur-table-wrap">
+                  <table className="kur-table">
+                    <thead><tr><th>#</th><th>No. Daftar</th><th>Nama Murid</th><th>Kelas</th><th>Jawatan</th><th>Tarikh Sertai</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                      {ahliByKelab(selectedId).length===0&&<tr><td colSpan={8} style={{textAlign:'center',color:'var(--text3)',padding:28}}>Tiada ahli. Tambah ahli untuk kelab ini.</td></tr>}
+                      {ahliByKelab(selectedId).map((a,i)=>(
+                        <tr key={a.id}>
+                          <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
+                          <td style={{fontFamily:'monospace',fontSize:12}}>{a.no_daftar||'—'}</td>
+                          <td style={{fontWeight:800}}>{a.nama_murid}</td>
+                          <td style={{fontSize:12,color:'var(--text3)'}}>{a.kelas}</td>
+                          <td><span className={`badge ${a.jawatan==='Pengerusi'?'b-red':a.jawatan==='Naib Pengerusi'?'b-yellow':a.jawatan==='AJK'?'b-blue':'b-gray'}`}>{a.jawatan}</span></td>
+                          <td style={{fontSize:12,color:'var(--text3)'}}>{a.tarikh_sertai||'—'}</td>
+                          <td><span className={`badge ${a.status==='Aktif'?'b-green':'b-gray'}`}>{a.status}</span></td>
+                          <td style={{display:'flex',gap:4}}>
+                            <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditAhli({...a})}>✏️</button>
+                            <button className="btn-del" onClick={()=>handleDelAhli(a.id)}>🗑</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── SUB-TAB 2: PERJUMPAAN */}
+        {subtab===2&&(
+          <div>
+            <KelabPill/>
+            {!selectedId?<NoSelection/>:(
+              <>
+                <div className="kur-header" style={{gap:8,marginBottom:10,flexWrap:'wrap'}}>
+                  <button className="btn-add" onClick={()=>{setFormPjp(blankPjp);setShowAddPjp(true);}}>+ Tambah Perjumpaan</button>
+                  <div style={{
+                    padding:'6px 14px',borderRadius:10,fontSize:12,fontWeight:900,
+                    background:sesiSelesai(selectedId)>=minSesi?'#f0fdf4':'#fef2f2',
+                    border:`2px solid ${sesiSelesai(selectedId)>=minSesi?'#86efac':'#fca5a5'}`,
+                    color:sesiSelesai(selectedId)>=minSesi?'#15803d':'#dc2626',
+                  }}>
+                    {sesiSelesai(selectedId)}/{minSesi} sesi {sesiSelesai(selectedId)>=minSesi?'✅ Cukup':'⚠️ Perlu tambah'}
+                  </div>
+                </div>
+                <div className="kur-table-wrap">
+                  <table className="kur-table">
+                    <thead><tr><th>#</th><th>Tarikh</th><th>Masa</th><th>Tajuk</th><th>Aktiviti</th><th>Hadir</th><th>Guru Hadir</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                      {pjpByKelab(selectedId).length===0&&<tr><td colSpan={9} style={{textAlign:'center',color:'var(--text3)',padding:28}}>Tiada rekod perjumpaan.</td></tr>}
+                      {pjpByKelab(selectedId).map((p,i)=>(
+                        <tr key={p.id}>
+                          <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
+                          <td style={{fontWeight:800,fontSize:12}}>{p.tarikh||'—'}</td>
+                          <td style={{fontSize:11,color:'var(--text3)'}}>{p.masa_mula}–{p.masa_tamat}</td>
+                          <td style={{fontWeight:700}}>{p.tajuk||'—'}</td>
+                          <td style={{fontSize:12,color:'var(--text3)',maxWidth:180}}>{p.aktiviti||'—'}</td>
+                          <td style={{fontWeight:800}}>{p.hadir_murid}</td>
+                          <td style={{fontSize:12}}>{p.guru_hadir||'—'}</td>
+                          <td><span className={`badge ${p.status==='Selesai'?'b-green':'b-yellow'}`}>{p.status}</span></td>
+                          <td style={{display:'flex',gap:4}}>
+                            <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditPjp({...p})}>✏️</button>
+                            <button className="btn-del" onClick={()=>handleDelPjp(p.id)}>🗑</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── SUB-TAB 3: PENILAIAN PAJSK */}
+        {subtab===3&&(
+          <div>
+            <KelabPill/>
+            {!selectedId?<NoSelection/>:(
+              <>
+                <div style={{fontSize:11,color:'var(--text3)',fontWeight:700,marginBottom:10}}>
+                  💡 Markah PAJSK per ahli untuk <strong>{selectedKelab?.nama}</strong>. Klik ✏️ untuk isi/kemaskini markah.
+                </div>
+                <div className="kur-table-wrap">
+                  <table className="kur-table">
+                    <thead>
+                      <tr>
+                        <th>#</th><th>Nama Murid</th><th>Kelas</th><th>Jawatan</th>
+                        <th>Kehadiran</th><th>Peringkat</th><th>Pencapaian</th>
+                        <th>Komitmen</th><th>Khidmat</th><th>Jumlah</th><th>Gred</th><th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ahliByKelab(selectedId).length===0&&(
+                        <tr><td colSpan={12} style={{textAlign:'center',color:'var(--text3)',padding:28}}>Tiada ahli. Tambah ahli dalam tab Ahli dahulu.</td></tr>
+                      )}
+                      {ahliByKelab(selectedId).map((a,i)=>{
+                        const rec=pajsk.find(p=>p.ahli_id===a.id&&p.kelab_id===selectedId);
+                        const r=rec?computePAJSKKelab(rec):null;
+                        return(
+                          <tr key={a.id}>
+                            <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
+                            <td style={{fontWeight:800}}>{a.nama_murid}</td>
+                            <td style={{fontSize:12,color:'var(--text3)'}}>{a.kelas}</td>
+                            <td><span className="badge b-blue" style={{fontSize:10}}>{rec?.jawatan||a.jawatan}</span></td>
+                            {r?(
+                              <>
+                                <td style={{fontSize:12}}>{rec.kehadiran_hadir}/{rec.kehadiran_total} <span style={{color:'var(--text3)'}}>({r.mK}mk)</span></td>
+                                <td style={{fontSize:11}}>{rec.peringkat} <span style={{color:'var(--text3)'}}>({r.mP})</span></td>
+                                <td style={{fontSize:11}}>{rec.pencapaian?.split('(')[0]} <span style={{color:'var(--text3)'}}>({r.mC})</span></td>
+                                <td style={{fontSize:12}}>{rec.komitmen}/4 <span style={{color:'var(--text3)'}}>({r.mKo})</span></td>
+                                <td style={{fontSize:11}}>{rec.khidmat} <span style={{color:'var(--text3)'}}>({r.mKh})</span></td>
+                                <td style={{fontWeight:900,fontSize:15}}>{r.total}<span style={{fontSize:10,color:'var(--text3)'}}>/110</span></td>
+                                <td><span className={`badge ${GRED_COLOR[r.gred]||'b-gray'}`}>{r.gred}</span></td>
+                              </>
+                            ):(
+                              <td colSpan={7} style={{color:'var(--text3)',fontSize:12,fontStyle:'italic'}}>Belum diisi markah</td>
+                            )}
+                            <td>
+                              <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditPajsk({
+                                ahli_id:a.id, no_daftar:a.no_daftar, nama_murid:a.nama_murid, kelas:a.kelas,
+                                ...(rec||{jawatan:a.jawatan,kehadiran_hadir:0,kehadiran_total:minSesi,peringkat:'Sekolah',pencapaian:'Tiada',komitmen:2,khidmat:'Ahli Biasa'}),
+                              })}>✏️</button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </>)}
+
+      {/* ── MODAL: TAMBAH/EDIT KELAB */}
+      {(showAddKelab||editKelab)&&(
+        <Modal title={editKelab?`Edit — ${editKelab.nama}`:'Tambah Kelab / Persatuan'} onClose={()=>{setShowAddKelab(false);setEditKelab(null);}}>
+          <form onSubmit={editKelab?handleEditKelab:handleAddKelab}>
+            {(()=>{const v=editKelab||formKelab;const s=editKelab?setEditKelab:setFormKelab;return(<>
+              <div className="form-field"><label className="form-label">Nama *</label><input className="form-input" required value={v.nama} onChange={e=>s(f=>({...f,nama:e.target.value}))}/></div>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Jenis</label>
+                  <select className="form-input" value={v.jenis} onChange={e=>s(f=>({...f,jenis:e.target.value}))}>
+                    <option>Kelab</option><option>Persatuan</option>
+                  </select>
+                </div>
+                <div className="form-field"><label className="form-label">Kategori</label>
+                  <select className="form-input" value={v.kategori} onChange={e=>s(f=>({...f,kategori:e.target.value}))}>
+                    {KELAB_KATEGORI.map(k=><option key={k}>{k}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-field"><label className="form-label">Guru Penasihat 1</label>
+                <select className="form-input" value={v.guru_penasihat} onChange={e=>s(f=>({...f,guru_penasihat:e.target.value}))}>
+                  {GURU_KOKU.map(g=><option key={g}>{g}</option>)}
+                </select>
+              </div>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Guru Penasihat 2</label>
+                  <select className="form-input" value={v.guru_penasihat_2||''} onChange={e=>s(f=>({...f,guru_penasihat_2:e.target.value}))}>
+                    <option value="">—</option>{GURU_KOKU.map(g=><option key={g}>{g}</option>)}
+                  </select>
+                </div>
+                <div className="form-field"><label className="form-label">Guru Penasihat 3</label>
+                  <select className="form-input" value={v.guru_penasihat_3||''} onChange={e=>s(f=>({...f,guru_penasihat_3:e.target.value}))}>
+                    <option value="">—</option>{GURU_KOKU.map(g=><option key={g}>{g}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Hari Perjumpaan</label>
+                  <select className="form-input" value={v.hari} onChange={e=>s(f=>({...f,hari:e.target.value}))}>
+                    {['Isnin','Selasa','Rabu','Khamis','Jumaat'].map(h=><option key={h}>{h}</option>)}
+                  </select>
+                </div>
+                <div className="form-field"><label className="form-label">Masa</label><input className="form-input" value={v.masa} onChange={e=>s(f=>({...f,masa:e.target.value}))}/></div>
+              </div>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Lokasi</label><input className="form-input" placeholder="Bilik / Padang" value={v.lokasi||''} onChange={e=>s(f=>({...f,lokasi:e.target.value}))}/></div>
+                <div className="form-field"><label className="form-label">Tarikh Ditubuhkan</label><input className="form-input" placeholder="Jan 2020" value={v.tarikh_tubuh||''} onChange={e=>s(f=>({...f,tarikh_tubuh:e.target.value}))}/></div>
+              </div>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Min. Sesi / Tahun</label><input className="form-input" type="number" min="1" value={v.min_sesi||12} onChange={e=>s(f=>({...f,min_sesi:+e.target.value}))}/></div>
+                <div className="form-field"><label className="form-label">Status</label>
+                  <select className="form-input" value={v.status} onChange={e=>s(f=>({...f,status:e.target.value}))}>
+                    <option>Aktif</option><option>Tidak Aktif</option>
+                  </select>
+                </div>
+              </div>
+            </>);})()}
+            <button className="btn-primary" type="submit">{editKelab?'💾 Simpan':'+ Tambah'}</button>
+          </form>
+        </Modal>
+      )}
+
+      {/* ── MODAL: TAMBAH/EDIT AHLI */}
+      {(showAddAhli||editAhli)&&(
+        <Modal title={editAhli?`Edit — ${editAhli.nama_murid}`:'Tambah Ahli'} onClose={()=>{setShowAddAhli(false);setEditAhli(null);}}>
+          <form onSubmit={editAhli?handleEditAhli:handleAddAhli}>
+            {(()=>{const v=editAhli||formAhli;const s=editAhli?setEditAhli:setFormAhli;return(<>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">No. Daftar</label><input className="form-input" value={v.no_daftar||''} onChange={e=>s(f=>({...f,no_daftar:e.target.value}))}/></div>
+                <div className="form-field"><label className="form-label">Nama Murid *</label><input className="form-input" required value={v.nama_murid||''} onChange={e=>s(f=>({...f,nama_murid:e.target.value}))}/></div>
+              </div>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Kelas</label>
+                  <select className="form-input" value={v.kelas||''} onChange={e=>s(f=>({...f,kelas:e.target.value}))}>
+                    <option value="">—</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+                  </select>
+                </div>
+                <div className="form-field"><label className="form-label">Jawatan</label>
+                  <select className="form-input" value={v.jawatan||'Ahli Biasa'} onChange={e=>s(f=>({...f,jawatan:e.target.value}))}>
+                    {JWTN_KELAB.map(j=><option key={j}>{j}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Tarikh Sertai</label><input className="form-input" type="date" value={v.tarikh_sertai||''} onChange={e=>s(f=>({...f,tarikh_sertai:e.target.value}))}/></div>
+                <div className="form-field"><label className="form-label">Status</label>
+                  <select className="form-input" value={v.status||'Aktif'} onChange={e=>s(f=>({...f,status:e.target.value}))}>
+                    <option>Aktif</option><option>Tidak Aktif</option>
+                  </select>
+                </div>
+              </div>
+            </>);})()}
+            <button className="btn-primary" type="submit">{editAhli?'💾 Simpan':'+ Tambah Ahli'}</button>
+          </form>
+        </Modal>
+      )}
+
+      {/* ── MODAL: TAMBAH/EDIT PERJUMPAAN */}
+      {(showAddPjp||editPjp)&&(
+        <Modal title={editPjp?'Edit Rekod Perjumpaan':'Tambah Rekod Perjumpaan'} onClose={()=>{setShowAddPjp(false);setEditPjp(null);}}>
+          <form onSubmit={editPjp?handleEditPjp:handleAddPjp}>
+            {(()=>{const v=editPjp||formPjp;const s=editPjp?setEditPjp:setFormPjp;return(<>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Tarikh *</label><input className="form-input" type="date" required value={v.tarikh||''} onChange={e=>s(f=>({...f,tarikh:e.target.value}))}/></div>
+                <div className="form-field"><label className="form-label">Guru Hadir</label>
+                  <select className="form-input" value={v.guru_hadir||''} onChange={e=>s(f=>({...f,guru_hadir:e.target.value}))}>
+                    <option value="">—</option>{GURU_KOKU.map(g=><option key={g}>{g}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Masa Mula</label><input className="form-input" value={v.masa_mula||''} onChange={e=>s(f=>({...f,masa_mula:e.target.value}))}/></div>
+                <div className="form-field"><label className="form-label">Masa Tamat</label><input className="form-input" value={v.masa_tamat||''} onChange={e=>s(f=>({...f,masa_tamat:e.target.value}))}/></div>
+              </div>
+              <div className="form-field"><label className="form-label">Tajuk Aktiviti *</label><input className="form-input" required value={v.tajuk||''} onChange={e=>s(f=>({...f,tajuk:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Huraian Aktiviti</label><input className="form-input" value={v.aktiviti||''} onChange={e=>s(f=>({...f,aktiviti:e.target.value}))}/></div>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Bil. Murid Hadir</label><input className="form-input" type="number" min="0" value={v.hadir_murid||0} onChange={e=>s(f=>({...f,hadir_murid:+e.target.value}))}/></div>
+                <div className="form-field"><label className="form-label">Status</label>
+                  <select className="form-input" value={v.status||'Selesai'} onChange={e=>s(f=>({...f,status:e.target.value}))}>
+                    <option>Selesai</option><option>Ditangguh</option><option>Batal</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-field"><label className="form-label">Catatan</label><input className="form-input" value={v.catatan||''} onChange={e=>s(f=>({...f,catatan:e.target.value}))}/></div>
+            </>);})()}
+            <button className="btn-primary" type="submit">{editPjp?'💾 Simpan':'+ Tambah Rekod'}</button>
+          </form>
+        </Modal>
+      )}
+
+      {/* ── MODAL: PENILAIAN PAJSK */}
+      {editPajsk&&(
+        <Modal title={`Markah PAJSK — ${editPajsk.nama_murid}`} onClose={()=>setEditPajsk(null)}>
+          <form onSubmit={handleSavePajsk}>
+            <div style={{background:'var(--accent-lt)',borderRadius:10,padding:'10px 12px',marginBottom:12}}>
+              <div style={{fontWeight:900,fontSize:11,color:'var(--accent)',marginBottom:8}}>📌 PENGLIBATAN (50 markah)</div>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Jawatan</label>
+                  <select className="form-input" value={editPajsk.jawatan||'Ahli Biasa'} onChange={e=>setEditPajsk(f=>({...f,jawatan:e.target.value}))}>
+                    {JWTN_KELAB.map(j=><option key={j}>{j} ({JWTN_KELAB_MK[j]} mk)</option>)}
+                  </select>
+                </div>
+                <div className="form-field"><label className="form-label">Komitmen (1-4)</label>
+                  <select className="form-input" value={editPajsk.komitmen||2} onChange={e=>setEditPajsk(f=>({...f,komitmen:+e.target.value}))}>
+                    {[1,2,3,4].map(v=><option key={v} value={v}>{v} ({KMTMN_MK[v]} mk)</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Peringkat Penyertaan</label>
+                  <select className="form-input" value={editPajsk.peringkat||'Sekolah'} onChange={e=>setEditPajsk(f=>({...f,peringkat:e.target.value}))}>
+                    {Object.entries(PRGKT_MK).map(([k,v])=><option key={k}>{k} ({v} mk)</option>)}
+                  </select>
+                </div>
+                <div className="form-field"><label className="form-label">Khidmat Sumbangan</label>
+                  <select className="form-input" value={editPajsk.khidmat||'Ahli Biasa'} onChange={e=>setEditPajsk(f=>({...f,khidmat:e.target.value}))}>
+                    {Object.entries(KHDMT_MK).map(([k,v])=><option key={k}>{k} ({v} mk)</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div style={{background:'#f0fdf4',borderRadius:10,padding:'10px 12px',marginBottom:12}}>
+              <div style={{fontWeight:900,fontSize:11,color:'#15803d',marginBottom:8}}>📅 PENYERTAAN — Kehadiran (40 markah)</div>
+              <div className="form-row">
+                <div className="form-field"><label className="form-label">Sesi Hadir</label><input className="form-input" type="number" min="0" value={editPajsk.kehadiran_hadir||0} onChange={e=>setEditPajsk(f=>({...f,kehadiran_hadir:+e.target.value}))}/></div>
+                <div className="form-field"><label className="form-label">Jumlah Sesi</label><input className="form-input" type="number" min="1" value={editPajsk.kehadiran_total||minSesi} onChange={e=>setEditPajsk(f=>({...f,kehadiran_total:+e.target.value}))}/></div>
+              </div>
+              <div style={{fontSize:11,color:'#15803d',fontWeight:800}}>
+                Markah kehadiran: {editPajsk.kehadiran_total>0?Math.round(editPajsk.kehadiran_hadir/editPajsk.kehadiran_total*40):0}/40
+              </div>
+            </div>
+            <div style={{background:'#fffbeb',borderRadius:10,padding:'10px 12px',marginBottom:12}}>
+              <div style={{fontWeight:900,fontSize:11,color:'#b45309',marginBottom:8}}>🏆 PRESTASI — Pencapaian (20 markah)</div>
+              <div className="form-field"><label className="form-label">Pencapaian Tertinggi</label>
+                <select className="form-input" value={editPajsk.pencapaian||'Tiada'} onChange={e=>setEditPajsk(f=>({...f,pencapaian:e.target.value}))}>
+                  {Object.entries(PENCPN_MK).map(([k,v])=><option key={k}>{k} ({v} mk)</option>)}
+                </select>
+              </div>
+            </div>
+            {(()=>{const r=computePAJSKKelab(editPajsk);return(
+              <div style={{textAlign:'center',background:'var(--surface)',border:'2px solid var(--border)',borderRadius:10,padding:'12px',marginBottom:12}}>
+                <div style={{fontSize:11,color:'var(--text3)',fontWeight:800,marginBottom:4}}>JUMLAH MARKAH PAJSK</div>
+                <div style={{fontSize:26,fontWeight:900,fontFamily:"'Fredoka One',cursive",color:'var(--accent)'}}>
+                  {r.total}<span style={{fontSize:14,color:'var(--text3)'}}>/110</span>
+                </div>
+                <div style={{fontSize:13,fontWeight:900}}>Gred: <span className={`badge ${GRED_COLOR[r.gred]||'b-gray'}`}>{r.gred}</span></div>
+                <div style={{fontSize:10,color:'var(--text3)',marginTop:6}}>
+                  Jawatan:{r.mJ} + Kehadiran:{r.mK} + Peringkat:{r.mP} + Pencapaian:{r.mC} + Komitmen:{r.mKo} + Khidmat:{r.mKh}
+                </div>
+              </div>
+            );})()}
+            <button className="btn-primary" type="submit">💾 Simpan Markah</button>
+          </form>
+        </Modal>
+      )}
     </KurPage>
   );
 }
