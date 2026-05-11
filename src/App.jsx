@@ -1636,113 +1636,633 @@ function JadualWaktu() {
 
 // ─── 2. PANITIA MATA PELAJARAN ────────────────────────────────────────────────
 function PanitiaMP() {
-  const [data, setData] = useState([]);
+  const [subtab, setSubtab] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const [editItem, setEditItem] = useState(null);
-  const emptyForm = { subjek:"", icon:"📋", color:"#2563eb", bg:"#eff6ff", ketua:"", jumlah_ahli:4, tarikh_mesyuarat:"", status:"Aktif" };
-  const [form, setForm] = useState(emptyForm);
 
-  const load = async () => {
+  const [panitia, setPanitia] = useState([]);
+  const [ahli, setAhli] = useState([]);
+  const [mesyuarat, setMesyuarat] = useState([]);
+  const [program, setProgram] = useState([]);
+  const [analisis, setAnalisis] = useState([]);
+  const [peperiksaanList, setPeperiksaanList] = useState([]);
+  const [laporan, setLaporan] = useState([]);
+  const [selId, setSelId] = useState(null);
+
+  const [showAddPanitia, setShowAddPanitia] = useState(false);
+  const [editPanitia, setEditPanitia] = useState(null);
+  const [showAddAhli, setShowAddAhli] = useState(false);
+  const [editAhli, setEditAhli] = useState(null);
+  const [showAddMesy, setShowAddMesy] = useState(false);
+  const [editMesy, setEditMesy] = useState(null);
+  const [showAddProg, setShowAddProg] = useState(false);
+  const [editProg, setEditProg] = useState(null);
+  const [showAddAnal, setShowAddAnal] = useState(false);
+  const [editAnal, setEditAnal] = useState(null);
+  const [showAddLap, setShowAddLap] = useState(false);
+  const [editLap, setEditLap] = useState(null);
+
+  const blankPanitia = { subjek:"", icon:"📋", color:"#2563eb", bg:"#eff6ff", ketua:"", status:"Aktif" };
+  const blankAhli    = { nama_guru:"", peranan:"Ahli", kelas_ajar:"", status:"Aktif" };
+  const blankMesy    = { tarikh:"", masa:"", tempat:"", agenda:"", minit:"", status:"Akan Datang" };
+  const blankProg    = { nama:"", jenis:"Pemulihan", tarikh_mula:"", tarikh_tamat:"", sasaran:"", status:"Rancangan", catatan:"" };
+  const blankAnal    = { peperiksaan_id:"", bil_murid:0, min_markah:0, peratus_lulus:0, peratus_cemerlang:0, catatan:"" };
+  const blankLap     = { tajuk:"", jenis:"Tahunan", tarikh:"", status:"Draf", kandungan:"" };
+
+  const [formPanitia, setFormPanitia] = useState(blankPanitia);
+  const [formAhli,    setFormAhli]    = useState(blankAhli);
+  const [formMesy,    setFormMesy]    = useState(blankMesy);
+  const [formProg,    setFormProg]    = useState(blankProg);
+  const [formAnal,    setFormAnal]    = useState(blankAnal);
+  const [formLap,     setFormLap]     = useState(blankLap);
+
+  const selPanitia = panitia.find(p=>p.id===selId);
+
+  const loadAll = async () => {
     setLoading(true);
+    const [r1,r2,r3,r4,r5,r6,r7] = await Promise.all([
+      supabase.from('panitia').select('*').order('created_at'),
+      supabase.from('panitia_ahli').select('*').order('created_at'),
+      supabase.from('panitia_mesyuarat').select('*').order('tarikh',{ascending:false}),
+      supabase.from('panitia_program').select('*').order('created_at'),
+      supabase.from('panitia_analisis').select('*').order('created_at'),
+      supabase.from('peperiksaan').select('*').order('created_at'),
+      supabase.from('panitia_laporan').select('*').order('created_at'),
+    ]);
+    setPanitia(r1.data||[]); setAhli(r2.data||[]); setMesyuarat(r3.data||[]);
+    setProgram(r4.data||[]); setAnalisis(r5.data||[]); setPeperiksaanList(r6.data||[]);
+    setLaporan(r7.data||[]); setLoading(false);
+  };
+  useEffect(()=>{ loadAll(); },[]);
 
-    const { data: rows } = await supabase.from('panitia').select('*').order('created_at');
-    setData(rows||[]); setLoading(false);
-  };
-  useEffect(()=>{ load(); },[]);
+  const addPanitia = async e => { e.preventDefault(); const ok=await dbRun(()=>supabase.from('panitia').insert([formPanitia])); if(!ok)return; toast("Panitia ditambah!","success"); setShowAddPanitia(false); loadAll(); };
+  const updPanitia = async e => { e.preventDefault(); const {subjek,icon,ketua,status}=editPanitia; const ok=await dbRun(()=>supabase.from('panitia').update({subjek,icon,ketua,status}).eq('id',editPanitia.id)); if(!ok)return; toast("Dikemaskini!","success"); setEditPanitia(null); loadAll(); };
+  const delPanitia = async id => { const ok=await dbRun(()=>supabase.from('panitia').delete().eq('id',id)); if(ok){ setPanitia(d=>d.filter(r=>r.id!==id)); if(selId===id)setSelId(null); } };
 
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    const ok = await dbRun(() => supabase.from('panitia').insert([form]));
-    if (!ok) return;
-    toast("Panitia ditambah!", "success");
-    setShowAdd(false); setForm(emptyForm); load();
-  };
-  const handleEdit = async (e) => {
-    e.preventDefault();
-    const ok = await dbRun(() => supabase.from('panitia').update({ subjek:editItem.subjek, icon:editItem.icon, ketua:editItem.ketua, jumlah_ahli:editItem.jumlah_ahli, tarikh_mesyuarat:editItem.tarikh_mesyuarat, status:editItem.status }).eq('id', editItem.id));
-    if (!ok) return;
-    toast("Dikemaskini!", "success");
-    setEditItem(null); load();
-  };
-  const handleDel = async (id) => {
-    const ok = await dbRun(() => supabase.from('panitia').delete().eq('id',id));
-    if (!ok) return;
-    setData(d=>d.filter(r=>r.id!==id));
-  };
+  const addAhli = async e => { e.preventDefault(); const ok=await dbRun(()=>supabase.from('panitia_ahli').insert([{...formAhli,panitia_id:selId}])); if(!ok)return; toast("Ahli ditambah!","success"); setShowAddAhli(false); loadAll(); };
+  const updAhli = async e => { e.preventDefault(); const {nama_guru,peranan,kelas_ajar,status}=editAhli; const ok=await dbRun(()=>supabase.from('panitia_ahli').update({nama_guru,peranan,kelas_ajar,status}).eq('id',editAhli.id)); if(!ok)return; toast("Dikemaskini!","success"); setEditAhli(null); loadAll(); };
+  const delAhli = async id => { const ok=await dbRun(()=>supabase.from('panitia_ahli').delete().eq('id',id)); if(ok)setAhli(d=>d.filter(r=>r.id!==id)); };
+
+  const addMesy = async e => { e.preventDefault(); const ok=await dbRun(()=>supabase.from('panitia_mesyuarat').insert([{...formMesy,panitia_id:selId}])); if(!ok)return; toast("Mesyuarat ditambah!","success"); setShowAddMesy(false); loadAll(); };
+  const updMesy = async e => { e.preventDefault(); const {tarikh,masa,tempat,agenda,minit,status}=editMesy; const ok=await dbRun(()=>supabase.from('panitia_mesyuarat').update({tarikh,masa,tempat,agenda,minit,status}).eq('id',editMesy.id)); if(!ok)return; toast("Dikemaskini!","success"); setEditMesy(null); loadAll(); };
+  const delMesy = async id => { const ok=await dbRun(()=>supabase.from('panitia_mesyuarat').delete().eq('id',id)); if(ok)setMesyuarat(d=>d.filter(r=>r.id!==id)); };
+
+  const addProg = async e => { e.preventDefault(); const ok=await dbRun(()=>supabase.from('panitia_program').insert([{...formProg,panitia_id:selId}])); if(!ok)return; toast("Program ditambah!","success"); setShowAddProg(false); loadAll(); };
+  const updProg = async e => { e.preventDefault(); const {nama,jenis,tarikh_mula,tarikh_tamat,sasaran,status,catatan}=editProg; const ok=await dbRun(()=>supabase.from('panitia_program').update({nama,jenis,tarikh_mula,tarikh_tamat,sasaran,status,catatan}).eq('id',editProg.id)); if(!ok)return; toast("Dikemaskini!","success"); setEditProg(null); loadAll(); };
+  const delProg = async id => { const ok=await dbRun(()=>supabase.from('panitia_program').delete().eq('id',id)); if(ok)setProgram(d=>d.filter(r=>r.id!==id)); };
+
+  const addAnal = async e => { e.preventDefault(); const ok=await dbRun(()=>supabase.from('panitia_analisis').insert([{...formAnal,panitia_id:selId}])); if(!ok)return; toast("Analisis ditambah!","success"); setShowAddAnal(false); loadAll(); };
+  const updAnal = async e => { e.preventDefault(); const {peperiksaan_id,bil_murid,min_markah,peratus_lulus,peratus_cemerlang,catatan}=editAnal; const ok=await dbRun(()=>supabase.from('panitia_analisis').update({peperiksaan_id,bil_murid,min_markah,peratus_lulus,peratus_cemerlang,catatan}).eq('id',editAnal.id)); if(!ok)return; toast("Dikemaskini!","success"); setEditAnal(null); loadAll(); };
+  const delAnal = async id => { const ok=await dbRun(()=>supabase.from('panitia_analisis').delete().eq('id',id)); if(ok)setAnalisis(d=>d.filter(r=>r.id!==id)); };
+
+  const addLap = async e => { e.preventDefault(); const ok=await dbRun(()=>supabase.from('panitia_laporan').insert([{...formLap,panitia_id:selId}])); if(!ok)return; toast("Laporan ditambah!","success"); setShowAddLap(false); loadAll(); };
+  const updLap = async e => { e.preventDefault(); const {tajuk,jenis,tarikh,status,kandungan}=editLap; const ok=await dbRun(()=>supabase.from('panitia_laporan').update({tajuk,jenis,tarikh,status,kandungan}).eq('id',editLap.id)); if(!ok)return; toast("Dikemaskini!","success"); setEditLap(null); loadAll(); };
+  const delLap = async id => { const ok=await dbRun(()=>supabase.from('panitia_laporan').delete().eq('id',id)); if(ok)setLaporan(d=>d.filter(r=>r.id!==id)); };
+
+  const tabSty = i => ({
+    padding:"7px 14px", borderRadius:12,
+    border:`1.5px solid ${subtab===i?'#2563eb':'var(--border)'}`,
+    background:subtab===i?'#2563eb':'var(--surface)',
+    color:subtab===i?'white':'var(--text2)',
+    fontSize:12, fontWeight:800, fontFamily:"'Nunito',sans-serif",
+    cursor:'pointer', transition:'all 0.15s'
+  });
+
+  const pilSty = p => ({
+    padding:'5px 12px', borderRadius:10, fontSize:12, fontWeight:800, cursor:'pointer',
+    border:`2px solid ${selId===p.id?(p.color||'#2563eb'):'var(--border)'}`,
+    background:selId===p.id?(p.bg||'#eff6ff'):'var(--surface)',
+    color:selId===p.id?(p.color||'#2563eb'):'var(--text2)',
+    fontFamily:"'Nunito',sans-serif"
+  });
+
+  const PanitiaPill = () => (
+    <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:14}}>
+      {panitia.map(p=>(
+        <button key={p.id} style={pilSty(p)} onClick={()=>setSelId(p.id)}>{p.icon} {p.subjek}</button>
+      ))}
+      {panitia.length===0&&<span style={{fontSize:12,color:'var(--text3)',fontWeight:800}}>Tiada panitia. Pergi Tab "Senarai Panitia" untuk tambah.</span>}
+    </div>
+  );
+
+  const NoSel = () => (
+    <div style={{textAlign:'center',color:'var(--text3)',padding:40,fontSize:14,fontWeight:800}}>
+      ☝️ Pilih panitia di atas dahulu
+    </div>
+  );
+
+  const quickBtn = (label, onClick) => (
+    <button onClick={onClick} style={{padding:'3px 8px',borderRadius:8,fontSize:10,fontWeight:800,
+      border:'1.5px solid var(--border)',background:'var(--surface)',cursor:'pointer',
+      fontFamily:"'Nunito',sans-serif",color:'var(--text2)'}}>
+      {label}
+    </button>
+  );
+
+  const statsCards = [
+    {ico:"📋",val:panitia.length,lbl:"Jumlah Panitia"},
+    {ico:"👩‍🏫",val:ahli.length,lbl:"Jumlah Guru"},
+    {ico:"📅",val:mesyuarat.filter(m=>m.status==="Selesai").length,lbl:"Mesyuarat Selesai"},
+    {ico:"🎯",val:program.filter(p=>p.status==="Aktif").length,lbl:"Program Aktif"},
+  ];
 
   return (
-    <KurPage title="Panitia Mata Pelajaran" sub="Kurikulum · SK Darau, Kota Kinabalu"
-      stats={[
-        {ico:"📋",val:data.length,lbl:"Panitia Aktif"},
-        {ico:"👩‍🏫",val:data.reduce((a,r)=>a+(r.jumlah_ahli||0),0),lbl:"Jumlah Ahli"},
-        {ico:"📅",val:"Apr",lbl:"Mesyuarat Terakhir"},
-        {ico:"✅",val:"100%",lbl:"Status Aktif"},
-      ]}>
-      <div className="kur-header">
-        <button className="btn-add" onClick={()=>setShowAdd(true)}>+ Tambah Panitia</button>
+    <KurPage title="Panitia Mata Pelajaran" sub="Kurikulum · SK Darau, Kota Kinabalu" stats={statsCards}>
+      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:16}}>
+        {['📋 Senarai Panitia','👩‍🏫 Ahli Panitia','📅 Mesyuarat','🎯 Program & Aktiviti','📊 Analisis Prestasi','📄 Laporan'].map((t,i)=>(
+          <button key={i} style={tabSty(i)} onClick={()=>setSubtab(i)}>{t}</button>
+        ))}
       </div>
-      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
-        <div className="panitia-grid">
-          {data.map(p=>(
-            <div className="panitia-card" key={p.id}>
-              <div className="panitia-head">
-                <div className="panitia-ico" style={{background:p.bg||"#eff6ff"}}>{p.icon}</div>
-                <div style={{flex:1}}>
-                  <div className="panitia-name">{p.subjek}</div>
-                  <div className="panitia-ketua">Ketua: {p.ketua}</div>
-                </div>
-                <div style={{display:"flex",gap:4}}>
-                  <button className="btn-add" style={{padding:"4px 10px",fontSize:11}} onClick={()=>setEditItem({...p})}>✏️ Edit</button>
-                  <button className="btn-del" onClick={()=>handleDel(p.id)}>🗑</button>
-                </div>
-              </div>
-              <div className="panitia-body">👥 {p.jumlah_ahli} ahli &nbsp;·&nbsp; 📅 {p.tarikh_mesyuarat}</div>
-              <div className="panitia-foot">
-                <span className="badge b-green">{p.status}</span>
-                <span className="badge b-blue">{p.jumlah_ahli} Ahli</span>
-              </div>
+
+      {loading?<div className="loading">⏳ Memuatkan…</div>:(<>
+
+        {/* ── TAB 0: SENARAI PANITIA ── */}
+        {subtab===0&&(
+          <div>
+            <div className="kur-header">
+              <button className="btn-add" onClick={()=>{setFormPanitia(blankPanitia);setShowAddPanitia(true);}}>+ Tambah Panitia</button>
             </div>
-          ))}
+            {panitia.length===0&&<div style={{color:'var(--text3)',padding:40,textAlign:'center',fontSize:14,fontWeight:800}}>Tiada panitia. Tambah panitia untuk memulakan.</div>}
+            <div className="panitia-grid">
+              {panitia.map(p=>(
+                <div className="panitia-card" key={p.id}
+                  style={{cursor:'pointer',outline:selId===p.id?`2.5px solid ${p.color||'#2563eb'}`:'none',outlineOffset:2}}
+                  onClick={()=>setSelId(p.id)}>
+                  <div className="panitia-head">
+                    <div className="panitia-ico" style={{background:p.bg||"#eff6ff"}}>{p.icon}</div>
+                    <div style={{flex:1}}>
+                      <div className="panitia-name">{p.subjek}</div>
+                      <div className="panitia-ketua">Ketua: {p.ketua}</div>
+                    </div>
+                    <div style={{display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
+                      <button className="btn-add" style={{padding:"4px 10px",fontSize:11}} onClick={()=>setEditPanitia({...p})}>✏️</button>
+                      <button className="btn-del" onClick={()=>delPanitia(p.id)}>🗑</button>
+                    </div>
+                  </div>
+                  <div className="panitia-body">
+                    👩‍🏫 {ahli.filter(a=>a.panitia_id===p.id).length} guru &nbsp;·&nbsp;
+                    📅 {mesyuarat.filter(m=>m.panitia_id===p.id).length} mesyuarat &nbsp;·&nbsp;
+                    🎯 {program.filter(pr=>pr.panitia_id===p.id).length} program
+                  </div>
+                  <div className="panitia-foot">
+                    <span className="badge b-green">{p.status}</span>
+                    <div style={{display:'flex',gap:4}} onClick={e=>e.stopPropagation()}>
+                      {quickBtn('👩‍🏫 Ahli', ()=>{setSelId(p.id);setSubtab(1);})}
+                      {quickBtn('📅 Mesyuarat', ()=>{setSelId(p.id);setSubtab(2);})}
+                      {quickBtn('📊 Analisis', ()=>{setSelId(p.id);setSubtab(4);})}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 1: AHLI PANITIA ── */}
+        {subtab===1&&(
+          <div>
+            <PanitiaPill/>
+            {!selId?<NoSel/>:(
+              <>
+                <div className="kur-header" style={{gap:8,marginBottom:10}}>
+                  <button className="btn-add" onClick={()=>{setFormAhli(blankAhli);setShowAddAhli(true);}}>+ Tambah Ahli</button>
+                  <span style={{fontSize:12,color:'var(--text3)',fontWeight:800,padding:'6px 0'}}>{ahli.filter(a=>a.panitia_id===selId).length} guru — Panitia {selPanitia?.subjek}</span>
+                </div>
+                <div className="kur-table-wrap">
+                  <table className="kur-table">
+                    <thead><tr><th>#</th><th>Nama Guru</th><th>Peranan</th><th>Kelas Diajar</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                      {ahli.filter(a=>a.panitia_id===selId).length===0&&<tr><td colSpan={6} style={{textAlign:'center',color:'var(--text3)',padding:28}}>Tiada ahli. Tambah ahli untuk panitia ini.</td></tr>}
+                      {ahli.filter(a=>a.panitia_id===selId).map((a,i)=>(
+                        <tr key={a.id}>
+                          <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
+                          <td style={{fontWeight:800}}>{a.nama_guru}</td>
+                          <td><span className={`badge ${a.peranan==='Ketua'?'b-red':a.peranan==='Setiausaha'?'b-yellow':'b-blue'}`}>{a.peranan}</span></td>
+                          <td style={{fontSize:12,color:'var(--text3)'}}>{a.kelas_ajar||'—'}</td>
+                          <td><span className={`badge ${a.status==='Aktif'?'b-green':'b-gray'}`}>{a.status}</span></td>
+                          <td style={{display:'flex',gap:4}}>
+                            <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditAhli({...a})}>✏️</button>
+                            <button className="btn-del" onClick={()=>delAhli(a.id)}>🗑</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── TAB 2: MESYUARAT ── */}
+        {subtab===2&&(
+          <div>
+            <PanitiaPill/>
+            {!selId?<NoSel/>:(
+              <>
+                <div className="kur-header" style={{gap:8,marginBottom:10,flexWrap:'wrap'}}>
+                  <button className="btn-add" onClick={()=>{setFormMesy(blankMesy);setShowAddMesy(true);}}>+ Tambah Mesyuarat</button>
+                  {(()=>{const done=mesyuarat.filter(m=>m.panitia_id===selId&&m.status==='Selesai').length;return(
+                    <div style={{padding:'6px 14px',borderRadius:10,fontSize:12,fontWeight:900,
+                      background:done>=2?'#f0fdf4':'#fef2f2',
+                      border:`2px solid ${done>=2?'#86efac':'#fca5a5'}`,
+                      color:done>=2?'#15803d':'#dc2626'}}>
+                      {done}/2 sesi minimum {done>=2?'✅ Cukup':'⚠️ Perlu tambah'}
+                    </div>
+                  );})()}
+                </div>
+                <div className="kur-table-wrap">
+                  <table className="kur-table">
+                    <thead><tr><th>#</th><th>Tarikh</th><th>Masa</th><th>Tempat</th><th>Agenda</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                      {mesyuarat.filter(m=>m.panitia_id===selId).length===0&&<tr><td colSpan={7} style={{textAlign:'center',color:'var(--text3)',padding:28}}>Tiada mesyuarat direkodkan.</td></tr>}
+                      {mesyuarat.filter(m=>m.panitia_id===selId).map((m,i)=>(
+                        <tr key={m.id}>
+                          <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
+                          <td style={{fontWeight:800}}>{m.tarikh}</td>
+                          <td style={{fontSize:12,color:'var(--text3)'}}>{m.masa||'—'}</td>
+                          <td style={{fontSize:12}}>{m.tempat||'—'}</td>
+                          <td style={{fontSize:12,maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.agenda||'—'}</td>
+                          <td><span className={`badge ${m.status==='Selesai'?'b-green':m.status==='Semasa'?'b-blue':'b-yellow'}`}>{m.status}</span></td>
+                          <td style={{display:'flex',gap:4}}>
+                            <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditMesy({...m})}>✏️</button>
+                            <button className="btn-del" onClick={()=>delMesy(m.id)}>🗑</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── TAB 3: PROGRAM & AKTIVITI ── */}
+        {subtab===3&&(
+          <div>
+            <PanitiaPill/>
+            {!selId?<NoSel/>:(
+              <>
+                <div className="kur-header" style={{gap:8,marginBottom:10}}>
+                  <button className="btn-add" onClick={()=>{setFormProg(blankProg);setShowAddProg(true);}}>+ Tambah Program</button>
+                </div>
+                <div className="kur-table-wrap">
+                  <table className="kur-table">
+                    <thead><tr><th>#</th><th>Nama Program</th><th>Jenis</th><th>Tarikh Mula</th><th>Tarikh Tamat</th><th>Sasaran</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                      {program.filter(p=>p.panitia_id===selId).length===0&&<tr><td colSpan={8} style={{textAlign:'center',color:'var(--text3)',padding:28}}>Tiada program. Tambah program untuk panitia ini.</td></tr>}
+                      {program.filter(p=>p.panitia_id===selId).map((p,i)=>(
+                        <tr key={p.id}>
+                          <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
+                          <td style={{fontWeight:800}}>{p.nama}</td>
+                          <td><span className={`badge ${p.jenis==='Pemulihan'?'b-red':p.jenis==='Pengayaan'?'b-green':p.jenis==='Bengkel'?'b-blue':'b-yellow'}`}>{p.jenis}</span></td>
+                          <td style={{fontSize:12,color:'var(--text3)'}}>{p.tarikh_mula||'—'}</td>
+                          <td style={{fontSize:12,color:'var(--text3)'}}>{p.tarikh_tamat||'—'}</td>
+                          <td style={{fontSize:12}}>{p.sasaran||'—'}</td>
+                          <td><span className={`badge ${p.status==='Aktif'?'b-green':p.status==='Selesai'?'b-blue':p.status==='Batal'?'b-red':'b-yellow'}`}>{p.status}</span></td>
+                          <td style={{display:'flex',gap:4}}>
+                            <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditProg({...p})}>✏️</button>
+                            <button className="btn-del" onClick={()=>delProg(p.id)}>🗑</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── TAB 4: ANALISIS PRESTASI ── */}
+        {subtab===4&&(
+          <div>
+            <PanitiaPill/>
+            {!selId?<NoSel/>:(
+              <>
+                <div className="kur-header" style={{gap:8,marginBottom:10}}>
+                  <button className="btn-add" onClick={()=>{setFormAnal(blankAnal);setShowAddAnal(true);}}>+ Tambah Analisis</button>
+                  <span style={{fontSize:11,color:'var(--text3)',fontWeight:800,padding:'6px 0'}}>🔗 Data peperiksaan dari modul Peperiksaan &amp; Penilaian</span>
+                </div>
+                {analisis.filter(a=>a.panitia_id===selId).length>0&&(
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:12,marginBottom:16}}>
+                    {analisis.filter(a=>a.panitia_id===selId).map(a=>{
+                      const pep=peperiksaanList.find(p=>String(p.id)===String(a.peperiksaan_id));
+                      return(
+                        <div key={a.id} style={{background:'var(--surface)',border:'2px solid var(--border)',borderRadius:12,padding:14,boxShadow:'var(--shadow)'}}>
+                          <div style={{fontWeight:900,fontSize:13,marginBottom:2}}>{pep?.nama||'Peperiksaan'}</div>
+                          <div style={{fontSize:10,color:'var(--text3)',marginBottom:10}}>{pep?.tarikh||'—'} · {pep?.kelas||''}</div>
+                          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:8}}>
+                            <div style={{background:'#f0fdf4',borderRadius:8,padding:'6px',textAlign:'center'}}>
+                              <div style={{fontWeight:900,fontSize:18,color:'#16a34a'}}>{a.peratus_lulus}%</div>
+                              <div style={{fontSize:9,color:'#15803d',fontWeight:800}}>LULUS</div>
+                            </div>
+                            <div style={{background:'#eff6ff',borderRadius:8,padding:'6px',textAlign:'center'}}>
+                              <div style={{fontWeight:900,fontSize:18,color:'#2563eb'}}>{a.peratus_cemerlang}%</div>
+                              <div style={{fontSize:9,color:'#1d4ed8',fontWeight:800}}>CEMERLANG</div>
+                            </div>
+                          </div>
+                          <div style={{fontSize:11,color:'var(--text2)',marginBottom:8}}>Min: <b>{a.min_markah}</b> · Murid: <b>{a.bil_murid}</b></div>
+                          <div style={{display:'flex',gap:4}}>
+                            <button className="btn-add" style={{padding:'3px 8px',fontSize:10,flex:1}} onClick={()=>setEditAnal({...a})}>✏️ Edit</button>
+                            <button className="btn-del" style={{padding:'3px 6px',fontSize:10}} onClick={()=>delAnal(a.id)}>🗑</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="kur-table-wrap">
+                  <table className="kur-table">
+                    <thead><tr><th>#</th><th>Peperiksaan</th><th>Tarikh</th><th>Bil Murid</th><th>Min Markah</th><th>% Lulus</th><th>% Cemerlang</th><th>Catatan</th><th></th></tr></thead>
+                    <tbody>
+                      {analisis.filter(a=>a.panitia_id===selId).length===0&&<tr><td colSpan={9} style={{textAlign:'center',color:'var(--text3)',padding:28}}>Tiada analisis. Tambah analisis berdasarkan peperiksaan sedia ada.</td></tr>}
+                      {analisis.filter(a=>a.panitia_id===selId).map((a,i)=>{
+                        const pep=peperiksaanList.find(p=>String(p.id)===String(a.peperiksaan_id));
+                        return(
+                          <tr key={a.id}>
+                            <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
+                            <td style={{fontWeight:800}}>{pep?.nama||'—'}</td>
+                            <td style={{fontSize:12,color:'var(--text3)'}}>{pep?.tarikh||'—'}</td>
+                            <td style={{fontWeight:800}}>{a.bil_murid}</td>
+                            <td style={{fontWeight:800}}>{a.min_markah}</td>
+                            <td><span style={{fontWeight:900,color:Number(a.peratus_lulus)>=80?'#16a34a':Number(a.peratus_lulus)>=60?'#f59e0b':'#dc2626'}}>{a.peratus_lulus}%</span></td>
+                            <td><span style={{fontWeight:900,color:Number(a.peratus_cemerlang)>=30?'#2563eb':'#64748b'}}>{a.peratus_cemerlang}%</span></td>
+                            <td style={{fontSize:12,color:'var(--text3)',maxWidth:150,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.catatan||'—'}</td>
+                            <td style={{display:'flex',gap:4}}>
+                              <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditAnal({...a})}>✏️</button>
+                              <button className="btn-del" onClick={()=>delAnal(a.id)}>🗑</button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── TAB 5: LAPORAN ── */}
+        {subtab===5&&(
+          <div>
+            <PanitiaPill/>
+            {!selId?<NoSel/>:(
+              <>
+                <div className="kur-header" style={{gap:8,marginBottom:10}}>
+                  <button className="btn-add" onClick={()=>{setFormLap(blankLap);setShowAddLap(true);}}>+ Tambah Laporan</button>
+                </div>
+                <div style={{background:'var(--surface)',border:'2px solid var(--border)',borderRadius:14,padding:16,marginBottom:16,boxShadow:'var(--shadow)'}}>
+                  <div style={{fontWeight:900,fontSize:14,marginBottom:12}}>📊 Ringkasan Panitia — {selPanitia?.subjek}</div>
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:8}}>
+                    {[
+                      {bg:'#eff6ff',c:'#2563eb',val:ahli.filter(a=>a.panitia_id===selId).length,lbl:'Ahli Panitia'},
+                      {bg:'#f0fdf4',c:'#16a34a',val:mesyuarat.filter(m=>m.panitia_id===selId&&m.status==='Selesai').length,lbl:'Mesyuarat Selesai'},
+                      {bg:'#fff7ed',c:'#ea580c',val:program.filter(p=>p.panitia_id===selId).length,lbl:'Program'},
+                      {bg:'#fdf4ff',c:'#a21caf',val:analisis.filter(a=>a.panitia_id===selId).length,lbl:'Analisis Prestasi'},
+                      {bg:'#f0fdf4',c:'#16a34a',val:laporan.filter(l=>l.panitia_id===selId&&l.status==='Dikemukakan').length,lbl:'Laporan Dikemukakan'},
+                    ].map((s,i)=>(
+                      <div key={i} style={{background:s.bg,borderRadius:10,padding:'10px 12px',textAlign:'center'}}>
+                        <div style={{fontWeight:900,fontSize:20,color:s.c}}>{s.val}</div>
+                        <div style={{fontSize:11,color:s.c,fontWeight:800}}>{s.lbl}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="kur-table-wrap">
+                  <table className="kur-table">
+                    <thead><tr><th>#</th><th>Tajuk Laporan</th><th>Jenis</th><th>Tarikh</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                      {laporan.filter(l=>l.panitia_id===selId).length===0&&<tr><td colSpan={6} style={{textAlign:'center',color:'var(--text3)',padding:28}}>Tiada laporan direkodkan.</td></tr>}
+                      {laporan.filter(l=>l.panitia_id===selId).map((l,i)=>(
+                        <tr key={l.id}>
+                          <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
+                          <td style={{fontWeight:800}}>{l.tajuk}</td>
+                          <td><span className={`badge ${l.jenis==='Tahunan'?'b-blue':l.jenis==='Mesyuarat'?'b-green':l.jenis==='Program'?'b-yellow':'b-red'}`}>{l.jenis}</span></td>
+                          <td style={{fontSize:12,color:'var(--text3)'}}>{l.tarikh||'—'}</td>
+                          <td><span className={`badge ${l.status==='Dikemukakan'?'b-green':l.status==='Siap'?'b-blue':'b-yellow'}`}>{l.status}</span></td>
+                          <td style={{display:'flex',gap:4}}>
+                            <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditLap({...l})}>✏️</button>
+                            <button className="btn-del" onClick={()=>delLap(l.id)}>🗑</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </>)}
+
+      {/* ── MODALS: PANITIA ── */}
+      {showAddPanitia&&<Modal title="Tambah Panitia" onClose={()=>setShowAddPanitia(false)}><form onSubmit={addPanitia}>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Mata Pelajaran</label><input className="form-input" required value={formPanitia.subjek} onChange={e=>setFormPanitia(f=>({...f,subjek:e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">Ikon</label><input className="form-input" value={formPanitia.icon} onChange={e=>setFormPanitia(f=>({...f,icon:e.target.value}))}/></div>
         </div>
-      )}
-      {showAdd && (
-        <Modal title="Tambah Panitia" onClose={()=>setShowAdd(false)}>
-          <form onSubmit={handleAdd}>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Subjek</label><input className="form-input" required value={form.subjek} onChange={e=>setForm(f=>({...f,subjek:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Ikon</label><input className="form-input" value={form.icon} onChange={e=>setForm(f=>({...f,icon:e.target.value}))}/></div>
-            </div>
-            <div className="form-field"><label className="form-label">Nama Ketua Panitia</label><input className="form-input" required value={form.ketua} onChange={e=>setForm(f=>({...f,ketua:e.target.value}))}/></div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Jumlah Ahli</label><input className="form-input" type="number" min="1" value={form.jumlah_ahli} onChange={e=>setForm(f=>({...f,jumlah_ahli:+e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Tarikh Mesyuarat</label><input className="form-input" placeholder="cth: 15 Jun 2025" value={form.tarikh_mesyuarat} onChange={e=>setForm(f=>({...f,tarikh_mesyuarat:e.target.value}))}/></div>
-            </div>
-            <button className="btn-primary" type="submit">+ Tambah</button>
-          </form>
-        </Modal>
-      )}
-      {editItem && (
-        <Modal title={`Edit Panitia — ${editItem.subjek}`} onClose={()=>setEditItem(null)}>
-          <form onSubmit={handleEdit}>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Subjek</label><input className="form-input" required value={editItem.subjek} onChange={e=>setEditItem(f=>({...f,subjek:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Ikon</label><input className="form-input" value={editItem.icon} onChange={e=>setEditItem(f=>({...f,icon:e.target.value}))}/></div>
-            </div>
-            <div className="form-field"><label className="form-label">Nama Ketua Panitia</label><input className="form-input" required value={editItem.ketua} onChange={e=>setEditItem(f=>({...f,ketua:e.target.value}))}/></div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Jumlah Ahli</label><input className="form-input" type="number" min="1" value={editItem.jumlah_ahli} onChange={e=>setEditItem(f=>({...f,jumlah_ahli:+e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Tarikh Mesyuarat</label><input className="form-input" value={editItem.tarikh_mesyuarat} onChange={e=>setEditItem(f=>({...f,tarikh_mesyuarat:e.target.value}))}/></div>
-            </div>
-            <div className="form-field"><label className="form-label">Status</label>
-              <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
-                <option>Aktif</option><option>Tidak Aktif</option>
-              </select>
-            </div>
-            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
-          </form>
-        </Modal>
-      )}
+        <div className="form-field"><label className="form-label">Nama Ketua Panitia</label><input className="form-input" required value={formPanitia.ketua} onChange={e=>setFormPanitia(f=>({...f,ketua:e.target.value}))}/></div>
+        <button className="btn-primary" type="submit">+ Tambah</button>
+      </form></Modal>}
+      {editPanitia&&<Modal title={`Edit — ${editPanitia.subjek}`} onClose={()=>setEditPanitia(null)}><form onSubmit={updPanitia}>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Mata Pelajaran</label><input className="form-input" required value={editPanitia.subjek} onChange={e=>setEditPanitia(f=>({...f,subjek:e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">Ikon</label><input className="form-input" value={editPanitia.icon} onChange={e=>setEditPanitia(f=>({...f,icon:e.target.value}))}/></div>
+        </div>
+        <div className="form-field"><label className="form-label">Nama Ketua Panitia</label><input className="form-input" required value={editPanitia.ketua} onChange={e=>setEditPanitia(f=>({...f,ketua:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Status</label>
+          <select className="form-input" value={editPanitia.status} onChange={e=>setEditPanitia(f=>({...f,status:e.target.value}))}>
+            <option>Aktif</option><option>Tidak Aktif</option>
+          </select>
+        </div>
+        <button className="btn-primary" type="submit">💾 Simpan</button>
+      </form></Modal>}
+
+      {/* ── MODALS: AHLI ── */}
+      {showAddAhli&&<Modal title="Tambah Ahli Panitia" onClose={()=>setShowAddAhli(false)}><form onSubmit={addAhli}>
+        <div className="form-field"><label className="form-label">Nama Guru</label><input className="form-input" required value={formAhli.nama_guru} onChange={e=>setFormAhli(f=>({...f,nama_guru:e.target.value}))}/></div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Peranan</label>
+            <select className="form-input" value={formAhli.peranan} onChange={e=>setFormAhli(f=>({...f,peranan:e.target.value}))}>
+              <option>Ketua</option><option>Setiausaha</option><option>Ahli</option>
+            </select>
+          </div>
+          <div className="form-field"><label className="form-label">Kelas Diajar</label><input className="form-input" placeholder="cth: Tahun 4 &amp; 5" value={formAhli.kelas_ajar} onChange={e=>setFormAhli(f=>({...f,kelas_ajar:e.target.value}))}/></div>
+        </div>
+        <button className="btn-primary" type="submit">+ Tambah</button>
+      </form></Modal>}
+      {editAhli&&<Modal title={`Edit — ${editAhli.nama_guru}`} onClose={()=>setEditAhli(null)}><form onSubmit={updAhli}>
+        <div className="form-field"><label className="form-label">Nama Guru</label><input className="form-input" required value={editAhli.nama_guru} onChange={e=>setEditAhli(f=>({...f,nama_guru:e.target.value}))}/></div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Peranan</label>
+            <select className="form-input" value={editAhli.peranan} onChange={e=>setEditAhli(f=>({...f,peranan:e.target.value}))}>
+              <option>Ketua</option><option>Setiausaha</option><option>Ahli</option>
+            </select>
+          </div>
+          <div className="form-field"><label className="form-label">Kelas Diajar</label><input className="form-input" value={editAhli.kelas_ajar} onChange={e=>setEditAhli(f=>({...f,kelas_ajar:e.target.value}))}/></div>
+        </div>
+        <div className="form-field"><label className="form-label">Status</label>
+          <select className="form-input" value={editAhli.status} onChange={e=>setEditAhli(f=>({...f,status:e.target.value}))}>
+            <option>Aktif</option><option>Tidak Aktif</option>
+          </select>
+        </div>
+        <button className="btn-primary" type="submit">💾 Simpan</button>
+      </form></Modal>}
+
+      {/* ── MODALS: MESYUARAT ── */}
+      {showAddMesy&&<Modal title="Tambah Mesyuarat" onClose={()=>setShowAddMesy(false)}><form onSubmit={addMesy}>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" type="date" required value={formMesy.tarikh} onChange={e=>setFormMesy(f=>({...f,tarikh:e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">Masa</label><input className="form-input" placeholder="cth: 2:00 PTG" value={formMesy.masa} onChange={e=>setFormMesy(f=>({...f,masa:e.target.value}))}/></div>
+        </div>
+        <div className="form-field"><label className="form-label">Tempat</label><input className="form-input" placeholder="cth: Bilik Gerakan" value={formMesy.tempat} onChange={e=>setFormMesy(f=>({...f,tempat:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Agenda</label><textarea className="form-input" rows={3} placeholder="Senarai agenda mesyuarat..." value={formMesy.agenda} onChange={e=>setFormMesy(f=>({...f,agenda:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Status</label>
+          <select className="form-input" value={formMesy.status} onChange={e=>setFormMesy(f=>({...f,status:e.target.value}))}>
+            <option>Akan Datang</option><option>Semasa</option><option>Selesai</option>
+          </select>
+        </div>
+        <button className="btn-primary" type="submit">+ Tambah</button>
+      </form></Modal>}
+      {editMesy&&<Modal title={`Edit Mesyuarat — ${editMesy.tarikh}`} onClose={()=>setEditMesy(null)}><form onSubmit={updMesy}>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" type="date" value={editMesy.tarikh} onChange={e=>setEditMesy(f=>({...f,tarikh:e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">Masa</label><input className="form-input" value={editMesy.masa} onChange={e=>setEditMesy(f=>({...f,masa:e.target.value}))}/></div>
+        </div>
+        <div className="form-field"><label className="form-label">Tempat</label><input className="form-input" value={editMesy.tempat} onChange={e=>setEditMesy(f=>({...f,tempat:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Agenda</label><textarea className="form-input" rows={2} value={editMesy.agenda} onChange={e=>setEditMesy(f=>({...f,agenda:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Minit Mesyuarat</label><textarea className="form-input" rows={3} placeholder="Ringkasan minit / keputusan mesyuarat..." value={editMesy.minit} onChange={e=>setEditMesy(f=>({...f,minit:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Status</label>
+          <select className="form-input" value={editMesy.status} onChange={e=>setEditMesy(f=>({...f,status:e.target.value}))}>
+            <option>Akan Datang</option><option>Semasa</option><option>Selesai</option>
+          </select>
+        </div>
+        <button className="btn-primary" type="submit">💾 Simpan</button>
+      </form></Modal>}
+
+      {/* ── MODALS: PROGRAM ── */}
+      {showAddProg&&<Modal title="Tambah Program / Aktiviti" onClose={()=>setShowAddProg(false)}><form onSubmit={addProg}>
+        <div className="form-field"><label className="form-label">Nama Program</label><input className="form-input" required value={formProg.nama} onChange={e=>setFormProg(f=>({...f,nama:e.target.value}))}/></div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Jenis</label>
+            <select className="form-input" value={formProg.jenis} onChange={e=>setFormProg(f=>({...f,jenis:e.target.value}))}>
+              <option>Pemulihan</option><option>Pengayaan</option><option>Bengkel</option><option>Klinik Subjek</option><option>Pertandingan</option><option>Lawatan</option>
+            </select>
+          </div>
+          <div className="form-field"><label className="form-label">Status</label>
+            <select className="form-input" value={formProg.status} onChange={e=>setFormProg(f=>({...f,status:e.target.value}))}>
+              <option>Rancangan</option><option>Aktif</option><option>Selesai</option><option>Batal</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Tarikh Mula</label><input className="form-input" type="date" value={formProg.tarikh_mula} onChange={e=>setFormProg(f=>({...f,tarikh_mula:e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">Tarikh Tamat</label><input className="form-input" type="date" value={formProg.tarikh_tamat} onChange={e=>setFormProg(f=>({...f,tarikh_tamat:e.target.value}))}/></div>
+        </div>
+        <div className="form-field"><label className="form-label">Sasaran Murid</label><input className="form-input" placeholder="cth: Murid lemah Tahun 4 &amp; 5" value={formProg.sasaran} onChange={e=>setFormProg(f=>({...f,sasaran:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Catatan</label><textarea className="form-input" rows={2} value={formProg.catatan} onChange={e=>setFormProg(f=>({...f,catatan:e.target.value}))}/></div>
+        <button className="btn-primary" type="submit">+ Tambah</button>
+      </form></Modal>}
+      {editProg&&<Modal title={`Edit — ${editProg.nama}`} onClose={()=>setEditProg(null)}><form onSubmit={updProg}>
+        <div className="form-field"><label className="form-label">Nama Program</label><input className="form-input" required value={editProg.nama} onChange={e=>setEditProg(f=>({...f,nama:e.target.value}))}/></div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Jenis</label>
+            <select className="form-input" value={editProg.jenis} onChange={e=>setEditProg(f=>({...f,jenis:e.target.value}))}>
+              <option>Pemulihan</option><option>Pengayaan</option><option>Bengkel</option><option>Klinik Subjek</option><option>Pertandingan</option><option>Lawatan</option>
+            </select>
+          </div>
+          <div className="form-field"><label className="form-label">Status</label>
+            <select className="form-input" value={editProg.status} onChange={e=>setEditProg(f=>({...f,status:e.target.value}))}>
+              <option>Rancangan</option><option>Aktif</option><option>Selesai</option><option>Batal</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Tarikh Mula</label><input className="form-input" type="date" value={editProg.tarikh_mula} onChange={e=>setEditProg(f=>({...f,tarikh_mula:e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">Tarikh Tamat</label><input className="form-input" type="date" value={editProg.tarikh_tamat} onChange={e=>setEditProg(f=>({...f,tarikh_tamat:e.target.value}))}/></div>
+        </div>
+        <div className="form-field"><label className="form-label">Sasaran Murid</label><input className="form-input" value={editProg.sasaran} onChange={e=>setEditProg(f=>({...f,sasaran:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Catatan</label><textarea className="form-input" rows={2} value={editProg.catatan} onChange={e=>setEditProg(f=>({...f,catatan:e.target.value}))}/></div>
+        <button className="btn-primary" type="submit">💾 Simpan</button>
+      </form></Modal>}
+
+      {/* ── MODALS: ANALISIS ── */}
+      {showAddAnal&&<Modal title="Tambah Analisis Prestasi" onClose={()=>setShowAddAnal(false)}><form onSubmit={addAnal}>
+        <div className="form-field"><label className="form-label">Peperiksaan (dari modul Peperiksaan &amp; Penilaian)</label>
+          <select className="form-input" required value={formAnal.peperiksaan_id} onChange={e=>setFormAnal(f=>({...f,peperiksaan_id:e.target.value}))}>
+            <option value="">— Pilih Peperiksaan —</option>
+            {peperiksaanList.map(p=><option key={p.id} value={p.id}>{p.nama} · {p.tarikh}</option>)}
+          </select>
+        </div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Bilangan Murid</label><input className="form-input" type="number" min="0" value={formAnal.bil_murid} onChange={e=>setFormAnal(f=>({...f,bil_murid:+e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">Min Markah</label><input className="form-input" type="number" min="0" max="100" step="0.1" value={formAnal.min_markah} onChange={e=>setFormAnal(f=>({...f,min_markah:+e.target.value}))}/></div>
+        </div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">% Lulus</label><input className="form-input" type="number" min="0" max="100" step="0.1" value={formAnal.peratus_lulus} onChange={e=>setFormAnal(f=>({...f,peratus_lulus:+e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">% Cemerlang (A)</label><input className="form-input" type="number" min="0" max="100" step="0.1" value={formAnal.peratus_cemerlang} onChange={e=>setFormAnal(f=>({...f,peratus_cemerlang:+e.target.value}))}/></div>
+        </div>
+        <div className="form-field"><label className="form-label">Catatan / Pemerhatian</label><textarea className="form-input" rows={2} placeholder="Prestasi meningkat / menurun, sebab-sebab..." value={formAnal.catatan} onChange={e=>setFormAnal(f=>({...f,catatan:e.target.value}))}/></div>
+        <button className="btn-primary" type="submit">+ Tambah</button>
+      </form></Modal>}
+      {editAnal&&<Modal title="Edit Analisis Prestasi" onClose={()=>setEditAnal(null)}><form onSubmit={updAnal}>
+        <div className="form-field"><label className="form-label">Peperiksaan</label>
+          <select className="form-input" value={editAnal.peperiksaan_id} onChange={e=>setEditAnal(f=>({...f,peperiksaan_id:e.target.value}))}>
+            <option value="">— Pilih Peperiksaan —</option>
+            {peperiksaanList.map(p=><option key={p.id} value={p.id}>{p.nama} · {p.tarikh}</option>)}
+          </select>
+        </div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Bilangan Murid</label><input className="form-input" type="number" min="0" value={editAnal.bil_murid} onChange={e=>setEditAnal(f=>({...f,bil_murid:+e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">Min Markah</label><input className="form-input" type="number" min="0" max="100" step="0.1" value={editAnal.min_markah} onChange={e=>setEditAnal(f=>({...f,min_markah:+e.target.value}))}/></div>
+        </div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">% Lulus</label><input className="form-input" type="number" min="0" max="100" step="0.1" value={editAnal.peratus_lulus} onChange={e=>setEditAnal(f=>({...f,peratus_lulus:+e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">% Cemerlang (A)</label><input className="form-input" type="number" min="0" max="100" step="0.1" value={editAnal.peratus_cemerlang} onChange={e=>setEditAnal(f=>({...f,peratus_cemerlang:+e.target.value}))}/></div>
+        </div>
+        <div className="form-field"><label className="form-label">Catatan / Pemerhatian</label><textarea className="form-input" rows={2} value={editAnal.catatan} onChange={e=>setEditAnal(f=>({...f,catatan:e.target.value}))}/></div>
+        <button className="btn-primary" type="submit">💾 Simpan</button>
+      </form></Modal>}
+
+      {/* ── MODALS: LAPORAN ── */}
+      {showAddLap&&<Modal title="Tambah Laporan" onClose={()=>setShowAddLap(false)}><form onSubmit={addLap}>
+        <div className="form-field"><label className="form-label">Tajuk Laporan</label><input className="form-input" required value={formLap.tajuk} onChange={e=>setFormLap(f=>({...f,tajuk:e.target.value}))}/></div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Jenis</label>
+            <select className="form-input" value={formLap.jenis} onChange={e=>setFormLap(f=>({...f,jenis:e.target.value}))}>
+              <option>Tahunan</option><option>Mesyuarat</option><option>Program</option><option>Analisis</option>
+            </select>
+          </div>
+          <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" type="date" value={formLap.tarikh} onChange={e=>setFormLap(f=>({...f,tarikh:e.target.value}))}/></div>
+        </div>
+        <div className="form-field"><label className="form-label">Status</label>
+          <select className="form-input" value={formLap.status} onChange={e=>setFormLap(f=>({...f,status:e.target.value}))}>
+            <option>Draf</option><option>Siap</option><option>Dikemukakan</option>
+          </select>
+        </div>
+        <div className="form-field"><label className="form-label">Kandungan / Nota</label><textarea className="form-input" rows={4} placeholder="Ringkasan / kandungan laporan..." value={formLap.kandungan} onChange={e=>setFormLap(f=>({...f,kandungan:e.target.value}))}/></div>
+        <button className="btn-primary" type="submit">+ Tambah</button>
+      </form></Modal>}
+      {editLap&&<Modal title={`Edit — ${editLap.tajuk}`} onClose={()=>setEditLap(null)}><form onSubmit={updLap}>
+        <div className="form-field"><label className="form-label">Tajuk Laporan</label><input className="form-input" required value={editLap.tajuk} onChange={e=>setEditLap(f=>({...f,tajuk:e.target.value}))}/></div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Jenis</label>
+            <select className="form-input" value={editLap.jenis} onChange={e=>setEditLap(f=>({...f,jenis:e.target.value}))}>
+              <option>Tahunan</option><option>Mesyuarat</option><option>Program</option><option>Analisis</option>
+            </select>
+          </div>
+          <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" type="date" value={editLap.tarikh} onChange={e=>setEditLap(f=>({...f,tarikh:e.target.value}))}/></div>
+        </div>
+        <div className="form-field"><label className="form-label">Status</label>
+          <select className="form-input" value={editLap.status} onChange={e=>setEditLap(f=>({...f,status:e.target.value}))}>
+            <option>Draf</option><option>Siap</option><option>Dikemukakan</option>
+          </select>
+        </div>
+        <div className="form-field"><label className="form-label">Kandungan / Nota</label><textarea className="form-input" rows={4} value={editLap.kandungan} onChange={e=>setEditLap(f=>({...f,kandungan:e.target.value}))}/></div>
+        <button className="btn-primary" type="submit">💾 Simpan</button>
+      </form></Modal>}
     </KurPage>
   );
 }
