@@ -8547,64 +8547,21 @@ function PenjadualanMakmal() {
 const ICT_APP_URL = "https://dashboard-ict-sekolah.vercel.app/";
 
 function EmbedFrame({ url, title }) {
-  const [loading, setLoading] = useState(true);
-  const [errored, setErrored] = useState(false);
   return (
-    <div style={{marginTop:16}}>
-      <div style={{
-        display:"flex",alignItems:"center",gap:10,marginBottom:10,
-        padding:"10px 16px",borderRadius:12,
-        background:"var(--surface)",border:"1.5px solid var(--border)",
-      }}>
-        <span style={{fontSize:18}}>🌐</span>
-        <span style={{flex:1,fontSize:12,color:"var(--text2)",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{url}</span>
-        <a href={url} target="_blank" rel="noopener noreferrer"
-          style={{padding:"6px 14px",borderRadius:8,background:"#2563eb",color:"white",fontSize:12,fontWeight:800,textDecoration:"none",whiteSpace:"nowrap"}}>
-          ↗ Tab Baru
-        </a>
-      </div>
-      {errored ? (
-        <div style={{textAlign:"center",padding:"60px 20px",background:"var(--surface)",borderRadius:16,border:"1.5px solid var(--border)"}}>
-          <div style={{fontSize:40,marginBottom:12}}>🚫</div>
-          <div style={{fontWeight:800,fontSize:15,color:"var(--text1)",marginBottom:8}}>Tidak Dapat Dipaparkan</div>
-          <div style={{color:"var(--text2)",fontSize:13,marginBottom:20,maxWidth:400,margin:"0 auto 20px"}}>
-            Web app ini menyekat iframe. Tambah header berikut dalam <code>vercel.json</code> web app ICT:
-          </div>
-          <pre style={{textAlign:"left",background:"#1e293b",color:"#e2e8f0",borderRadius:10,padding:16,fontSize:12,maxWidth:480,margin:"0 auto 20px",overflow:"auto"}}>{`{
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Frame-Options", "value": "ALLOWALL" }
-      ]
-    }
-  ]
-}`}</pre>
-          <a href={url} target="_blank" rel="noopener noreferrer"
-            style={{display:"inline-block",padding:"10px 24px",borderRadius:10,background:"#2563eb",color:"white",fontSize:13,fontWeight:800,textDecoration:"none"}}>
-            ↗ Buka Dalam Tab Baru
-          </a>
-        </div>
-      ) : (
-        <div style={{position:"relative",borderRadius:16,overflow:"hidden",border:"1.5px solid var(--border)",background:"var(--surface)"}}>
-          {loading&&(
-            <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"var(--surface)",zIndex:1,gap:12}}>
-              <div style={{fontSize:32}}>⏳</div>
-              <div style={{fontWeight:700,color:"var(--text2)"}}>Memuatkan {title}…</div>
-            </div>
-          )}
-          <iframe
-            src={url}
-            title={title}
-            width="100%"
-            height="600"
-            frameBorder="0"
-            style={{display:"block"}}
-            onLoad={()=>setLoading(false)}
-            onError={()=>{setLoading(false);setErrored(true);}}
-          />
-        </div>
-      )}
+    <div style={{marginTop:24,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+      padding:"60px 20px",borderRadius:20,border:"2px dashed var(--border)",background:"var(--surface)",minHeight:300,gap:20}}>
+      <div style={{fontSize:52}}>🌐</div>
+      <div style={{fontWeight:900,fontSize:20,color:"var(--text1)",textAlign:"center"}}>{title}</div>
+      <div style={{fontSize:13,color:"var(--text3)",fontWeight:700,background:"var(--surface2)",padding:"6px 14px",borderRadius:8,fontFamily:"monospace",maxWidth:480,wordBreak:"break-all",textAlign:"center"}}>{url}</div>
+      <a href={url} target="_blank" rel="noopener noreferrer"
+        style={{display:"inline-flex",alignItems:"center",gap:8,padding:"14px 32px",borderRadius:12,
+          background:"var(--primary)",color:"white",fontSize:15,fontWeight:900,textDecoration:"none",
+          boxShadow:"0 4px 16px rgba(37,99,235,.3)",transition:"opacity .15s"}}
+        onMouseEnter={e=>e.currentTarget.style.opacity=".85"}
+        onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+        <span style={{fontSize:18}}>↗</span> Buka {title}
+      </a>
+      <div style={{fontSize:11,color:"var(--text3)"}}>Akan dibuka dalam tab baru</div>
     </div>
   );
 }
