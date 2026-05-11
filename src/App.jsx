@@ -4533,135 +4533,147 @@ function PerkembanganStaf() {
 
 // ─── HEM 1. PENDAFTARAN & DATA MURID (APDM) ──────────────────────────────────
 function HemMurid() {
+  const TABS_HM=['👦 Senarai Murid','📊 Analisis','📋 Laporan Kelas'];
+  const [subtab,setSubtab]=useState(0);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [q,setQ]=useState(''); const [filterKelas,setFilterKelas]=useState(''); const [filterStatus,setFilterStatus]=useState('');
   const blank = { nama:"", kelas:"", ic:"", jantina:"Lelaki", telefon_wali:"", status:"Aktif" };
   const [form, setForm] = useState(blank);
-
-  const load = async () => {
-    setLoading(true);
-    const { data: rows } = await supabase.from('hem_murid').select('*').order('created_at');
-    setData(rows || []); setLoading(false);
-  };
+  const load = async () => { setLoading(true); const { data: rows } = await supabase.from('hem_murid').select('*').order('kelas').order('nama'); setData(rows || []); setLoading(false); };
   useEffect(() => { load(); }, []);
-
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    const ok = await dbRun(() => supabase.from('hem_murid').insert([form]));
-    if (!ok) return;
-    toast("Murid ditambah!", "success");
-    setShowAdd(false); setForm(blank); load();
-  };
-  const handleEdit = async (e) => {
-    e.preventDefault();
-    const { nama, kelas, ic, jantina, telefon_wali, status } = editItem;
-    const ok = await dbRun(() => supabase.from('hem_murid').update({ nama, kelas, ic, jantina, telefon_wali, status }).eq('id', editItem.id));
-    if (!ok) return;
-    toast("Dikemaskini!", "success"); setEditItem(null); load();
-  };
-  const handleDel = async (id) => {
-    const ok = await dbRun(() => supabase.from('hem_murid').delete().eq('id', id));
-    if (ok) setData(d => d.filter(r => r.id !== id));
-  };
-
+  const handleAdd = async (e) => { e.preventDefault(); const ok = await dbRun(() => supabase.from('hem_murid').insert([form])); if (!ok) return; toast("Murid ditambah!", "success"); setShowAdd(false); setForm(blank); load(); };
+  const handleEdit = async (e) => { e.preventDefault(); const { nama, kelas, ic, jantina, telefon_wali, status } = editItem; const ok = await dbRun(() => supabase.from('hem_murid').update({ nama, kelas, ic, jantina, telefon_wali, status }).eq('id', editItem.id)); if (!ok) return; toast("Dikemaskini!", "success"); setEditItem(null); load(); };
+  const handleDel = async (id) => { const ok = await dbRun(() => supabase.from('hem_murid').delete().eq('id', id)); if (ok) setData(d => d.filter(r => r.id !== id)); };
   const aktif = data.filter(r => r.status === "Aktif").length;
+  const filtered=data.filter(r=>(!filterKelas||r.kelas===filterKelas)&&(!filterStatus||r.status===filterStatus)&&(!q||r.nama.toLowerCase().includes(q.toLowerCase())||r.ic?.includes(q)));
+  const kelasList=[...new Set(data.map(r=>r.kelas).filter(Boolean))].sort();
+  const byKelas=kelasList.map(k=>({k,total:data.filter(r=>r.kelas===k).length,lelaki:data.filter(r=>r.kelas===k&&r.jantina==='Lelaki').length,perempuan:data.filter(r=>r.kelas===k&&r.jantina==='Perempuan').length,aktif:data.filter(r=>r.kelas===k&&r.status==='Aktif').length}));
+  const TS=(i)=>({padding:'7px 16px',borderRadius:20,border:'none',cursor:'pointer',fontWeight:subtab===i?700:400,background:subtab===i?'var(--accent)':'var(--card2)',color:subtab===i?'#fff':'var(--text1)',fontSize:13});
   return (
     <KurPage title="Pendaftaran & Data Murid" sub="HEM · SK Darau, Kota Kinabalu"
-      stats={[
-        { ico:"👦", val:data.length, lbl:"Jumlah Murid" },
-        { ico:"✅", val:aktif, lbl:"Aktif" },
-        { ico:"👧", val:data.filter(r=>r.jantina==="Perempuan").length, lbl:"Perempuan" },
-        { ico:"👦", val:data.filter(r=>r.jantina==="Lelaki").length, lbl:"Lelaki" },
-      ]}>
-      <div className="kur-header">
-        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Murid</button>
-      </div>
-      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
-        <div className="kur-table-wrap">
-          <table className="kur-table">
+      stats={[{ico:"👥",val:data.length,lbl:"Jumlah Murid"},{ico:"✅",val:aktif,lbl:"Aktif"},{ico:"👧",val:data.filter(r=>r.jantina==="Perempuan").length,lbl:"Perempuan"},{ico:"👦",val:data.filter(r=>r.jantina==="Lelaki").length,lbl:"Lelaki"}]}>
+      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:16}}>{TABS_HM.map((t,i)=><button key={i} style={TS(i)} onClick={()=>setSubtab(i)}>{t}</button>)}</div>
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (<>
+        {subtab===0&&(<>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}}>
+            <div className="kur-search-wrap" style={{flex:1,minWidth:140}}><span className="kur-search-ico">🔍</span><input className="kur-search" placeholder="Cari nama / IC…" value={q} onChange={e=>setQ(e.target.value)}/></div>
+            <select className="kur-select" value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}><option value="">Semua Kelas</option>{kelasList.map(k=><option key={k}>{k}</option>)}</select>
+            <select className="kur-select" value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}><option value="">Semua Status</option><option>Aktif</option><option>Tidak Aktif</option><option>Berpindah</option></select>
+            <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Murid</button>
+          </div>
+          <div className="kur-table-wrap"><table className="kur-table">
             <thead><tr><th>#</th><th>Nama</th><th>Kelas</th><th>IC</th><th>Jantina</th><th>Tel. Wali</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              {data.map((r, i) => (
-                <tr key={r.id}>
-                  <td style={{fontWeight:900,color:"var(--accent)"}}>{i+1}</td>
-                  <td style={{fontWeight:800}}>{r.nama}</td>
-                  <td>{r.kelas}</td>
-                  <td style={{fontSize:12,color:"var(--text3)"}}>{r.ic}</td>
-                  <td><span className={`badge ${r.jantina==="Perempuan"?"b-purple":"b-blue"}`}>{r.jantina}</span></td>
-                  <td style={{color:"var(--text3)"}}>{r.telefon_wali}</td>
-                  <td><span className={`badge ${r.status==="Aktif"?"b-green":"b-gray"}`}>{r.status}</span></td>
-                  <td style={{display:"flex",gap:4}}>
-                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
-                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
-                  </td>
-                </tr>
-              ))}
+            <tbody>{filtered.length===0&&<tr><td colSpan={8} style={{textAlign:'center',color:'var(--text3)',padding:24}}>Tiada rekod.</td></tr>}
+              {filtered.map((r, i) => (<tr key={r.id}>
+                <td style={{fontWeight:900,color:"var(--accent)"}}>{i+1}</td>
+                <td style={{fontWeight:800}}>{r.nama}</td><td>{r.kelas}</td>
+                <td style={{fontSize:12,color:"var(--text3)"}}>{r.ic}</td>
+                <td><span className={`badge ${r.jantina==="Perempuan"?"b-purple":"b-blue"}`}>{r.jantina}</span></td>
+                <td style={{color:"var(--text3)"}}>{r.telefon_wali}</td>
+                <td><span className={`badge ${r.status==="Aktif"?"b-green":r.status==="Berpindah"?"b-yellow":"b-gray"}`}>{r.status}</span></td>
+                <td style={{display:"flex",gap:4}}>
+                  <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                  <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                </td>
+              </tr>))}
             </tbody>
-          </table>
+          </table></div>
+        </>)}
+        {subtab===1&&(<>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+            <div style={{background:'var(--card2)',borderRadius:12,padding:16}}>
+              <p style={{fontWeight:700,fontSize:14,marginBottom:12}}>👥 Agihan Jantina</p>
+              {['Lelaki','Perempuan'].map(j=>{const n=data.filter(r=>r.jantina===j).length;const pct=data.length?Math.round(n/data.length*100):0;return(<div key={j} style={{marginBottom:10}}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:4}}><span>{j}</span><span style={{fontWeight:700}}>{n} ({pct}%)</span></div>
+                <div style={{background:'var(--divider)',borderRadius:99,height:12,overflow:'hidden'}}><div style={{height:'100%',background:j==='Lelaki'?'#2563eb':'#a855f7',width:`${pct}%`,borderRadius:99}}/></div>
+              </div>);})}
+            </div>
+            <div style={{background:'var(--card2)',borderRadius:12,padding:16}}>
+              <p style={{fontWeight:700,fontSize:14,marginBottom:12}}>📊 Status Murid</p>
+              {['Aktif','Tidak Aktif','Berpindah'].map(s=>{const n=data.filter(r=>r.status===s).length;const pct=data.length?Math.round(n/data.length*100):0;const clr=s==='Aktif'?'#16a34a':s==='Berpindah'?'#d97706':'#94a3b8';return(<div key={s} style={{marginBottom:10}}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:4}}><span>{s}</span><span style={{fontWeight:700,color:clr}}>{n} ({pct}%)</span></div>
+                <div style={{background:'var(--divider)',borderRadius:99,height:12,overflow:'hidden'}}><div style={{height:'100%',background:clr,width:`${pct}%`,borderRadius:99}}/></div>
+              </div>);})}
+            </div>
+          </div>
+          <div style={{background:'var(--card2)',borderRadius:12,padding:16}}>
+            <p style={{fontWeight:700,fontSize:14,marginBottom:10}}>🏫 Bilangan Murid Mengikut Kelas</p>
+            {byKelas.length===0&&<p style={{color:'var(--text3)',fontSize:13}}>Tiada data.</p>}
+            {byKelas.map(r=><div key={r.k} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+              <span style={{fontSize:12,fontWeight:700,minWidth:140}}>{r.k}</span>
+              <div style={{flex:1,background:'var(--divider)',borderRadius:99,height:14,overflow:'hidden'}}><div style={{height:'100%',background:'var(--accent)',width:`${data.length?Math.round(r.total/data.length*100):0}%`,borderRadius:99}}/></div>
+              <span style={{fontSize:12,fontWeight:700,minWidth:30,textAlign:'right'}}>{r.total}</span>
+              <span style={{fontSize:11,color:'#2563eb',minWidth:24}}>L:{r.lelaki}</span>
+              <span style={{fontSize:11,color:'#a855f7',minWidth:24}}>P:{r.perempuan}</span>
+            </div>)}
+          </div>
+        </>)}
+        {subtab===2&&(<>
+          <div className="kur-table-wrap"><table className="kur-table">
+            <thead><tr><th>Kelas</th><th>Jumlah</th><th>Lelaki</th><th>Perempuan</th><th>Aktif</th><th>Tidak Aktif/Pindah</th></tr></thead>
+            <tbody>
+              {byKelas.length===0&&<tr><td colSpan={6} style={{textAlign:'center',color:'var(--text3)',padding:24}}>Tiada data.</td></tr>}
+              {byKelas.map(r=><tr key={r.k}>
+                <td style={{fontWeight:700}}>{r.k}</td>
+                <td style={{fontWeight:800,color:'var(--accent)'}}>{r.total}</td>
+                <td style={{color:'#2563eb',fontWeight:700}}>{r.lelaki}</td>
+                <td style={{color:'#a855f7',fontWeight:700}}>{r.perempuan}</td>
+                <td style={{color:'#16a34a',fontWeight:700}}>{r.aktif}</td>
+                <td style={{color:'#94a3b8',fontWeight:700}}>{r.total-r.aktif}</td>
+              </tr>)}
+              <tr style={{background:'var(--accent-lt)',fontWeight:900}}>
+                <td>JUMLAH</td><td style={{color:'var(--accent)'}}>{data.length}</td>
+                <td style={{color:'#2563eb'}}>{data.filter(r=>r.jantina==='Lelaki').length}</td>
+                <td style={{color:'#a855f7'}}>{data.filter(r=>r.jantina==='Perempuan').length}</td>
+                <td style={{color:'#16a34a'}}>{aktif}</td>
+                <td style={{color:'#94a3b8'}}>{data.length-aktif}</td>
+              </tr>
+            </tbody>
+          </table></div>
+        </>)}
+      </>)}
+      {showAdd && (<Modal title="Tambah Murid" onClose={() => setShowAdd(false)}><form onSubmit={handleAdd}>
+        <div className="form-field"><label className="form-label">Nama Penuh</label><input className="form-input" required value={form.nama} onChange={e=>setForm(f=>({...f,nama:e.target.value}))} placeholder="Nama penuh murid"/></div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))} placeholder="cth: Tahun 4 Unik"/></div>
+          <div className="form-field"><label className="form-label">No. IC</label><input className="form-input" value={form.ic} onChange={e=>setForm(f=>({...f,ic:e.target.value}))} placeholder="cth: 120304-12-0011"/></div>
         </div>
-      )}
-      {showAdd && (
-        <Modal title="Tambah Murid" onClose={() => setShowAdd(false)}>
-          <form onSubmit={handleAdd}>
-            <div className="form-field"><label className="form-label">Nama Penuh</label><input className="form-input" required value={form.nama} onChange={e=>setForm(f=>({...f,nama:e.target.value}))} placeholder="Nama penuh murid"/></div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))} placeholder="cth: Tahun 4 Angsana"/></div>
-              <div className="form-field"><label className="form-label">No. IC</label><input className="form-input" value={form.ic} onChange={e=>setForm(f=>({...f,ic:e.target.value}))} placeholder="cth: 120304-12-0011"/></div>
-            </div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Jantina</label>
-                <select className="form-input" value={form.jantina} onChange={e=>setForm(f=>({...f,jantina:e.target.value}))}>
-                  <option>Lelaki</option><option>Perempuan</option>
-                </select>
-              </div>
-              <div className="form-field"><label className="form-label">Status</label>
-                <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
-                  <option>Aktif</option><option>Tidak Aktif</option><option>Berpindah</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-field"><label className="form-label">Tel. Wali</label><input className="form-input" value={form.telefon_wali} onChange={e=>setForm(f=>({...f,telefon_wali:e.target.value}))} placeholder="cth: 011-2345678"/></div>
-            <button className="btn-primary" type="submit">+ Tambah</button>
-          </form>
-        </Modal>
-      )}
-      {editItem && (
-        <Modal title={`Edit — ${editItem.nama}`} onClose={() => setEditItem(null)}>
-          <form onSubmit={handleEdit}>
-            <div className="form-field"><label className="form-label">Nama Penuh</label><input className="form-input" required value={editItem.nama} onChange={e=>setEditItem(f=>({...f,nama:e.target.value}))}/></div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">No. IC</label><input className="form-input" value={editItem.ic} onChange={e=>setEditItem(f=>({...f,ic:e.target.value}))}/></div>
-            </div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Jantina</label>
-                <select className="form-input" value={editItem.jantina} onChange={e=>setEditItem(f=>({...f,jantina:e.target.value}))}>
-                  <option>Lelaki</option><option>Perempuan</option>
-                </select>
-              </div>
-              <div className="form-field"><label className="form-label">Status</label>
-                <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
-                  <option>Aktif</option><option>Tidak Aktif</option><option>Berpindah</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-field"><label className="form-label">Tel. Wali</label><input className="form-input" value={editItem.telefon_wali} onChange={e=>setEditItem(f=>({...f,telefon_wali:e.target.value}))}/></div>
-            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
-          </form>
-        </Modal>
-      )}
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Jantina</label><select className="form-input" value={form.jantina} onChange={e=>setForm(f=>({...f,jantina:e.target.value}))}><option>Lelaki</option><option>Perempuan</option></select></div>
+          <div className="form-field"><label className="form-label">Status</label><select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}><option>Aktif</option><option>Tidak Aktif</option><option>Berpindah</option></select></div>
+        </div>
+        <div className="form-field"><label className="form-label">Tel. Wali</label><input className="form-input" value={form.telefon_wali} onChange={e=>setForm(f=>({...f,telefon_wali:e.target.value}))} placeholder="cth: 011-2345678"/></div>
+        <button className="btn-primary" type="submit">+ Tambah</button>
+      </form></Modal>)}
+      {editItem && (<Modal title={`Edit — ${editItem.nama}`} onClose={() => setEditItem(null)}><form onSubmit={handleEdit}>
+        <div className="form-field"><label className="form-label">Nama Penuh</label><input className="form-input" required value={editItem.nama} onChange={e=>setEditItem(f=>({...f,nama:e.target.value}))}/></div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">No. IC</label><input className="form-input" value={editItem.ic} onChange={e=>setEditItem(f=>({...f,ic:e.target.value}))}/></div>
+        </div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Jantina</label><select className="form-input" value={editItem.jantina} onChange={e=>setEditItem(f=>({...f,jantina:e.target.value}))}><option>Lelaki</option><option>Perempuan</option></select></div>
+          <div className="form-field"><label className="form-label">Status</label><select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}><option>Aktif</option><option>Tidak Aktif</option><option>Berpindah</option></select></div>
+        </div>
+        <div className="form-field"><label className="form-label">Tel. Wali</label><input className="form-input" value={editItem.telefon_wali} onChange={e=>setEditItem(f=>({...f,telefon_wali:e.target.value}))}/></div>
+        <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+      </form></Modal>)}
     </KurPage>
   );
 }
 
 // ─── HEM 2. DISIPLIN ─────────────────────────────────────────────────────────
 function HemDisiplin() {
+  const TABS_DS=['📋 Rekod Kes','📊 Analisis','⚠️ Murid Bermasalah'];
+  const [subtab,setSubtab]=useState(0);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [q,setQ]=useState(''); const [filterKelas,setFilterKelas]=useState(''); const [filterStatus,setFilterStatus]=useState('');
   const blank = { nama_murid:"", kelas:"", tarikh:"", kesalahan:"", tindakan:"", status:"Dalam Proses" };
   const [form, setForm] = useState(blank);
   const badgeMap = { "Selesai":"b-green","Dalam Proses":"b-yellow","Dirujuk":"b-red" };
@@ -4691,6 +4703,18 @@ function HemDisiplin() {
     if (ok) setData(d => d.filter(r => r.id !== id));
   };
 
+  const filtered = data.filter(r => {
+    if(q && !r.nama_murid?.toLowerCase().includes(q.toLowerCase()) && !r.kesalahan?.toLowerCase().includes(q.toLowerCase())) return false;
+    if(filterKelas && r.kelas !== filterKelas) return false;
+    if(filterStatus && r.status !== filterStatus) return false;
+    return true;
+  });
+  const kelasList = [...new Set(data.map(r=>r.kelas).filter(Boolean))].sort();
+  const byKesalahan = Object.entries(data.reduce((a,r)=>{ a[r.kesalahan||'Lain-lain']=(a[r.kesalahan||'Lain-lain']||0)+1; return a; },{})).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const byKelas = kelasList.map(k=>({ kelas:k, count:data.filter(r=>r.kelas===k).length })).sort((a,b)=>b.count-a.count);
+  const byMurid = Object.entries(data.reduce((a,r)=>{ const key=`${r.nama_murid}||${r.kelas}`; a[key]=(a[key]||0)+1; return a; },{})).map(([k,c])=>({ nama:k.split('||')[0], kelas:k.split('||')[1], count:c })).sort((a,b)=>b.count-a.count).slice(0,15);
+  const maxKes = byKesalahan[0]?.[1]||1; const maxKls = byKelas[0]?.count||1;
+
   const selesai = data.filter(r => r.status === "Selesai").length;
   return (
     <KurPage title="Disiplin" sub="HEM · SK Darau, Kota Kinabalu"
@@ -4700,32 +4724,103 @@ function HemDisiplin() {
         { ico:"⏳", val:data.filter(r=>r.status==="Dalam Proses").length, lbl:"Dalam Proses" },
         { ico:"🚨", val:data.filter(r=>r.status==="Dirujuk").length, lbl:"Dirujuk" },
       ]}>
-      <div className="kur-header">
-        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Kes</button>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+        {TABS_DS.map((t,i)=><button key={i} onClick={()=>setSubtab(i)} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,background:subtab===i?"var(--accent)":"var(--card2)",color:subtab===i?"#fff":"var(--text2)"}}>{t}</button>)}
       </div>
-      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+      {subtab===0 && (<>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8,alignItems:"center"}}>
+          <input className="form-input" style={{maxWidth:200,marginBottom:0}} placeholder="🔍 Cari nama / kesalahan…" value={q} onChange={e=>setQ(e.target.value)}/>
+          <select className="form-input" style={{maxWidth:160,marginBottom:0}} value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}>
+            <option value="">Semua Kelas</option>{kelasList.map(k=><option key={k}>{k}</option>)}
+          </select>
+          <select className="form-input" style={{maxWidth:160,marginBottom:0}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+            <option value="">Semua Status</option><option>Dalam Proses</option><option>Selesai</option><option>Dirujuk</option>
+          </select>
+          <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Kes</button>
+        </div>
+        {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+          <div className="kur-table-wrap">
+            <table className="kur-table">
+              <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Kesalahan</th><th>Tindakan</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {filtered.map(r => (
+                  <tr key={r.id}>
+                    <td style={{fontWeight:800}}>{r.nama_murid}</td>
+                    <td style={{color:"var(--text3)"}}>{r.kelas}</td>
+                    <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
+                    <td>{r.kesalahan}</td>
+                    <td style={{fontSize:12,color:"var(--text2)"}}>{r.tindakan}</td>
+                    <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
+                    <td style={{display:"flex",gap:4}}>
+                      <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                      <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length===0 && <tr><td colSpan={7} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada rekod</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </>)}
+      {subtab===1 && (<>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Jenis Kesalahan</div>
+            {byKesalahan.map(([k,c])=>(
+              <div key={k} style={{marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span>{k}</span><b>{c}</b></div>
+                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(c/maxKes)*100}%`,height:8,borderRadius:4,background:"var(--accent)"}}></div></div>
+              </div>
+            ))}
+            {byKesalahan.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
+          </div>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Kes Mengikut Kelas</div>
+            {byKelas.map(({kelas,count})=>(
+              <div key={kelas} style={{marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span>{kelas}</span><b>{count}</b></div>
+                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(count/maxKls)*100}%`,height:8,borderRadius:4,background:"var(--accent2)"}}></div></div>
+              </div>
+            ))}
+            {byKelas.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
+          </div>
+        </div>
+        <div className="kur-card" style={{padding:16,marginTop:16}}>
+          <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Status Keseluruhan</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+            {[["Selesai","b-green","✅"],["Dalam Proses","b-yellow","⏳"],["Dirujuk","b-red","🚨"]].map(([s,b,ico])=>{
+              const cnt=data.filter(r=>r.status===s).length;
+              return <div key={s} style={{textAlign:"center",padding:"12px 8px",background:"var(--card2)",borderRadius:10}}>
+                <div style={{fontSize:22}}>{ico}</div>
+                <div style={{fontWeight:900,fontSize:22,color:"var(--accent)"}}>{cnt}</div>
+                <div style={{fontSize:11,color:"var(--text3)"}}>{s}</div>
+              </div>;
+            })}
+          </div>
+        </div>
+      </>)}
+      {subtab===2 && (<>
+        <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Murid dengan Kes Paling Banyak</div>
         <div className="kur-table-wrap">
           <table className="kur-table">
-            <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Kesalahan</th><th>Tindakan</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>Bilangan Kes</th><th>Status Semasa</th></tr></thead>
             <tbody>
-              {data.map(r => (
-                <tr key={r.id}>
-                  <td style={{fontWeight:800}}>{r.nama_murid}</td>
-                  <td style={{color:"var(--text3)"}}>{r.kelas}</td>
-                  <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
-                  <td>{r.kesalahan}</td>
-                  <td style={{fontSize:12,color:"var(--text2)"}}>{r.tindakan}</td>
-                  <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
-                  <td style={{display:"flex",gap:4}}>
-                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
-                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
-                  </td>
-                </tr>
-              ))}
+              {byMurid.map((m,i)=>{
+                const latest = data.find(r=>r.nama_murid===m.nama && r.kelas===m.kelas);
+                return <tr key={i}>
+                  <td style={{fontWeight:900,color:i<3?"var(--accent)":"var(--text3)"}}>{i+1}</td>
+                  <td style={{fontWeight:800}}>{m.nama}</td>
+                  <td style={{color:"var(--text3)"}}>{m.kelas}</td>
+                  <td><span style={{fontWeight:900,color:"var(--accent)",fontSize:16}}>{m.count}</span> kes</td>
+                  <td>{latest && <span className={`badge ${badgeMap[latest.status]||"b-gray"}`}>{latest.status}</span>}</td>
+                </tr>;
+              })}
+              {byMurid.length===0 && <tr><td colSpan={5} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada data</td></tr>}
             </tbody>
           </table>
         </div>
-      )}
+      </>)}
       {showAdd && (
         <Modal title="Tambah Kes Disiplin" onClose={() => setShowAdd(false)}>
           <form onSubmit={handleAdd}>
@@ -4774,10 +4869,13 @@ function HemDisiplin() {
 
 // ─── HEM 3. BIMBINGAN & KAUNSELING ───────────────────────────────────────────
 function HemKaunseling() {
+  const TABS_KS=['💬 Rekod Sesi','📊 Analisis','🔔 Tindak Lanjut'];
+  const [subtab,setSubtab]=useState(0);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [q,setQ]=useState(''); const [filterKelas,setFilterKelas]=useState(''); const [filterStatus,setFilterStatus]=useState('');
   const blank = { nama_murid:"", kelas:"", tarikh:"", jenis_kes:"", kaunselor:"", status:"Dalam Proses" };
   const [form, setForm] = useState(blank);
   const badgeMap = { "Selesai":"b-green","Dalam Proses":"b-blue","Dirujuk":"b-red" };
@@ -4807,6 +4905,18 @@ function HemKaunseling() {
     if (ok) setData(d => d.filter(r => r.id !== id));
   };
 
+  const filtered = data.filter(r => {
+    if(q && !r.nama_murid?.toLowerCase().includes(q.toLowerCase()) && !r.jenis_kes?.toLowerCase().includes(q.toLowerCase())) return false;
+    if(filterKelas && r.kelas !== filterKelas) return false;
+    if(filterStatus && r.status !== filterStatus) return false;
+    return true;
+  });
+  const kelasList = [...new Set(data.map(r=>r.kelas).filter(Boolean))].sort();
+  const byJenis = Object.entries(data.reduce((a,r)=>{ a[r.jenis_kes||'Lain-lain']=(a[r.jenis_kes||'Lain-lain']||0)+1; return a; },{})).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const byKaunselor = Object.entries(data.reduce((a,r)=>{ if(r.kaunselor) a[r.kaunselor]=(a[r.kaunselor]||0)+1; return a; },{})).sort((a,b)=>b[1]-a[1]);
+  const pending = data.filter(r=>r.status==="Dalam Proses"||r.status==="Dirujuk");
+  const maxJ = byJenis[0]?.[1]||1;
+
   const selesai = data.filter(r => r.status === "Selesai").length;
   return (
     <KurPage title="Bimbingan & Kaunseling" sub="HEM · SK Darau, Kota Kinabalu"
@@ -4816,15 +4926,90 @@ function HemKaunseling() {
         { ico:"⏳", val:data.filter(r=>r.status==="Dalam Proses").length, lbl:"Dalam Proses" },
         { ico:"👩‍💼", val:[...new Set(data.map(r=>r.kaunselor))].filter(Boolean).length, lbl:"Kaunselor" },
       ]}>
-      <div className="kur-header">
-        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Sesi</button>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+        {TABS_KS.map((t,i)=><button key={i} onClick={()=>setSubtab(i)} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,background:subtab===i?"var(--accent)":"var(--card2)",color:subtab===i?"#fff":"var(--text2)"}}>{t}</button>)}
       </div>
-      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+      {subtab===0 && (<>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8,alignItems:"center"}}>
+          <input className="form-input" style={{maxWidth:200,marginBottom:0}} placeholder="🔍 Cari nama / jenis kes…" value={q} onChange={e=>setQ(e.target.value)}/>
+          <select className="form-input" style={{maxWidth:160,marginBottom:0}} value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}>
+            <option value="">Semua Kelas</option>{kelasList.map(k=><option key={k}>{k}</option>)}
+          </select>
+          <select className="form-input" style={{maxWidth:160,marginBottom:0}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+            <option value="">Semua Status</option><option>Dalam Proses</option><option>Selesai</option><option>Dirujuk</option>
+          </select>
+          <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Sesi</button>
+        </div>
+        {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+          <div className="kur-table-wrap">
+            <table className="kur-table">
+              <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Jenis Kes</th><th>Kaunselor</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {filtered.map(r => (
+                  <tr key={r.id}>
+                    <td style={{fontWeight:800}}>{r.nama_murid}</td>
+                    <td style={{color:"var(--text3)"}}>{r.kelas}</td>
+                    <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
+                    <td>{r.jenis_kes}</td>
+                    <td><span className="badge b-gray">{r.kaunselor}</span></td>
+                    <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
+                    <td style={{display:"flex",gap:4}}>
+                      <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                      <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length===0 && <tr><td colSpan={7} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada rekod</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </>)}
+      {subtab===1 && (<>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Jenis Kes</div>
+            {byJenis.map(([k,c])=>(
+              <div key={k} style={{marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span>{k}</span><b>{c}</b></div>
+                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(c/maxJ)*100}%`,height:8,borderRadius:4,background:"var(--accent)"}}></div></div>
+              </div>
+            ))}
+            {byJenis.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
+          </div>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Sesi Mengikut Kaunselor</div>
+            {byKaunselor.map(([k,c])=>(
+              <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
+                <span style={{fontWeight:600}}>{k}</span>
+                <span className="badge b-blue">{c} sesi</span>
+              </div>
+            ))}
+            {byKaunselor.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
+          </div>
+        </div>
+        <div className="kur-card" style={{padding:16,marginTop:16}}>
+          <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Status Keseluruhan</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+            {[["Selesai","b-green","✅"],["Dalam Proses","b-blue","⏳"],["Dirujuk","b-red","🔔"]].map(([s,b,ico])=>{
+              const cnt=data.filter(r=>r.status===s).length;
+              return <div key={s} style={{textAlign:"center",padding:"12px 8px",background:"var(--card2)",borderRadius:10}}>
+                <div style={{fontSize:22}}>{ico}</div>
+                <div style={{fontWeight:900,fontSize:22,color:"var(--accent)"}}>{cnt}</div>
+                <div style={{fontSize:11,color:"var(--text3)"}}>{s}</div>
+              </div>;
+            })}
+          </div>
+        </div>
+      </>)}
+      {subtab===2 && (<>
+        <div style={{fontWeight:700,marginBottom:4,color:"var(--text2)"}}>Sesi Perlu Tindak Lanjut</div>
+        <div style={{fontSize:12,color:"var(--text3)",marginBottom:12}}>Status: Dalam Proses atau Dirujuk</div>
         <div className="kur-table-wrap">
           <table className="kur-table">
             <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Jenis Kes</th><th>Kaunselor</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              {data.map(r => (
+              {pending.map(r=>(
                 <tr key={r.id}>
                   <td style={{fontWeight:800}}>{r.nama_murid}</td>
                   <td style={{color:"var(--text3)"}}>{r.kelas}</td>
@@ -4832,16 +5017,14 @@ function HemKaunseling() {
                   <td>{r.jenis_kes}</td>
                   <td><span className="badge b-gray">{r.kaunselor}</span></td>
                   <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
-                  <td style={{display:"flex",gap:4}}>
-                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
-                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
-                  </td>
+                  <td><button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button></td>
                 </tr>
               ))}
+              {pending.length===0 && <tr><td colSpan={7} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada sesi tertunggak 🎉</td></tr>}
             </tbody>
           </table>
         </div>
-      )}
+      </>)}
       {showAdd && (
         <Modal title="Tambah Sesi Kaunseling" onClose={() => setShowAdd(false)}>
           <form onSubmit={handleAdd}>
@@ -4890,10 +5073,13 @@ function HemKaunseling() {
 
 // ─── HEM 4. KESIHATAN MURID ───────────────────────────────────────────────────
 function HemKesihatan() {
+  const TABS_KH=['🏥 Rekod','📊 Analisis','🚑 Perlu Tindakan'];
+  const [subtab,setSubtab]=useState(0);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [q,setQ]=useState(''); const [filterKelas,setFilterKelas]=useState(''); const [filterStatus,setFilterStatus]=useState('');
   const blank = { nama_murid:"", kelas:"", tarikh:"", jenis_pemeriksaan:"", catatan:"", status:"Normal" };
   const [form, setForm] = useState(blank);
   const badgeMap = { "Normal":"b-green","Perlu Perhatian":"b-yellow","Dirujuk":"b-red" };
@@ -4923,6 +5109,18 @@ function HemKesihatan() {
     if (ok) setData(d => d.filter(r => r.id !== id));
   };
 
+  const filtered = data.filter(r => {
+    if(q && !r.nama_murid?.toLowerCase().includes(q.toLowerCase()) && !r.jenis_pemeriksaan?.toLowerCase().includes(q.toLowerCase())) return false;
+    if(filterKelas && r.kelas !== filterKelas) return false;
+    if(filterStatus && r.status !== filterStatus) return false;
+    return true;
+  });
+  const kelasList = [...new Set(data.map(r=>r.kelas).filter(Boolean))].sort();
+  const byPemeriksaan = Object.entries(data.reduce((a,r)=>{ a[r.jenis_pemeriksaan||'Lain-lain']=(a[r.jenis_pemeriksaan||'Lain-lain']||0)+1; return a; },{})).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const byKelas = [...new Set(data.map(r=>r.kelas).filter(Boolean))].sort().map(k=>({ kelas:k, count:data.filter(r=>r.kelas===k).length })).sort((a,b)=>b.count-a.count);
+  const needAction = data.filter(r=>r.status==="Perlu Perhatian"||r.status==="Dirujuk");
+  const maxP = byPemeriksaan[0]?.[1]||1; const maxK = byKelas[0]?.count||1;
+
   const normal = data.filter(r => r.status === "Normal").length;
   return (
     <KurPage title="Kesihatan Murid" sub="HEM · SK Darau, Kota Kinabalu"
@@ -4932,15 +5130,90 @@ function HemKesihatan() {
         { ico:"⚠️", val:data.filter(r=>r.status==="Perlu Perhatian").length, lbl:"Perlu Perhatian" },
         { ico:"🚑", val:data.filter(r=>r.status==="Dirujuk").length, lbl:"Dirujuk" },
       ]}>
-      <div className="kur-header">
-        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Rekod</button>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+        {TABS_KH.map((t,i)=><button key={i} onClick={()=>setSubtab(i)} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,background:subtab===i?"var(--accent)":"var(--card2)",color:subtab===i?"#fff":"var(--text2)"}}>{t}</button>)}
       </div>
-      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+      {subtab===0 && (<>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8,alignItems:"center"}}>
+          <input className="form-input" style={{maxWidth:200,marginBottom:0}} placeholder="🔍 Cari nama / pemeriksaan…" value={q} onChange={e=>setQ(e.target.value)}/>
+          <select className="form-input" style={{maxWidth:160,marginBottom:0}} value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}>
+            <option value="">Semua Kelas</option>{kelasList.map(k=><option key={k}>{k}</option>)}
+          </select>
+          <select className="form-input" style={{maxWidth:180,marginBottom:0}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+            <option value="">Semua Status</option><option>Normal</option><option>Perlu Perhatian</option><option>Dirujuk</option>
+          </select>
+          <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Rekod</button>
+        </div>
+        {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+          <div className="kur-table-wrap">
+            <table className="kur-table">
+              <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Pemeriksaan</th><th>Catatan</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {filtered.map(r => (
+                  <tr key={r.id}>
+                    <td style={{fontWeight:800}}>{r.nama_murid}</td>
+                    <td style={{color:"var(--text3)"}}>{r.kelas}</td>
+                    <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
+                    <td>{r.jenis_pemeriksaan}</td>
+                    <td style={{fontSize:12,color:"var(--text2)"}}>{r.catatan}</td>
+                    <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
+                    <td style={{display:"flex",gap:4}}>
+                      <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                      <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length===0 && <tr><td colSpan={7} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada rekod</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </>)}
+      {subtab===1 && (<>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Jenis Pemeriksaan</div>
+            {byPemeriksaan.map(([k,c])=>(
+              <div key={k} style={{marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span>{k}</span><b>{c}</b></div>
+                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(c/maxP)*100}%`,height:8,borderRadius:4,background:"var(--accent)"}}></div></div>
+              </div>
+            ))}
+            {byPemeriksaan.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
+          </div>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Rekod Mengikut Kelas</div>
+            {byKelas.map(({kelas,count})=>(
+              <div key={kelas} style={{marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span>{kelas}</span><b>{count}</b></div>
+                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(count/maxK)*100}%`,height:8,borderRadius:4,background:"var(--accent2)"}}></div></div>
+              </div>
+            ))}
+            {byKelas.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
+          </div>
+        </div>
+        <div className="kur-card" style={{padding:16,marginTop:16}}>
+          <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Status Kesihatan</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+            {[["Normal","b-green","✅"],["Perlu Perhatian","b-yellow","⚠️"],["Dirujuk","b-red","🚑"]].map(([s,b,ico])=>{
+              const cnt=data.filter(r=>r.status===s).length;
+              return <div key={s} style={{textAlign:"center",padding:"12px 8px",background:"var(--card2)",borderRadius:10}}>
+                <div style={{fontSize:22}}>{ico}</div>
+                <div style={{fontWeight:900,fontSize:22,color:"var(--accent)"}}>{cnt}</div>
+                <div style={{fontSize:11,color:"var(--text3)"}}>{s}</div>
+              </div>;
+            })}
+          </div>
+        </div>
+      </>)}
+      {subtab===2 && (<>
+        <div style={{fontWeight:700,marginBottom:4,color:"var(--text2)"}}>Murid Perlu Tindakan Segera</div>
+        <div style={{fontSize:12,color:"var(--text3)",marginBottom:12}}>Status: Perlu Perhatian atau Dirujuk</div>
         <div className="kur-table-wrap">
           <table className="kur-table">
             <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Pemeriksaan</th><th>Catatan</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              {data.map(r => (
+              {needAction.map(r=>(
                 <tr key={r.id}>
                   <td style={{fontWeight:800}}>{r.nama_murid}</td>
                   <td style={{color:"var(--text3)"}}>{r.kelas}</td>
@@ -4948,16 +5221,14 @@ function HemKesihatan() {
                   <td>{r.jenis_pemeriksaan}</td>
                   <td style={{fontSize:12,color:"var(--text2)"}}>{r.catatan}</td>
                   <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
-                  <td style={{display:"flex",gap:4}}>
-                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
-                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
-                  </td>
+                  <td><button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button></td>
                 </tr>
               ))}
+              {needAction.length===0 && <tr><td colSpan={7} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Semua murid dalam keadaan baik 🎉</td></tr>}
             </tbody>
           </table>
         </div>
-      )}
+      </>)}
       {showAdd && (
         <Modal title="Tambah Rekod Kesihatan" onClose={() => setShowAdd(false)}>
           <form onSubmit={handleAdd}>
@@ -5554,13 +5825,18 @@ function HemBantuan() {
 
 // ─── HEM 6. KESELAMATAN & 3K ──────────────────────────────────────────────────
 function Hem3K() {
+  const TABS_3K=['🛡️ Senarai','📅 Paparan Bulanan','📊 Ringkasan'];
+  const [subtab,setSubtab]=useState(0);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [q,setQ]=useState(''); const [filterJenis,setFilterJenis]=useState(''); const [filterStatus,setFilterStatus]=useState('');
   const blank = { tajuk:"", tarikh:"", jenis:"Kebersihan", lokasi:"", status:"Akan Datang" };
   const [form, setForm] = useState(blank);
   const badgeMap = { "Selesai":"b-green","Akan Datang":"b-yellow","Dalam Proses":"b-blue" };
+  const JENIS_3K = ["Kebersihan","Keselamatan","Kesihatan","Gotong-royong","Lain-lain"];
+  const BULAN = ["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ogos","Sep","Okt","Nov","Dis"];
 
   const load = async () => {
     setLoading(true);
@@ -5587,7 +5863,16 @@ function Hem3K() {
     if (ok) setData(d => d.filter(r => r.id !== id));
   };
 
-  const JENIS_3K = ["Kebersihan","Keselamatan","Kesihatan","Gotong-royong","Lain-lain"];
+  const filtered = data.filter(r => {
+    if(q && !r.tajuk?.toLowerCase().includes(q.toLowerCase()) && !r.lokasi?.toLowerCase().includes(q.toLowerCase())) return false;
+    if(filterJenis && r.jenis !== filterJenis) return false;
+    if(filterStatus && r.status !== filterStatus) return false;
+    return true;
+  });
+  const byBulan = BULAN.map((b,i) => ({ bulan:b, items:data.filter(r => { const d=new Date(r.tarikh); return !isNaN(d) && d.getMonth()===i; }) })).filter(b=>b.items.length>0);
+  const byJenis = JENIS_3K.map(j=>({ jenis:j, total:data.filter(r=>r.jenis===j).length, selesai:data.filter(r=>r.jenis===j&&r.status==="Selesai").length })).filter(j=>j.total>0);
+  const pctSelesai = data.length ? Math.round((data.filter(r=>r.status==="Selesai").length/data.length)*100) : 0;
+
   const selesai = data.filter(r => r.status === "Selesai").length;
   return (
     <KurPage title="Keselamatan & 3K" sub="HEM · SK Darau, Kota Kinabalu"
@@ -5597,31 +5882,98 @@ function Hem3K() {
         { ico:"📅", val:data.filter(r=>r.status==="Akan Datang").length, lbl:"Akan Datang" },
         { ico:"🔄", val:data.filter(r=>r.status==="Dalam Proses").length, lbl:"Dalam Proses" },
       ]}>
-      <div className="kur-header">
-        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Aktiviti</button>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+        {TABS_3K.map((t,i)=><button key={i} onClick={()=>setSubtab(i)} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,background:subtab===i?"var(--accent)":"var(--card2)",color:subtab===i?"#fff":"var(--text2)"}}>{t}</button>)}
       </div>
-      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
-        <div className="kur-table-wrap">
-          <table className="kur-table">
-            <thead><tr><th>Tajuk</th><th>Tarikh</th><th>Jenis</th><th>Lokasi</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              {data.map(r => (
-                <tr key={r.id}>
-                  <td style={{fontWeight:800}}>{r.tajuk}</td>
-                  <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
-                  <td><span className="badge b-blue">{r.jenis}</span></td>
-                  <td style={{color:"var(--text2)"}}>{r.lokasi}</td>
-                  <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
-                  <td style={{display:"flex",gap:4}}>
-                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
-                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {subtab===0 && (<>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8,alignItems:"center"}}>
+          <input className="form-input" style={{maxWidth:200,marginBottom:0}} placeholder="🔍 Cari tajuk / lokasi…" value={q} onChange={e=>setQ(e.target.value)}/>
+          <select className="form-input" style={{maxWidth:160,marginBottom:0}} value={filterJenis} onChange={e=>setFilterJenis(e.target.value)}>
+            <option value="">Semua Jenis</option>{JENIS_3K.map(j=><option key={j}>{j}</option>)}
+          </select>
+          <select className="form-input" style={{maxWidth:160,marginBottom:0}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+            <option value="">Semua Status</option><option>Akan Datang</option><option>Dalam Proses</option><option>Selesai</option>
+          </select>
+          <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Aktiviti</button>
         </div>
-      )}
+        {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+          <div className="kur-table-wrap">
+            <table className="kur-table">
+              <thead><tr><th>Tajuk</th><th>Tarikh</th><th>Jenis</th><th>Lokasi</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {filtered.map(r => (
+                  <tr key={r.id}>
+                    <td style={{fontWeight:800}}>{r.tajuk}</td>
+                    <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
+                    <td><span className="badge b-blue">{r.jenis}</span></td>
+                    <td style={{color:"var(--text2)"}}>{r.lokasi}</td>
+                    <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
+                    <td style={{display:"flex",gap:4}}>
+                      <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                      <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length===0 && <tr><td colSpan={6} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada rekod</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </>)}
+      {subtab===1 && (<>
+        {byBulan.length===0 ? <div style={{color:"var(--text3)",padding:24,textAlign:"center"}}>Tiada data bertarikh</div> :
+        byBulan.map(({bulan,items})=>(
+          <div key={bulan} className="kur-card" style={{marginBottom:12,padding:14}}>
+            <div style={{fontWeight:800,marginBottom:10,color:"var(--accent)",fontSize:15}}>{bulan}</div>
+            {items.map(r=>(
+              <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid var(--border)"}}>
+                <div>
+                  <div style={{fontWeight:700}}>{r.tajuk}</div>
+                  <div style={{fontSize:11,color:"var(--text3)"}}>{r.tarikh} · {r.lokasi}</div>
+                </div>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <span className="badge b-blue">{r.jenis}</span>
+                  <span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </>)}
+      {subtab===2 && (<>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Mengikut Jenis</div>
+            <table className="kur-table" style={{fontSize:12}}>
+              <thead><tr><th>Jenis</th><th>Total</th><th>Selesai</th><th>%</th></tr></thead>
+              <tbody>
+                {byJenis.map(({jenis,total,selesai:s})=>(
+                  <tr key={jenis}>
+                    <td>{jenis}</td>
+                    <td style={{fontWeight:700}}>{total}</td>
+                    <td><span className="badge b-green">{s}</span></td>
+                    <td>{total?Math.round(s/total*100):0}%</td>
+                  </tr>
+                ))}
+                {byJenis.length===0 && <tr><td colSpan={4} style={{color:"var(--text3)"}}>Tiada data</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Peratusan Selesai</div>
+            <div style={{textAlign:"center",padding:"24px 0"}}>
+              <div style={{fontSize:48,fontWeight:900,color:"var(--accent)"}}>{pctSelesai}%</div>
+              <div style={{fontSize:13,color:"var(--text3)",marginTop:4}}>aktiviti telah selesai</div>
+            </div>
+            <div style={{background:"var(--border)",borderRadius:8,height:14,marginTop:8}}>
+              <div style={{width:`${pctSelesai}%`,height:14,borderRadius:8,background:"var(--accent)",transition:"width 0.5s"}}></div>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"var(--text3)",marginTop:4}}>
+              <span>{selesai} selesai</span><span>{data.length} jumlah</span>
+            </div>
+          </div>
+        </div>
+      </>)}
       {showAdd && (
         <Modal title="Tambah Aktiviti 3K" onClose={() => setShowAdd(false)}>
           <form onSubmit={handleAdd}>
@@ -5672,12 +6024,17 @@ function Hem3K() {
 
 // ─── HEM 7. PENGAWAS SEKOLAH ──────────────────────────────────────────────────
 function HemPengawas() {
+  const TABS_PW=['🎖️ Senarai','👑 Ikut Jawatan','🏫 Ikut Kelas'];
+  const [subtab,setSubtab]=useState(0);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [q,setQ]=useState(''); const [filterJawatan,setFilterJawatan]=useState(''); const [filterStatus,setFilterStatus]=useState('');
   const blank = { nama:"", kelas:"", jawatan:"Pengawas Biasa", tarikh_lantik:"", status:"Aktif" };
   const [form, setForm] = useState(blank);
+  const JAWATAN = ["Ketua Pengawas","Penolong Ketua","Pengawas Biasa"];
+  const jawatanColor = { "Ketua Pengawas":"b-purple","Penolong Ketua":"b-blue","Pengawas Biasa":"b-gray" };
 
   const load = async () => {
     setLoading(true);
@@ -5704,7 +6061,16 @@ function HemPengawas() {
     if (ok) setData(d => d.filter(r => r.id !== id));
   };
 
-  const JAWATAN = ["Ketua Pengawas","Penolong Ketua","Pengawas Biasa"];
+  const filtered = data.filter(r => {
+    if(q && !r.nama?.toLowerCase().includes(q.toLowerCase())) return false;
+    if(filterJawatan && r.jawatan !== filterJawatan) return false;
+    if(filterStatus && r.status !== filterStatus) return false;
+    return true;
+  });
+  const byJawatan = JAWATAN.map(j=>({ jawatan:j, list:data.filter(r=>r.jawatan===j) })).filter(j=>j.list.length>0);
+  const kelasList = [...new Set(data.map(r=>r.kelas).filter(Boolean))].sort();
+  const byKelas = kelasList.map(k=>({ kelas:k, list:data.filter(r=>r.kelas===k) }));
+
   const aktif = data.filter(r => r.status === "Aktif").length;
   return (
     <KurPage title="Pengawas Sekolah" sub="HEM · SK Darau, Kota Kinabalu"
@@ -5714,32 +6080,87 @@ function HemPengawas() {
         { ico:"👑", val:data.filter(r=>r.jawatan==="Ketua Pengawas").length, lbl:"Ketua" },
         { ico:"🏅", val:data.filter(r=>r.jawatan==="Pengawas Biasa").length, lbl:"Biasa" },
       ]}>
-      <div className="kur-header">
-        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Pengawas</button>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+        {TABS_PW.map((t,i)=><button key={i} onClick={()=>setSubtab(i)} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,background:subtab===i?"var(--accent)":"var(--card2)",color:subtab===i?"#fff":"var(--text2)"}}>{t}</button>)}
       </div>
-      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
-        <div className="kur-table-wrap">
-          <table className="kur-table">
-            <thead><tr><th>#</th><th>Nama</th><th>Kelas</th><th>Jawatan</th><th>Tarikh Lantik</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              {data.map((r, i) => (
-                <tr key={r.id}>
-                  <td style={{fontWeight:900,color:"var(--accent)"}}>{i+1}</td>
-                  <td style={{fontWeight:800}}>{r.nama}</td>
-                  <td style={{color:"var(--text3)"}}>{r.kelas}</td>
-                  <td><span className={`badge ${r.jawatan==="Ketua Pengawas"?"b-purple":r.jawatan==="Penolong Ketua"?"b-blue":"b-gray"}`}>{r.jawatan}</span></td>
-                  <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh_lantik}</td>
-                  <td><span className={`badge ${r.status==="Aktif"?"b-green":"b-gray"}`}>{r.status}</span></td>
-                  <td style={{display:"flex",gap:4}}>
-                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
-                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {subtab===0 && (<>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8,alignItems:"center"}}>
+          <input className="form-input" style={{maxWidth:200,marginBottom:0}} placeholder="🔍 Cari nama…" value={q} onChange={e=>setQ(e.target.value)}/>
+          <select className="form-input" style={{maxWidth:180,marginBottom:0}} value={filterJawatan} onChange={e=>setFilterJawatan(e.target.value)}>
+            <option value="">Semua Jawatan</option>{JAWATAN.map(j=><option key={j}>{j}</option>)}
+          </select>
+          <select className="form-input" style={{maxWidth:160,marginBottom:0}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+            <option value="">Semua Status</option><option>Aktif</option><option>Tidak Aktif</option>
+          </select>
+          <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Pengawas</button>
         </div>
-      )}
+        {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+          <div className="kur-table-wrap">
+            <table className="kur-table">
+              <thead><tr><th>#</th><th>Nama</th><th>Kelas</th><th>Jawatan</th><th>Tarikh Lantik</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {filtered.map((r, i) => (
+                  <tr key={r.id}>
+                    <td style={{fontWeight:900,color:"var(--accent)"}}>{i+1}</td>
+                    <td style={{fontWeight:800}}>{r.nama}</td>
+                    <td style={{color:"var(--text3)"}}>{r.kelas}</td>
+                    <td><span className={`badge ${jawatanColor[r.jawatan]||"b-gray"}`}>{r.jawatan}</span></td>
+                    <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh_lantik}</td>
+                    <td><span className={`badge ${r.status==="Aktif"?"b-green":"b-gray"}`}>{r.status}</span></td>
+                    <td style={{display:"flex",gap:4}}>
+                      <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                      <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length===0 && <tr><td colSpan={7} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada rekod</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </>)}
+      {subtab===1 && (<>
+        {byJawatan.map(({jawatan,list})=>(
+          <div key={jawatan} className="kur-card" style={{marginBottom:14,padding:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div style={{fontWeight:800,fontSize:15}}>{jawatan}</div>
+              <span className={`badge ${jawatanColor[jawatan]||"b-gray"}`}>{list.length} orang</span>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
+              {list.map((r,i)=>(
+                <div key={r.id} style={{background:"var(--card2)",borderRadius:8,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontWeight:900,color:"var(--accent)",fontSize:13}}>{i+1}.</span>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:13}}>{r.nama}</div>
+                    <div style={{fontSize:11,color:"var(--text3)"}}>{r.kelas}</div>
+                  </div>
+                  <span className={`badge ${r.status==="Aktif"?"b-green":"b-gray"}`} style={{marginLeft:"auto",fontSize:10}}>{r.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        {byJawatan.length===0 && <div style={{color:"var(--text3)",padding:24,textAlign:"center"}}>Tiada pengawas</div>}
+      </>)}
+      {subtab===2 && (<>
+        {byKelas.map(({kelas,list})=>(
+          <div key={kelas} className="kur-card" style={{marginBottom:10,padding:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontWeight:800}}>{kelas}</div>
+              <span className="badge b-blue">{list.length} pengawas</span>
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {list.map(r=>(
+                <div key={r.id} style={{background:"var(--card2)",borderRadius:6,padding:"4px 10px",fontSize:12,display:"flex",gap:6,alignItems:"center"}}>
+                  <span style={{fontWeight:700}}>{r.nama}</span>
+                  <span className={`badge ${jawatanColor[r.jawatan]||"b-gray"}`} style={{fontSize:10}}>{r.jawatan}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        {byKelas.length===0 && <div style={{color:"var(--text3)",padding:24,textAlign:"center"}}>Tiada data</div>}
+      </>)}
       {showAdd && (
         <Modal title="Tambah Pengawas" onClose={() => setShowAdd(false)}>
           <form onSubmit={handleAdd}>
@@ -5794,12 +6215,16 @@ function HemPengawas() {
 
 // ─── HEM 8. KOPERASI ──────────────────────────────────────────────────────────
 function HemKoperasi() {
+  const TABS_KP=['🏪 Inventori','📊 Analisis Stok','💰 Nilai & Laporan'];
+  const [subtab,setSubtab]=useState(0);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [q,setQ]=useState(''); const [filterKat,setFilterKat]=useState('');
   const blank = { nama_produk:"", kategori:"Alat Tulis", stok:0, harga:0, status:"Tersedia" };
   const [form, setForm] = useState(blank);
+  const KAT = ["Alat Tulis","Pakaian","Makanan & Minuman","Buku","Lain-lain"];
 
   const load = async () => {
     setLoading(true);
@@ -5832,7 +6257,22 @@ function HemKoperasi() {
     if (ok) setData(d => d.map(r => r.id === id ? {...r, stok:val} : r));
   };
 
-  const KAT = ["Alat Tulis","Pakaian","Makanan & Minuman","Buku","Lain-lain"];
+  const filtered = data.filter(r => {
+    if(q && !r.nama_produk?.toLowerCase().includes(q.toLowerCase())) return false;
+    if(filterKat && r.kategori !== filterKat) return false;
+    return true;
+  });
+  const byKat = KAT.map(k=>({
+    kat:k,
+    count:data.filter(r=>r.kategori===k).length,
+    stok:data.filter(r=>r.kategori===k).reduce((a,r)=>a+(r.stok||0),0),
+    nilai:data.filter(r=>r.kategori===k).reduce((a,r)=>a+(r.stok||0)*(r.harga||0),0),
+  })).filter(k=>k.count>0);
+  const lowStock = data.filter(r=>r.stok<10 && r.stok>0).sort((a,b)=>a.stok-b.stok);
+  const habis = data.filter(r=>r.stok===0);
+  const totalNilai = data.reduce((a,r)=>a+(r.stok||0)*(r.harga||0),0);
+  const maxStok = byKat[0] ? Math.max(...byKat.map(k=>k.stok)) : 1;
+
   const tersedia = data.filter(r => r.status === "Tersedia").length;
   const totalStok = data.reduce((a, r) => a + (r.stok || 0), 0);
   return (
@@ -5843,37 +6283,125 @@ function HemKoperasi() {
         { ico:"📦", val:totalStok, lbl:"Jumlah Stok" },
         { ico:"🚫", val:data.filter(r=>r.stok===0).length, lbl:"Kehabisan" },
       ]}>
-      <div className="kur-header">
-        <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Produk</button>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+        {TABS_KP.map((t,i)=><button key={i} onClick={()=>setSubtab(i)} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,background:subtab===i?"var(--accent)":"var(--card2)",color:subtab===i?"#fff":"var(--text2)"}}>{t}</button>)}
       </div>
-      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
-        <div className="kur-table-wrap">
-          <table className="kur-table">
-            <thead><tr><th>Nama Produk</th><th>Kategori</th><th>Stok</th><th>Harga (RM)</th><th>Status</th><th></th></tr></thead>
+      {subtab===0 && (<>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8,alignItems:"center"}}>
+          <input className="form-input" style={{maxWidth:200,marginBottom:0}} placeholder="🔍 Cari produk…" value={q} onChange={e=>setQ(e.target.value)}/>
+          <select className="form-input" style={{maxWidth:180,marginBottom:0}} value={filterKat} onChange={e=>setFilterKat(e.target.value)}>
+            <option value="">Semua Kategori</option>{KAT.map(k=><option key={k}>{k}</option>)}
+          </select>
+          <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Produk</button>
+        </div>
+        {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+          <div className="kur-table-wrap">
+            <table className="kur-table">
+              <thead><tr><th>Nama Produk</th><th>Kategori</th><th>Stok</th><th>Harga (RM)</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {filtered.map(r => (
+                  <tr key={r.id}>
+                    <td style={{fontWeight:800}}>{r.nama_produk}</td>
+                    <td><span className="badge b-blue">{r.kategori}</span></td>
+                    <td>
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        <button onClick={() => adjustStok(r.id, r.stok, -1)} style={{border:"1px solid var(--border)",background:"var(--surface)",borderRadius:4,width:22,height:22,cursor:"pointer",color:"var(--text)",fontWeight:900,lineHeight:1}}>-</button>
+                        <span style={{fontWeight:900,color:r.stok===0?"var(--danger)":r.stok<10?"var(--warning)":"var(--accent)",minWidth:24,textAlign:"center"}}>{r.stok}</span>
+                        <button onClick={() => adjustStok(r.id, r.stok, 1)} style={{border:"1px solid var(--border)",background:"var(--surface)",borderRadius:4,width:22,height:22,cursor:"pointer",color:"var(--text)",fontWeight:900,lineHeight:1}}>+</button>
+                      </div>
+                    </td>
+                    <td style={{fontWeight:700}}>RM {Number(r.harga).toFixed(2)}</td>
+                    <td><span className={`badge ${r.stok===0?"b-red":r.stok<10?"b-yellow":"b-green"}`}>{r.stok===0?"Habis":r.stok<10?"Sedikit":"Tersedia"}</span></td>
+                    <td style={{display:"flex",gap:4}}>
+                      <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                      <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length===0 && <tr><td colSpan={6} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada rekod</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </>)}
+      {subtab===1 && (<>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Stok Mengikut Kategori</div>
+            {byKat.map(({kat,stok})=>(
+              <div key={kat} style={{marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span>{kat}</span><b>{stok} unit</b></div>
+                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(stok/maxStok)*100}%`,height:8,borderRadius:4,background:"var(--accent)"}}></div></div>
+              </div>
+            ))}
+            {byKat.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
+          </div>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Amaran Stok Rendah (&lt;10)</div>
+            {lowStock.map(r=>(
+              <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid var(--border)"}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:13}}>{r.nama_produk}</div>
+                  <div style={{fontSize:11,color:"var(--text3)"}}>{r.kategori}</div>
+                </div>
+                <span className="badge b-yellow">{r.stok} unit</span>
+              </div>
+            ))}
+            {habis.length>0 && habis.map(r=>(
+              <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid var(--border)"}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:13}}>{r.nama_produk}</div>
+                  <div style={{fontSize:11,color:"var(--text3)"}}>{r.kategori}</div>
+                </div>
+                <span className="badge b-red">Habis</span>
+              </div>
+            ))}
+            {lowStock.length===0 && habis.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Semua stok mencukupi 👍</div>}
+          </div>
+        </div>
+      </>)}
+      {subtab===2 && (<>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:4,color:"var(--text2)"}}>Jumlah Nilai Stok</div>
+            <div style={{fontSize:36,fontWeight:900,color:"var(--accent)"}}>RM {totalNilai.toFixed(2)}</div>
+            <div style={{fontSize:12,color:"var(--text3)",marginTop:4}}>{data.length} produk · {totalStok} unit</div>
+          </div>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:4,color:"var(--text2)"}}>Keadaan Stok</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:8}}>
+              {[["Tersedia","b-green",data.filter(r=>r.stok>=10).length],["Sedikit","b-yellow",data.filter(r=>r.stok>0&&r.stok<10).length],["Habis","b-red",habis.length]].map(([s,b,c])=>(
+                <div key={s} style={{textAlign:"center",padding:"10px 4px",background:"var(--card2)",borderRadius:8}}>
+                  <div style={{fontWeight:900,fontSize:20,color:"var(--accent)"}}>{c}</div>
+                  <div style={{fontSize:10,color:"var(--text3)"}}>{s}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="kur-card" style={{padding:16}}>
+          <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Nilai Mengikut Kategori</div>
+          <table className="kur-table" style={{fontSize:12}}>
+            <thead><tr><th>Kategori</th><th>Produk</th><th>Unit</th><th>Nilai (RM)</th></tr></thead>
             <tbody>
-              {data.map(r => (
-                <tr key={r.id}>
-                  <td style={{fontWeight:800}}>{r.nama_produk}</td>
-                  <td><span className="badge b-blue">{r.kategori}</span></td>
-                  <td>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <button onClick={() => adjustStok(r.id, r.stok, -1)} style={{border:"1px solid var(--border)",background:"var(--surface)",borderRadius:4,width:22,height:22,cursor:"pointer",color:"var(--text)",fontWeight:900,lineHeight:1}}>-</button>
-                      <span style={{fontWeight:900,color:"var(--accent)",minWidth:24,textAlign:"center"}}>{r.stok}</span>
-                      <button onClick={() => adjustStok(r.id, r.stok, 1)} style={{border:"1px solid var(--border)",background:"var(--surface)",borderRadius:4,width:22,height:22,cursor:"pointer",color:"var(--text)",fontWeight:900,lineHeight:1}}>+</button>
-                    </div>
-                  </td>
-                  <td style={{fontWeight:700}}>RM {Number(r.harga).toFixed(2)}</td>
-                  <td><span className={`badge ${r.stok===0?"b-red":r.stok<10?"b-yellow":"b-green"}`}>{r.stok===0?"Habis":r.stok<10?"Sedikit":"Tersedia"}</span></td>
-                  <td style={{display:"flex",gap:4}}>
-                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
-                    <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
-                  </td>
+              {byKat.map(({kat,count,stok,nilai})=>(
+                <tr key={kat}>
+                  <td><span className="badge b-blue">{kat}</span></td>
+                  <td>{count}</td>
+                  <td style={{fontWeight:700}}>{stok}</td>
+                  <td style={{fontWeight:800,color:"var(--accent)"}}>RM {nilai.toFixed(2)}</td>
                 </tr>
               ))}
+              <tr style={{borderTop:"2px solid var(--border)"}}>
+                <td style={{fontWeight:800}}>JUMLAH</td>
+                <td style={{fontWeight:800}}>{data.length}</td>
+                <td style={{fontWeight:800}}>{totalStok}</td>
+                <td style={{fontWeight:900,color:"var(--accent)"}}>RM {totalNilai.toFixed(2)}</td>
+              </tr>
             </tbody>
           </table>
         </div>
-      )}
+      </>)}
       {showAdd && (
         <Modal title="Tambah Produk Koperasi" onClose={() => setShowAdd(false)}>
           <form onSubmit={handleAdd}>
