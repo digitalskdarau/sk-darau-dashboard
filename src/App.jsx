@@ -4,7 +4,7 @@ import { supabase } from './lib/supabase.js';
 // ─── DATA ────────────────────────────────────────────────────────────────────
 const MODULES = [
   { id:"kurikulum", label:"Kurikulum", icon:"📚", color:"#2563eb", light:"#eff6ff", tag:"GPK 1",
-    subs:["Jadual Waktu","Panitia Mata Pelajaran","Peperiksaan & Penilaian","RPH / Rekod Mengajar","Program Akademik","Pusat Sumber / NILAM","Perkembangan Staf"],
+    subs:["Jadual Waktu","Panitia Mata Pelajaran","Peperiksaan & Penilaian","eRPH / Rekod Mengajar","Program Akademik","Pusat Sumber / NILAM","Perkembangan Staf"],
     ids:["jadual","panitia","peperiksaan","rph","program","pss","staf"] },
   { id:"hem", label:"Hal Ehwal Murid", icon:"👫", color:"#0ea5e9", light:"#f0f9ff", tag:"GPK HEM",
     subs:["Pendaftaran & Data Murid","Disiplin","Bimbingan & Kaunseling","Kesihatan Murid","Bantuan Pelajaran","Keselamatan & 3K","Pengawas Sekolah","Koperasi"],
@@ -3096,102 +3096,19 @@ function Peperiksaan() {
   );
 }
 
-// ─── 4. RPH / REKOD MENGAJAR ──────────────────────────────────────────────────
+// ─── 4. ERPH / REKOD MENGAJAR ─────────────────────────────────────────────────
+const ERPH_URL = "https://erph-sk-darau.vercel.app/";
+
 function RPHRekod() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ guru:"", subjek:"", kelas:"", minggu:"Minggu 16", status:"Tertunggak" });
-  const badgeMap = { "Hantar":"b-green","Tertunggak":"b-red","Semak":"b-yellow" };
-
-  const load = async () => {
-    setLoading(true);
-
-    const { data: rows } = await supabase.from('rph').select('*').order('created_at');
-    setData(rows||[]); setLoading(false);
-  };
-  useEffect(()=>{ load(); },[]);
-
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    const ok = await dbRun(() => supabase.from('rph').insert([form]));
-    if (!ok) return;
-    toast("RPH ditambah!", "success");
-    setShowAdd(false); setForm({ guru:"", subjek:"", kelas:"", minggu:"Minggu 16", status:"Tertunggak" }); load();
-  };
-  const handleDel = async (id) => {
-    const ok = await dbRun(() => supabase.from('rph').delete().eq('id',id));
-    if (ok) setData(d=>d.filter(r=>r.id!==id));
-  };
-  const handleStatus = async (id, status) => {
-    const ok = await dbRun(() => supabase.from('rph').update({ status }).eq('id',id));
-    if (ok) setData(d=>d.map(r=>r.id===id?{...r,status}:r));
-  };
-
-  const filtered = data.filter(r=>!q||r.guru?.toLowerCase().includes(q.toLowerCase())||r.subjek?.toLowerCase().includes(q.toLowerCase()));
-  const hantar = data.filter(r=>r.status==="Hantar").length;
-
   return (
-    <KurPage title="RPH / Rekod Mengajar" sub="Kurikulum · SK Darau, Kota Kinabalu"
+    <KurPage title="eRPH / Rekod Mengajar" sub="Kurikulum · SK Darau, Kota Kinabalu"
       stats={[
-        {ico:"📄",val:data.length,lbl:"Jumlah RPH"},
-        {ico:"✅",val:hantar,lbl:"Sudah Hantar"},
-        {ico:"⚠️",val:data.length-hantar,lbl:"Tertunggak / Semak"},
-        {ico:"📅",val:"Minggu 16",lbl:"Minggu Semasa"},
+        {ico:"📄",lbl:"Sistem eRPH",val:"Aktif"},
+        {ico:"🌐",lbl:"Platform",val:"Web"},
+        {ico:"📝",lbl:"Rekod Mengajar",val:"Online"},
+        {ico:"✅",lbl:"Status",val:"Online"},
       ]}>
-      <div className="kur-header">
-        <button className="btn-add" onClick={()=>setShowAdd(true)}>+ Tambah RPH</button>
-        <div className="kur-search-wrap">
-          <span className="kur-search-ico">🔍</span>
-          <input className="kur-search" placeholder="Cari guru atau subjek…" value={q} onChange={e=>setQ(e.target.value)}/>
-        </div>
-      </div>
-      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
-        <div className="kur-table-wrap">
-          <table className="kur-table">
-            <thead><tr><th>Guru</th><th>Subjek</th><th>Kelas</th><th>Minggu</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              {filtered.map(r=>(
-                <tr key={r.id}>
-                  <td style={{fontWeight:800}}>{r.guru}</td>
-                  <td>{r.subjek}</td>
-                  <td>{r.kelas}</td>
-                  <td style={{color:"var(--text3)"}}>{r.minggu}</td>
-                  <td>
-                    <select style={{border:"none",background:"transparent",cursor:"pointer",fontFamily:"'Nunito',sans-serif",fontWeight:700,fontSize:12,color:"inherit"}}
-                      value={r.status} onChange={e=>handleStatus(r.id,e.target.value)}>
-                      <option>Hantar</option><option>Tertunggak</option><option>Semak</option>
-                    </select>
-                    <span className={`badge ${badgeMap[r.status]||"b-gray"}`} style={{pointerEvents:"none",marginLeft:4}}>{r.status}</span>
-                  </td>
-                  <td><button className="btn-del" onClick={()=>handleDel(r.id)}>🗑</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {showAdd && (
-        <Modal title="Tambah RPH" onClose={()=>setShowAdd(false)}>
-          <form onSubmit={handleAdd}>
-            <div className="form-field"><label className="form-label">Nama Guru</label><input className="form-input" required value={form.guru} onChange={e=>setForm(f=>({...f,guru:e.target.value}))}/></div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Subjek</label><input className="form-input" value={form.subjek} onChange={e=>setForm(f=>({...f,subjek:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" placeholder="cth: Thn 4" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))}/></div>
-            </div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Minggu</label><input className="form-input" value={form.minggu} onChange={e=>setForm(f=>({...f,minggu:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Status</label>
-                <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
-                  <option>Tertunggak</option><option>Hantar</option><option>Semak</option>
-                </select>
-              </div>
-            </div>
-            <button className="btn-primary" type="submit">+ Tambah</button>
-          </form>
-        </Modal>
-      )}
+      <EmbedFrame url={ERPH_URL} title="eRPH SK Darau" />
     </KurPage>
   );
 }
