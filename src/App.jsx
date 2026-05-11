@@ -4622,135 +4622,390 @@ function PerkembanganStaf() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ─── HEM 1. PENDAFTARAN & DATA MURID (APDM) ──────────────────────────────────
+const TAHUN_COLORS = ['#2563eb','#0ea5e9','#6366f1','#0284c7','#7c3aed','#0891b2'];
+const KELAS_NAMA_LIST = ["Unik","Aplikasi","Revolusi","Aspirasi","Dedikasi"];
+
 function HemMurid() {
-  const TABS_HM=['👦 Senarai Murid','📊 Analisis','📋 Laporan Kelas'];
+  const TABS_HM=['🏫 Senarai Kelas','👦 Murid','📊 Analisis','📋 Laporan'];
   const [subtab,setSubtab]=useState(0);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [q,setQ]=useState(''); const [filterKelas,setFilterKelas]=useState(''); const [filterStatus,setFilterStatus]=useState('');
+  const [q,setQ]=useState('');
+  const [filterKelas,setFilterKelas]=useState('');
+  const [filterTahun,setFilterTahun]=useState('');
+  const [filterStatus,setFilterStatus]=useState('');
   const blank = { nama:"", kelas:"", ic:"", jantina:"Lelaki", telefon_wali:"", status:"Aktif" };
   const [form, setForm] = useState(blank);
-  const load = async () => { setLoading(true); const { data: rows } = await supabase.from('hem_murid').select('*').order('kelas').order('nama'); setData(rows || []); setLoading(false); };
+
+  const load = async () => {
+    setLoading(true);
+    const { data: rows } = await supabase.from('hem_murid').select('*').order('kelas').order('nama');
+    setData(rows || []);
+    setLoading(false);
+  };
   useEffect(() => { load(); }, []);
-  const handleAdd = async (e) => { e.preventDefault(); const ok = await dbRun(() => supabase.from('hem_murid').insert([form])); if (!ok) return; toast("Murid ditambah!", "success"); setShowAdd(false); setForm(blank); load(); };
-  const handleEdit = async (e) => { e.preventDefault(); const { nama, kelas, ic, jantina, telefon_wali, status } = editItem; const ok = await dbRun(() => supabase.from('hem_murid').update({ nama, kelas, ic, jantina, telefon_wali, status }).eq('id', editItem.id)); if (!ok) return; toast("Dikemaskini!", "success"); setEditItem(null); load(); };
-  const handleDel = async (id) => { const ok = await dbRun(() => supabase.from('hem_murid').delete().eq('id', id)); if (ok) setData(d => d.filter(r => r.id !== id)); };
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(() => supabase.from('hem_murid').insert([form]));
+    if (!ok) return;
+    toast("Murid berjaya ditambah!", "success");
+    setShowAdd(false); setForm(blank); load();
+  };
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const { nama, kelas, ic, jantina, telefon_wali, status } = editItem;
+    const ok = await dbRun(() => supabase.from('hem_murid').update({ nama, kelas, ic, jantina, telefon_wali, status }).eq('id', editItem.id));
+    if (!ok) return;
+    toast("Rekod dikemaskini!", "success"); setEditItem(null); load();
+  };
+  const handleDel = async (id) => {
+    if (!window.confirm("Padam rekod murid ini?")) return;
+    const ok = await dbRun(() => supabase.from('hem_murid').delete().eq('id', id));
+    if (ok) { toast("Rekod dipadam.","success"); setData(d => d.filter(r => r.id !== id)); }
+  };
+
   const aktif = data.filter(r => r.status === "Aktif").length;
-  const filtered=data.filter(r=>(!filterKelas||r.kelas===filterKelas)&&(!filterStatus||r.status===filterStatus)&&(!q||r.nama.toLowerCase().includes(q.toLowerCase())||r.ic?.includes(q)));
-  const kelasList=[...new Set(data.map(r=>r.kelas).filter(Boolean))].sort();
-  const byKelas=kelasList.map(k=>({k,total:data.filter(r=>r.kelas===k).length,lelaki:data.filter(r=>r.kelas===k&&r.jantina==='Lelaki').length,perempuan:data.filter(r=>r.kelas===k&&r.jantina==='Perempuan').length,aktif:data.filter(r=>r.kelas===k&&r.status==='Aktif').length}));
-  const TS=(i)=>({padding:'7px 16px',borderRadius:20,border:'none',cursor:'pointer',fontWeight:subtab===i?700:400,background:subtab===i?'var(--accent)':'var(--card2)',color:subtab===i?'#fff':'var(--text1)',fontSize:13});
+
+  // build per-kelas stats using full KELAS_LIST (not just from data)
+  const byKelas = KELAS_LIST.map(k => ({
+    k,
+    total: data.filter(r=>r.kelas===k).length,
+    lelaki: data.filter(r=>r.kelas===k&&r.jantina==='Lelaki').length,
+    perempuan: data.filter(r=>r.kelas===k&&r.jantina==='Perempuan').length,
+    aktif: data.filter(r=>r.kelas===k&&r.status==='Aktif').length,
+  }));
+
+  // group by Tahun for structured view
+  const kelasGroups = [1,2,3,4,5,6].map(t => ({
+    tahun: t,
+    color: TAHUN_COLORS[t-1],
+    kelas: byKelas.filter(bk => bk.k.startsWith(`Tahun ${t} `)),
+    total: data.filter(r => r.kelas?.startsWith(`Tahun ${t} `)).length,
+  }));
+
+  // filtered list for Murid tab
+  const filtered = data.filter(r => {
+    const matchQ = !q || r.nama.toLowerCase().includes(q.toLowerCase()) || r.ic?.includes(q);
+    const matchK = !filterKelas || r.kelas === filterKelas;
+    const matchT = !filterTahun || r.kelas?.startsWith(`Tahun ${filterTahun} `);
+    const matchS = !filterStatus || r.status === filterStatus;
+    return matchQ && matchK && matchT && matchS;
+  });
+
+  const TS = (i) => ({
+    padding:'7px 18px', borderRadius:20, border:`2px solid ${subtab===i?'var(--accent)':'var(--divider)'}`,
+    cursor:'pointer', fontWeight:800,
+    background: subtab===i ? 'var(--accent)' : 'transparent',
+    color: subtab===i ? '#fff' : 'var(--text2)', fontSize:13, transition:'all 0.15s',
+  });
+
+  const goMuridKelas = (k) => { setFilterKelas(k); setFilterTahun(''); setSubtab(1); };
+
+  const MuridForm = ({ val, set, onSubmit, btnLabel }) => (
+    <form onSubmit={onSubmit}>
+      <div className="form-field">
+        <label className="form-label">Nama Penuh</label>
+        <input className="form-input" required value={val.nama} onChange={e=>set(f=>({...f,nama:e.target.value}))} placeholder="Nama penuh murid"/>
+      </div>
+      <div className="form-row">
+        <div className="form-field">
+          <label className="form-label">Kelas</label>
+          <select className="form-input" required value={val.kelas} onChange={e=>set(f=>({...f,kelas:e.target.value}))}>
+            <option value="">— Pilih Kelas —</option>
+            {[1,2,3,4,5,6].map(t=>(
+              <optgroup key={t} label={`── Tahun ${t} ──`}>
+                {KELAS_NAMA_LIST.map(n=>(
+                  <option key={n} value={`Tahun ${t} ${n}`}>Tahun {t} {n}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
+        <div className="form-field">
+          <label className="form-label">No. IC</label>
+          <input className="form-input" value={val.ic} onChange={e=>set(f=>({...f,ic:e.target.value}))} placeholder="cth: 120304-12-0011"/>
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-field">
+          <label className="form-label">Jantina</label>
+          <select className="form-input" value={val.jantina} onChange={e=>set(f=>({...f,jantina:e.target.value}))}>
+            <option>Lelaki</option><option>Perempuan</option>
+          </select>
+        </div>
+        <div className="form-field">
+          <label className="form-label">Status</label>
+          <select className="form-input" value={val.status} onChange={e=>set(f=>({...f,status:e.target.value}))}>
+            <option>Aktif</option><option>Tidak Aktif</option><option>Berpindah</option>
+          </select>
+        </div>
+      </div>
+      <div className="form-field">
+        <label className="form-label">Tel. Wali</label>
+        <input className="form-input" value={val.telefon_wali} onChange={e=>set(f=>({...f,telefon_wali:e.target.value}))} placeholder="cth: 011-2345678"/>
+      </div>
+      <button className="btn-primary" type="submit">{btnLabel}</button>
+    </form>
+  );
+
   return (
     <KurPage title="Pendaftaran & Data Murid" sub="HEM · SK Darau, Kota Kinabalu"
-      stats={[{ico:"👥",val:data.length,lbl:"Jumlah Murid"},{ico:"✅",val:aktif,lbl:"Aktif"},{ico:"👧",val:data.filter(r=>r.jantina==="Perempuan").length,lbl:"Perempuan"},{ico:"👦",val:data.filter(r=>r.jantina==="Lelaki").length,lbl:"Lelaki"}]}>
-      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:16}}>{TABS_HM.map((t,i)=><button key={i} style={TS(i)} onClick={()=>setSubtab(i)}>{t}</button>)}</div>
+      stats={[
+        {ico:"👥",val:data.length,lbl:"Jumlah Murid"},
+        {ico:"✅",val:aktif,lbl:"Aktif"},
+        {ico:"👧",val:data.filter(r=>r.jantina==="Perempuan").length,lbl:"Perempuan"},
+        {ico:"👦",val:data.filter(r=>r.jantina==="Lelaki").length,lbl:"Lelaki"},
+      ]}>
+
+      {/* Tab bar */}
+      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:18}}>
+        {TABS_HM.map((t,i)=><button key={i} style={TS(i)} onClick={()=>setSubtab(i)}>{t}</button>)}
+        <button className="btn-add" style={{marginLeft:'auto'}} onClick={()=>setShowAdd(true)}>+ Tambah Murid</button>
+      </div>
+
       {loading ? <div className="loading">⏳ Memuatkan…</div> : (<>
-        {subtab===0&&(<>
-          <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}}>
-            <div className="kur-search-wrap" style={{flex:1,minWidth:140}}><span className="kur-search-ico">🔍</span><input className="kur-search" placeholder="Cari nama / IC…" value={q} onChange={e=>setQ(e.target.value)}/></div>
-            <select className="kur-select" value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}><option value="">Semua Kelas</option>{kelasList.map(k=><option key={k}>{k}</option>)}</select>
-            <select className="kur-select" value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}><option value="">Semua Status</option><option>Aktif</option><option>Tidak Aktif</option><option>Berpindah</option></select>
-            <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Murid</button>
+
+        {/* ── TAB 0: SENARAI KELAS ── */}
+        {subtab===0&&(
+          <div>
+            {kelasGroups.map(g=>(
+              <div key={g.tahun} style={{marginBottom:20}}>
+                {/* Tahun header */}
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+                  <div style={{
+                    padding:'5px 18px',borderRadius:20,
+                    background:g.color,color:'#fff',
+                    fontFamily:"'Fredoka One',cursive",fontSize:15,letterSpacing:'0.02em',
+                  }}>Tahun {g.tahun}</div>
+                  <div style={{fontSize:12,color:'var(--text3)',fontWeight:700}}>
+                    {g.total} murid
+                  </div>
+                  <div style={{flex:1,height:2,background:'var(--divider)',borderRadius:99}}/>
+                </div>
+                {/* 5 kelas cards */}
+                <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10}}>
+                  {g.kelas.map(bk=>{
+                    const kelasNama = bk.k.replace(`Tahun ${g.tahun} `,'');
+                    const pctL = bk.total ? Math.round(bk.lelaki/bk.total*100) : 0;
+                    return (
+                      <div key={bk.k}
+                        onClick={()=>goMuridKelas(bk.k)}
+                        style={{
+                          background:`linear-gradient(145deg,rgba(255,255,255,0.88),${g.color}14)`,
+                          border:`1.5px solid ${g.color}30`,
+                          borderRadius:16, padding:'14px 12px',
+                          cursor:'pointer', transition:'all 0.2s cubic-bezier(.34,1.56,.64,1)',
+                          position:'relative', overflow:'hidden',
+                          backdropFilter:'blur(12px)',
+                        }}
+                        onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-4px) scale(1.03)';e.currentTarget.style.boxShadow=`0 10px 28px ${g.color}28`;e.currentTarget.style.borderColor=g.color;}}
+                        onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='';e.currentTarget.style.borderColor=`${g.color}30`;}}
+                      >
+                        <div style={{position:'absolute',bottom:-12,right:-12,width:60,height:60,borderRadius:'50%',background:g.color,opacity:0.07}}/>
+                        <div style={{fontFamily:"'Fredoka One',cursive",fontSize:14,color:g.color,marginBottom:4}}>{kelasNama}</div>
+                        <div style={{fontSize:26,fontWeight:900,fontFamily:"'Fredoka One',cursive",color:'var(--text)',lineHeight:1}}>{bk.total}</div>
+                        <div style={{fontSize:11,color:'var(--text3)',fontWeight:700,marginTop:2}}>murid</div>
+                        {bk.total>0&&(
+                          <>
+                            <div style={{display:'flex',gap:4,marginTop:8,fontSize:10,fontWeight:700}}>
+                              <span style={{color:'#2563eb'}}>👦{bk.lelaki}</span>
+                              <span style={{color:'#a855f7'}}>👧{bk.perempuan}</span>
+                            </div>
+                            <div style={{marginTop:6,height:4,borderRadius:99,background:'var(--divider)',overflow:'hidden'}}>
+                              <div style={{height:'100%',background:g.color,width:`${pctL}%`,borderRadius:99}}/>
+                            </div>
+                          </>
+                        )}
+                        {bk.total===0&&(
+                          <div style={{marginTop:8,fontSize:10,color:'var(--text3)',fontStyle:'italic'}}>Tiada murid</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="kur-table-wrap"><table className="kur-table">
-            <thead><tr><th>#</th><th>Nama</th><th>Kelas</th><th>IC</th><th>Jantina</th><th>Tel. Wali</th><th>Status</th><th></th></tr></thead>
-            <tbody>{filtered.length===0&&<tr><td colSpan={8} style={{textAlign:'center',color:'var(--text3)',padding:24}}>Tiada rekod.</td></tr>}
-              {filtered.map((r, i) => (<tr key={r.id}>
-                <td style={{fontWeight:900,color:"var(--accent)"}}>{i+1}</td>
-                <td style={{fontWeight:800}}>{r.nama}</td><td>{r.kelas}</td>
-                <td style={{fontSize:12,color:"var(--text3)"}}>{r.ic}</td>
-                <td><span className={`badge ${r.jantina==="Perempuan"?"b-purple":"b-blue"}`}>{r.jantina}</span></td>
-                <td style={{color:"var(--text3)"}}>{r.telefon_wali}</td>
-                <td><span className={`badge ${r.status==="Aktif"?"b-green":r.status==="Berpindah"?"b-yellow":"b-gray"}`}>{r.status}</span></td>
-                <td style={{display:"flex",gap:4}}>
-                  <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
-                  <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
-                </td>
-              </tr>))}
-            </tbody>
-          </table></div>
-        </>)}
+        )}
+
+        {/* ── TAB 1: SENARAI MURID ── */}
         {subtab===1&&(<>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
-            <div style={{background:'var(--card2)',borderRadius:12,padding:16}}>
-              <p style={{fontWeight:700,fontSize:14,marginBottom:12}}>👥 Agihan Jantina</p>
-              {['Lelaki','Perempuan'].map(j=>{const n=data.filter(r=>r.jantina===j).length;const pct=data.length?Math.round(n/data.length*100):0;return(<div key={j} style={{marginBottom:10}}>
-                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:4}}><span>{j}</span><span style={{fontWeight:700}}>{n} ({pct}%)</span></div>
-                <div style={{background:'var(--divider)',borderRadius:99,height:12,overflow:'hidden'}}><div style={{height:'100%',background:j==='Lelaki'?'#2563eb':'#a855f7',width:`${pct}%`,borderRadius:99}}/></div>
-              </div>);})}
+          {/* Search & filter bar */}
+          <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12,alignItems:'center'}}>
+            <div className="kur-search-wrap" style={{flex:1,minWidth:160}}>
+              <span className="kur-search-ico">🔍</span>
+              <input className="kur-search" placeholder="Cari nama atau No. IC…" value={q} onChange={e=>setQ(e.target.value)}/>
+              {q&&<button onClick={()=>setQ('')} style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:14,color:'var(--text3)'}}>✕</button>}
             </div>
-            <div style={{background:'var(--card2)',borderRadius:12,padding:16}}>
-              <p style={{fontWeight:700,fontSize:14,marginBottom:12}}>📊 Status Murid</p>
-              {['Aktif','Tidak Aktif','Berpindah'].map(s=>{const n=data.filter(r=>r.status===s).length;const pct=data.length?Math.round(n/data.length*100):0;const clr=s==='Aktif'?'#16a34a':s==='Berpindah'?'#d97706':'#94a3b8';return(<div key={s} style={{marginBottom:10}}>
-                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:4}}><span>{s}</span><span style={{fontWeight:700,color:clr}}>{n} ({pct}%)</span></div>
-                <div style={{background:'var(--divider)',borderRadius:99,height:12,overflow:'hidden'}}><div style={{height:'100%',background:clr,width:`${pct}%`,borderRadius:99}}/></div>
-              </div>);})}
-            </div>
+            <select className="kur-select" value={filterTahun} onChange={e=>{setFilterTahun(e.target.value);setFilterKelas('');}}>
+              <option value="">Semua Tahun</option>
+              {[1,2,3,4,5,6].map(t=><option key={t} value={t}>Tahun {t}</option>)}
+            </select>
+            <select className="kur-select" value={filterKelas} onChange={e=>{setFilterKelas(e.target.value);setFilterTahun('');}}>
+              <option value="">Semua Kelas</option>
+              {[1,2,3,4,5,6].map(t=>(
+                <optgroup key={t} label={`Tahun ${t}`}>
+                  {KELAS_NAMA_LIST.map(n=><option key={n} value={`Tahun ${t} ${n}`}>Tahun {t} {n}</option>)}
+                </optgroup>
+              ))}
+            </select>
+            <select className="kur-select" value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+              <option value="">Semua Status</option>
+              <option>Aktif</option><option>Tidak Aktif</option><option>Berpindah</option>
+            </select>
+            {(q||filterKelas||filterTahun||filterStatus)&&(
+              <button onClick={()=>{setQ('');setFilterKelas('');setFilterTahun('');setFilterStatus('');}}
+                style={{padding:'6px 12px',borderRadius:10,border:'1.5px solid var(--divider)',background:'var(--surface)',color:'var(--text3)',fontWeight:700,fontSize:12,cursor:'pointer'}}>
+                ✕ Reset
+              </button>
+            )}
           </div>
-          <div style={{background:'var(--card2)',borderRadius:12,padding:16}}>
-            <p style={{fontWeight:700,fontSize:14,marginBottom:10}}>🏫 Bilangan Murid Mengikut Kelas</p>
-            {byKelas.length===0&&<p style={{color:'var(--text3)',fontSize:13}}>Tiada data.</p>}
-            {byKelas.map(r=><div key={r.k} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
-              <span style={{fontSize:12,fontWeight:700,minWidth:140}}>{r.k}</span>
-              <div style={{flex:1,background:'var(--divider)',borderRadius:99,height:14,overflow:'hidden'}}><div style={{height:'100%',background:'var(--accent)',width:`${data.length?Math.round(r.total/data.length*100):0}%`,borderRadius:99}}/></div>
-              <span style={{fontSize:12,fontWeight:700,minWidth:30,textAlign:'right'}}>{r.total}</span>
-              <span style={{fontSize:11,color:'#2563eb',minWidth:24}}>L:{r.lelaki}</span>
-              <span style={{fontSize:11,color:'#a855f7',minWidth:24}}>P:{r.perempuan}</span>
-            </div>)}
+          {/* Result count */}
+          <div style={{fontSize:12,color:'var(--text3)',fontWeight:700,marginBottom:8}}>
+            {filtered.length} rekod
+            {filterKelas&&<span style={{marginLeft:8,padding:'2px 10px',borderRadius:20,background:'var(--accent-lt)',color:'var(--accent)',fontSize:11}}>📌 {filterKelas}</span>}
+            {filterTahun&&<span style={{marginLeft:8,padding:'2px 10px',borderRadius:20,background:'#eff6ff',color:'#2563eb',fontSize:11}}>📌 Tahun {filterTahun}</span>}
+          </div>
+          <div className="kur-table-wrap">
+            <table className="kur-table">
+              <thead>
+                <tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>No. IC</th><th>Jantina</th><th>Tel. Wali</th><th>Status</th><th style={{width:80}}></th></tr>
+              </thead>
+              <tbody>
+                {filtered.length===0&&(
+                  <tr><td colSpan={8} style={{textAlign:'center',color:'var(--text3)',padding:32}}>
+                    {q||filterKelas||filterTahun||filterStatus ? '🔍 Tiada rekod sepadan.' : '📭 Tiada murid. Klik "+ Tambah Murid" untuk mula.'}
+                  </td></tr>
+                )}
+                {filtered.map((r, i) => (
+                  <tr key={r.id}>
+                    <td style={{fontWeight:900,color:'var(--accent)',fontSize:12}}>{i+1}</td>
+                    <td style={{fontWeight:800}}>{r.nama}</td>
+                    <td>
+                      <span style={{padding:'2px 8px',borderRadius:8,fontSize:11,fontWeight:700,
+                        background: TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1]+'18',
+                        color: TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1]}}>
+                        {r.kelas}
+                      </span>
+                    </td>
+                    <td style={{fontSize:12,color:'var(--text3)',fontFamily:'monospace'}}>{r.ic||'—'}</td>
+                    <td><span className={`badge ${r.jantina==="Perempuan"?"b-purple":"b-blue"}`}>{r.jantina}</span></td>
+                    <td style={{color:'var(--text3)',fontSize:13}}>{r.telefon_wali||'—'}</td>
+                    <td><span className={`badge ${r.status==="Aktif"?"b-green":r.status==="Berpindah"?"b-yellow":"b-gray"}`}>{r.status}</span></td>
+                    <td>
+                      <div style={{display:'flex',gap:4}}>
+                        <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditItem({...r})}>✏️</button>
+                        <button className="btn-del" onClick={()=>handleDel(r.id)}>🗑</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </>)}
+
+        {/* ── TAB 2: ANALISIS ── */}
         {subtab===2&&(<>
-          <div className="kur-table-wrap"><table className="kur-table">
-            <thead><tr><th>Kelas</th><th>Jumlah</th><th>Lelaki</th><th>Perempuan</th><th>Aktif</th><th>Tidak Aktif/Pindah</th></tr></thead>
-            <tbody>
-              {byKelas.length===0&&<tr><td colSpan={6} style={{textAlign:'center',color:'var(--text3)',padding:24}}>Tiada data.</td></tr>}
-              {byKelas.map(r=><tr key={r.k}>
-                <td style={{fontWeight:700}}>{r.k}</td>
-                <td style={{fontWeight:800,color:'var(--accent)'}}>{r.total}</td>
-                <td style={{color:'#2563eb',fontWeight:700}}>{r.lelaki}</td>
-                <td style={{color:'#a855f7',fontWeight:700}}>{r.perempuan}</td>
-                <td style={{color:'#16a34a',fontWeight:700}}>{r.aktif}</td>
-                <td style={{color:'#94a3b8',fontWeight:700}}>{r.total-r.aktif}</td>
-              </tr>)}
-              <tr style={{background:'var(--accent-lt)',fontWeight:900}}>
-                <td>JUMLAH</td><td style={{color:'var(--accent)'}}>{data.length}</td>
-                <td style={{color:'#2563eb'}}>{data.filter(r=>r.jantina==='Lelaki').length}</td>
-                <td style={{color:'#a855f7'}}>{data.filter(r=>r.jantina==='Perempuan').length}</td>
-                <td style={{color:'#16a34a'}}>{aktif}</td>
-                <td style={{color:'#94a3b8'}}>{data.length-aktif}</td>
-              </tr>
-            </tbody>
-          </table></div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+            <div style={{background:'var(--surface)',borderRadius:16,padding:18,border:'1.5px solid var(--divider)'}}>
+              <p style={{fontWeight:700,fontSize:14,marginBottom:14}}>👥 Agihan Jantina</p>
+              {['Lelaki','Perempuan'].map(j=>{
+                const n=data.filter(r=>r.jantina===j).length;
+                const pct=data.length?Math.round(n/data.length*100):0;
+                return(<div key={j} style={{marginBottom:12}}>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:5}}><span style={{fontWeight:700}}>{j}</span><span style={{fontWeight:800,color:j==='Lelaki'?'#2563eb':'#a855f7'}}>{n} ({pct}%)</span></div>
+                  <div style={{background:'var(--divider)',borderRadius:99,height:12,overflow:'hidden'}}><div style={{height:'100%',background:j==='Lelaki'?'#2563eb':'#a855f7',width:`${pct}%`,borderRadius:99,transition:'width 0.6s ease'}}/></div>
+                </div>);
+              })}
+            </div>
+            <div style={{background:'var(--surface)',borderRadius:16,padding:18,border:'1.5px solid var(--divider)'}}>
+              <p style={{fontWeight:700,fontSize:14,marginBottom:14}}>📊 Status Murid</p>
+              {['Aktif','Tidak Aktif','Berpindah'].map(s=>{
+                const n=data.filter(r=>r.status===s).length;
+                const pct=data.length?Math.round(n/data.length*100):0;
+                const clr=s==='Aktif'?'#16a34a':s==='Berpindah'?'#d97706':'#94a3b8';
+                return(<div key={s} style={{marginBottom:12}}>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:5}}><span style={{fontWeight:700}}>{s}</span><span style={{fontWeight:800,color:clr}}>{n} ({pct}%)</span></div>
+                  <div style={{background:'var(--divider)',borderRadius:99,height:12,overflow:'hidden'}}><div style={{height:'100%',background:clr,width:`${pct}%`,borderRadius:99,transition:'width 0.6s ease'}}/></div>
+                </div>);
+              })}
+            </div>
+          </div>
+          <div style={{background:'var(--surface)',borderRadius:16,padding:18,border:'1.5px solid var(--divider)'}}>
+            <p style={{fontWeight:700,fontSize:14,marginBottom:14}}>🏫 Murid Mengikut Kelas</p>
+            {kelasGroups.map(g=>(
+              <div key={g.tahun} style={{marginBottom:14}}>
+                <div style={{fontSize:11,fontWeight:900,color:g.color,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6}}>Tahun {g.tahun}</div>
+                {g.kelas.map(bk=>{
+                  const pct=data.length?Math.round(bk.total/data.length*100):0;
+                  return(<div key={bk.k} style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
+                    <span style={{fontSize:12,fontWeight:700,minWidth:110,color:'var(--text2)'}}>{bk.k.replace(`Tahun ${g.tahun} `,'')}</span>
+                    <div style={{flex:1,background:'var(--divider)',borderRadius:99,height:12,overflow:'hidden'}}>
+                      <div style={{height:'100%',background:g.color,width:`${pct}%`,borderRadius:99,opacity:0.75,transition:'width 0.6s ease'}}/>
+                    </div>
+                    <span style={{fontSize:12,fontWeight:800,minWidth:28,textAlign:'right',color:g.color}}>{bk.total}</span>
+                    <span style={{fontSize:10,color:'#2563eb',minWidth:30}}>👦{bk.lelaki}</span>
+                    <span style={{fontSize:10,color:'#a855f7',minWidth:30}}>👧{bk.perempuan}</span>
+                  </div>);
+                })}
+              </div>
+            ))}
+          </div>
         </>)}
+
+        {/* ── TAB 3: LAPORAN KELAS ── */}
+        {subtab===3&&(<>
+          <div className="kur-table-wrap">
+            <table className="kur-table">
+              <thead><tr><th>Kelas</th><th>Jumlah</th><th>Lelaki</th><th>Perempuan</th><th>Aktif</th><th>Tidak Aktif / Pindah</th></tr></thead>
+              <tbody>
+                {[1,2,3,4,5,6].map(t=>(
+                  <React.Fragment key={t}>
+                    <tr style={{background:TAHUN_COLORS[t-1]+'12'}}>
+                      <td colSpan={6} style={{fontWeight:900,color:TAHUN_COLORS[t-1],fontSize:12,letterSpacing:'0.06em'}}>── TAHUN {t} ──</td>
+                    </tr>
+                    {byKelas.filter(bk=>bk.k.startsWith(`Tahun ${t} `)).map(r=>(
+                      <tr key={r.k}>
+                        <td style={{fontWeight:700,paddingLeft:20}}>{r.k}</td>
+                        <td style={{fontWeight:800,color:'var(--accent)'}}>{r.total}</td>
+                        <td style={{color:'#2563eb',fontWeight:700}}>{r.lelaki}</td>
+                        <td style={{color:'#a855f7',fontWeight:700}}>{r.perempuan}</td>
+                        <td style={{color:'#16a34a',fontWeight:700}}>{r.aktif}</td>
+                        <td style={{color:'#94a3b8',fontWeight:700}}>{r.total-r.aktif}</td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))}
+                <tr style={{background:'var(--accent-lt)',fontWeight:900}}>
+                  <td>JUMLAH KESELURUHAN</td>
+                  <td style={{color:'var(--accent)'}}>{data.length}</td>
+                  <td style={{color:'#2563eb'}}>{data.filter(r=>r.jantina==='Lelaki').length}</td>
+                  <td style={{color:'#a855f7'}}>{data.filter(r=>r.jantina==='Perempuan').length}</td>
+                  <td style={{color:'#16a34a'}}>{aktif}</td>
+                  <td style={{color:'#94a3b8'}}>{data.length-aktif}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </>)}
+
       </>)}
-      {showAdd && (<Modal title="Tambah Murid" onClose={() => setShowAdd(false)}><form onSubmit={handleAdd}>
-        <div className="form-field"><label className="form-label">Nama Penuh</label><input className="form-input" required value={form.nama} onChange={e=>setForm(f=>({...f,nama:e.target.value}))} placeholder="Nama penuh murid"/></div>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))} placeholder="cth: Tahun 4 Unik"/></div>
-          <div className="form-field"><label className="form-label">No. IC</label><input className="form-input" value={form.ic} onChange={e=>setForm(f=>({...f,ic:e.target.value}))} placeholder="cth: 120304-12-0011"/></div>
-        </div>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Jantina</label><select className="form-input" value={form.jantina} onChange={e=>setForm(f=>({...f,jantina:e.target.value}))}><option>Lelaki</option><option>Perempuan</option></select></div>
-          <div className="form-field"><label className="form-label">Status</label><select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}><option>Aktif</option><option>Tidak Aktif</option><option>Berpindah</option></select></div>
-        </div>
-        <div className="form-field"><label className="form-label">Tel. Wali</label><input className="form-input" value={form.telefon_wali} onChange={e=>setForm(f=>({...f,telefon_wali:e.target.value}))} placeholder="cth: 011-2345678"/></div>
-        <button className="btn-primary" type="submit">+ Tambah</button>
-      </form></Modal>)}
-      {editItem && (<Modal title={`Edit — ${editItem.nama}`} onClose={() => setEditItem(null)}><form onSubmit={handleEdit}>
-        <div className="form-field"><label className="form-label">Nama Penuh</label><input className="form-input" required value={editItem.nama} onChange={e=>setEditItem(f=>({...f,nama:e.target.value}))}/></div>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}/></div>
-          <div className="form-field"><label className="form-label">No. IC</label><input className="form-input" value={editItem.ic} onChange={e=>setEditItem(f=>({...f,ic:e.target.value}))}/></div>
-        </div>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Jantina</label><select className="form-input" value={editItem.jantina} onChange={e=>setEditItem(f=>({...f,jantina:e.target.value}))}><option>Lelaki</option><option>Perempuan</option></select></div>
-          <div className="form-field"><label className="form-label">Status</label><select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}><option>Aktif</option><option>Tidak Aktif</option><option>Berpindah</option></select></div>
-        </div>
-        <div className="form-field"><label className="form-label">Tel. Wali</label><input className="form-input" value={editItem.telefon_wali} onChange={e=>setEditItem(f=>({...f,telefon_wali:e.target.value}))}/></div>
-        <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
-      </form></Modal>)}
+
+      {/* Modals */}
+      {showAdd&&(
+        <Modal title="➕ Tambah Murid Baru" onClose={()=>{setShowAdd(false);setForm(blank);}}>
+          <MuridForm val={form} set={setForm} onSubmit={handleAdd} btnLabel="✅ Simpan Murid"/>
+        </Modal>
+      )}
+      {editItem&&(
+        <Modal title={`✏️ Edit — ${editItem.nama}`} onClose={()=>setEditItem(null)}>
+          <MuridForm val={editItem} set={setEditItem} onSubmit={handleEdit} btnLabel="💾 Simpan Perubahan"/>
+        </Modal>
+      )}
     </KurPage>
   );
 }
