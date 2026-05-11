@@ -4963,23 +4963,21 @@ function HemMurid() {
             <table className="kur-table">
               <thead><tr><th>Kelas</th><th>Jumlah</th><th>Lelaki</th><th>Perempuan</th><th>Aktif</th><th>Tidak Aktif / Pindah</th></tr></thead>
               <tbody>
-                {[1,2,3,4,5,6].map(t=>(
-                  <React.Fragment key={t}>
-                    <tr style={{background:TAHUN_COLORS[t-1]+'12'}}>
-                      <td colSpan={6} style={{fontWeight:900,color:TAHUN_COLORS[t-1],fontSize:12,letterSpacing:'0.06em'}}>── TAHUN {t} ──</td>
+                {[1,2,3,4,5,6].flatMap(t=>[
+                  <tr key={`hdr-${t}`} style={{background:TAHUN_COLORS[t-1]+'12'}}>
+                    <td colSpan={6} style={{fontWeight:900,color:TAHUN_COLORS[t-1],fontSize:12,letterSpacing:'0.06em'}}>── TAHUN {t} ──</td>
+                  </tr>,
+                  ...byKelas.filter(bk=>bk.k.startsWith(`Tahun ${t} `)).map(r=>(
+                    <tr key={r.k}>
+                      <td style={{fontWeight:700,paddingLeft:20}}>{r.k}</td>
+                      <td style={{fontWeight:800,color:'var(--accent)'}}>{r.total}</td>
+                      <td style={{color:'#2563eb',fontWeight:700}}>{r.lelaki}</td>
+                      <td style={{color:'#a855f7',fontWeight:700}}>{r.perempuan}</td>
+                      <td style={{color:'#16a34a',fontWeight:700}}>{r.aktif}</td>
+                      <td style={{color:'#94a3b8',fontWeight:700}}>{r.total-r.aktif}</td>
                     </tr>
-                    {byKelas.filter(bk=>bk.k.startsWith(`Tahun ${t} `)).map(r=>(
-                      <tr key={r.k}>
-                        <td style={{fontWeight:700,paddingLeft:20}}>{r.k}</td>
-                        <td style={{fontWeight:800,color:'var(--accent)'}}>{r.total}</td>
-                        <td style={{color:'#2563eb',fontWeight:700}}>{r.lelaki}</td>
-                        <td style={{color:'#a855f7',fontWeight:700}}>{r.perempuan}</td>
-                        <td style={{color:'#16a34a',fontWeight:700}}>{r.aktif}</td>
-                        <td style={{color:'#94a3b8',fontWeight:700}}>{r.total-r.aktif}</td>
-                      </tr>
-                    ))}
-                  </React.Fragment>
-                ))}
+                  )),
+                ])}
                 <tr style={{background:'var(--accent-lt)',fontWeight:900}}>
                   <td>JUMLAH KESELURUHAN</td>
                   <td style={{color:'var(--accent)'}}>{data.length}</td>
