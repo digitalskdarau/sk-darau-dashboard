@@ -4436,16 +4436,13 @@ function ProfilMuridKoku() {
         {/* ── SUBTAB 0: SENARAI ── */}
         {subtab === 0 && (
           <div>
-            <div className="kur-header" style={{flexWrap:'wrap', gap:8}}>
+            {/* Top toolbar */}
+            <div className="kur-header" style={{flexWrap:'wrap', gap:8, marginBottom:10}}>
               <button className="btn-add" onClick={() => { setForm(blank); setShowAdd(true); }}>+ Tambah Profil</button>
               <div className="kur-search-wrap" style={{flex:1, minWidth:160}}>
                 <span className="kur-search-ico">🔍</span>
                 <input className="kur-search" placeholder="Cari nama / no. daftar…" value={q} onChange={e=>setQ(e.target.value)}/>
               </div>
-              <select className="kur-select" value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}>
-                <option value="">Semua Kelas</option>
-                {KELAS_LIST.map(k=><option key={k}>{k}</option>)}
-              </select>
               <select className="kur-select" value={filterTahun} onChange={e=>setFilterTahun(e.target.value)}>
                 {['2023','2024','2025','2026'].map(y=><option key={y}>{y}</option>)}
               </select>
@@ -4453,6 +4450,53 @@ function ProfilMuridKoku() {
                 <option value="">Semua Gred</option>
                 {['A','B','C','D','E'].map(g=><option key={g}>{g}</option>)}
               </select>
+            </div>
+
+            {/* Kelas pill selector */}
+            <div style={{background:'var(--surface)', border:'2px solid var(--border)', borderRadius:12, padding:'10px 12px', marginBottom:12}}>
+              {/* Semua button */}
+              <button
+                onClick={() => setFilterKelas('')}
+                style={{
+                  padding:'5px 14px', borderRadius:20, fontSize:12, fontWeight:900,
+                  border:'2px solid', cursor:'pointer', marginBottom:8, marginRight:6,
+                  fontFamily:"'Nunito',sans-serif", transition:'all 0.15s',
+                  background: filterKelas==='' ? 'var(--accent)' : 'var(--surface)',
+                  borderColor: filterKelas==='' ? 'var(--accent)' : 'var(--border)',
+                  color: filterKelas==='' ? '#fff' : 'var(--text)',
+                }}>
+                Semua ({data.length})
+              </button>
+
+              {/* Group by Tahun */}
+              {[1,2,3,4,5,6].map(t => {
+                const suffix = ['Unik','Aplikasi','Revolusi','Aspirasi','Dedikasi'];
+                return (
+                  <div key={t} style={{display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginBottom:6}}>
+                    <span style={{fontSize:11, fontWeight:900, color:'var(--text3)', minWidth:52, letterSpacing:'0.04em'}}>
+                      THN {t}
+                    </span>
+                    {suffix.map(s => {
+                      const k = `Tahun ${t} ${s}`;
+                      const cnt = data.filter(r => r.kelas === k).length;
+                      const active = filterKelas === k;
+                      return (
+                        <button key={k} onClick={() => setFilterKelas(active ? '' : k)} style={{
+                          padding:'4px 12px', borderRadius:20, fontSize:11, fontWeight:800,
+                          border:'2px solid', cursor:'pointer', fontFamily:"'Nunito',sans-serif",
+                          transition:'all 0.12s',
+                          background: active ? 'var(--accent)' : cnt===0 ? 'transparent' : 'var(--surface)',
+                          borderColor: active ? 'var(--accent)' : cnt===0 ? 'var(--border)' : 'var(--border)',
+                          color: active ? '#fff' : cnt===0 ? 'var(--text3)' : 'var(--text)',
+                          opacity: cnt===0 ? 0.45 : 1,
+                        }}>
+                          {s} {cnt > 0 && <span style={{opacity:0.7, fontSize:10}}>({cnt})</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="kur-table-wrap">
