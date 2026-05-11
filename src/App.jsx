@@ -1041,8 +1041,9 @@ body {
 .modal-overlay {
   position:fixed; inset:0; z-index:1000;
   background:rgba(0,0,0,0.5);
-  display:flex; align-items:center; justify-content:center;
+  display:flex; align-items:flex-start; justify-content:center;
   padding:20px; animation:fadeIn 0.15s ease;
+  overflow-y:auto;
 }
 .modal-card {
   background:var(--surface-s); border:3px solid var(--border);
@@ -7529,6 +7530,73 @@ function jawatanBonus(j, opts) {
   return 2;
 }
 
+// Module-level — must NOT be inside ProfilMuridKoku (inner component = unmount on every render = lost focus)
+function ProfilFormFields({ val, set, tahunNow }) {
+  return (<>
+    <div className="form-row">
+      <div className="form-field"><label className="form-label">No. Daftar</label><input className="form-input" value={val.no_daftar||''} onChange={e=>set(f=>({...f,no_daftar:e.target.value}))}/></div>
+      <div className="form-field"><label className="form-label">Nama Murid *</label><input className="form-input" required value={val.nama||''} onChange={e=>set(f=>({...f,nama:e.target.value}))}/></div>
+    </div>
+    <div className="form-row">
+      <div className="form-field"><label className="form-label">Kelas</label>
+        <select className="form-input" value={val.kelas||''} onChange={e=>set(f=>({...f,kelas:e.target.value}))}>
+          <option value="">—</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+        </select>
+      </div>
+      <div className="form-field"><label className="form-label">Tahun</label>
+        <select className="form-input" value={val.tahun||tahunNow} onChange={e=>set(f=>({...f,tahun:e.target.value}))}>
+          {['2023','2024','2025','2026'].map(y=><option key={y}>{y}</option>)}
+        </select>
+      </div>
+    </div>
+    <div style={{background:'var(--accent-lt)', borderRadius:10, padding:'10px 12px', marginBottom:10}}>
+      <div style={{fontWeight:900, fontSize:11, color:'var(--accent)', marginBottom:8, letterSpacing:'0.06em'}}>🏛️ KELAB / PERSATUAN</div>
+      <div className="form-field"><label className="form-label">Nama Kelab/Persatuan</label><input className="form-input" value={val.kelab||''} onChange={e=>set(f=>({...f,kelab:e.target.value}))}/></div>
+      <div className="form-row">
+        <div className="form-field"><label className="form-label">Jawatan</label>
+          <select className="form-input" value={val.jawatan_kelab||'Ahli Biasa'} onChange={e=>set(f=>({...f,jawatan_kelab:e.target.value}))}>
+            {JAWATAN_KELAB.map(j=><option key={j}>{j}</option>)}
+          </select>
+        </div>
+        <div className="form-field"><label className="form-label">Markah (/10)</label>
+          <input className="form-input" type="number" min="0" max="10" value={val.m_kelab??5} onChange={e=>set(f=>({...f,m_kelab:+e.target.value}))}/>
+        </div>
+      </div>
+    </div>
+    <div style={{background:'#f0fdf4', borderRadius:10, padding:'10px 12px', marginBottom:10}}>
+      <div style={{fontWeight:900, fontSize:11, color:'#15803d', marginBottom:8, letterSpacing:'0.06em'}}>🎖️ BADAN BERUNIFORM</div>
+      <div className="form-field"><label className="form-label">Nama Badan Beruniform</label><input className="form-input" value={val.uniform||''} onChange={e=>set(f=>({...f,uniform:e.target.value}))}/></div>
+      <div className="form-row">
+        <div className="form-field"><label className="form-label">Pangkat/Jawatan</label>
+          <select className="form-input" value={val.pangkat_uniform||'Ahli'} onChange={e=>set(f=>({...f,pangkat_uniform:e.target.value}))}>
+            {JAWATAN_UNIFORM.map(j=><option key={j}>{j}</option>)}
+          </select>
+        </div>
+        <div className="form-field"><label className="form-label">Markah (/10)</label>
+          <input className="form-input" type="number" min="0" max="10" value={val.m_uniform??5} onChange={e=>set(f=>({...f,m_uniform:+e.target.value}))}/>
+        </div>
+      </div>
+    </div>
+    <div style={{background:'#fffbeb', borderRadius:10, padding:'10px 12px', marginBottom:10}}>
+      <div style={{fontWeight:900, fontSize:11, color:'#b45309', marginBottom:8, letterSpacing:'0.06em'}}>⚽ SUKAN & PERMAINAN</div>
+      <div className="form-field"><label className="form-label">Jenis Sukan/Permainan</label><input className="form-input" value={val.sukan||''} onChange={e=>set(f=>({...f,sukan:e.target.value}))}/></div>
+      <div className="form-row">
+        <div className="form-field"><label className="form-label">Jawatan</label>
+          <select className="form-input" value={val.jawatan_sukan||'Ahli'} onChange={e=>set(f=>({...f,jawatan_sukan:e.target.value}))}>
+            {JAWATAN_SUKAN.map(j=><option key={j}>{j}</option>)}
+          </select>
+        </div>
+        <div className="form-field"><label className="form-label">Markah (/10)</label>
+          <input className="form-input" type="number" min="0" max="10" value={val.m_sukan??5} onChange={e=>set(f=>({...f,m_sukan:+e.target.value}))}/>
+        </div>
+      </div>
+    </div>
+    <div className="form-field"><label className="form-label">Catatan</label>
+      <input className="form-input" placeholder="Catatan tambahan (jika ada)" value={val.catatan||''} onChange={e=>set(f=>({...f,catatan:e.target.value}))}/>
+    </div>
+  </>);
+}
+
 function ProfilMuridKoku() {
   const [subtab, setSubtab]         = useState(0);
   const [data, setData]             = useState([]);
@@ -7622,80 +7690,6 @@ function ProfilMuridKoku() {
     borderColor: subtab===i ? 'var(--accent)' : 'var(--border)',
     color: subtab===i ? '#fff' : 'var(--text)', transition:'all 0.15s',
   });
-
-  // shared form fields (reused for add & edit)
-  function ProfilFormFields({ val, set }) {
-    return (<>
-      <div className="form-row">
-        <div className="form-field"><label className="form-label">No. Daftar</label><input className="form-input" value={val.no_daftar||''} onChange={e=>set(f=>({...f,no_daftar:e.target.value}))}/></div>
-        <div className="form-field"><label className="form-label">Nama Murid *</label><input className="form-input" required value={val.nama||''} onChange={e=>set(f=>({...f,nama:e.target.value}))}/></div>
-      </div>
-      <div className="form-row">
-        <div className="form-field"><label className="form-label">Kelas</label>
-          <select className="form-input" value={val.kelas||''} onChange={e=>set(f=>({...f,kelas:e.target.value}))}>
-            <option value="">—</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}
-          </select>
-        </div>
-        <div className="form-field"><label className="form-label">Tahun</label>
-          <select className="form-input" value={val.tahun||tahunNow} onChange={e=>set(f=>({...f,tahun:e.target.value}))}>
-            {['2023','2024','2025','2026'].map(y=><option key={y}>{y}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* Kelab */}
-      <div style={{background:'var(--accent-lt)', borderRadius:10, padding:'10px 12px', marginBottom:10}}>
-        <div style={{fontWeight:900, fontSize:11, color:'var(--accent)', marginBottom:8, letterSpacing:'0.06em'}}>🏛️ KELAB / PERSATUAN</div>
-        <div className="form-field"><label className="form-label">Nama Kelab/Persatuan</label><input className="form-input" value={val.kelab||''} onChange={e=>set(f=>({...f,kelab:e.target.value}))}/></div>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Jawatan</label>
-            <select className="form-input" value={val.jawatan_kelab||'Ahli Biasa'} onChange={e=>set(f=>({...f,jawatan_kelab:e.target.value}))}>
-              {JAWATAN_KELAB.map(j=><option key={j}>{j}</option>)}
-            </select>
-          </div>
-          <div className="form-field"><label className="form-label">Markah (/10)</label>
-            <input className="form-input" type="number" min="0" max="10" value={val.m_kelab??5} onChange={e=>set(f=>({...f,m_kelab:+e.target.value}))}/>
-          </div>
-        </div>
-      </div>
-
-      {/* Uniform */}
-      <div style={{background:'#f0fdf4', borderRadius:10, padding:'10px 12px', marginBottom:10}}>
-        <div style={{fontWeight:900, fontSize:11, color:'#15803d', marginBottom:8, letterSpacing:'0.06em'}}>🎖️ BADAN BERUNIFORM</div>
-        <div className="form-field"><label className="form-label">Nama Badan Beruniform</label><input className="form-input" value={val.uniform||''} onChange={e=>set(f=>({...f,uniform:e.target.value}))}/></div>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Pangkat/Jawatan</label>
-            <select className="form-input" value={val.pangkat_uniform||'Ahli'} onChange={e=>set(f=>({...f,pangkat_uniform:e.target.value}))}>
-              {JAWATAN_UNIFORM.map(j=><option key={j}>{j}</option>)}
-            </select>
-          </div>
-          <div className="form-field"><label className="form-label">Markah (/10)</label>
-            <input className="form-input" type="number" min="0" max="10" value={val.m_uniform??5} onChange={e=>set(f=>({...f,m_uniform:+e.target.value}))}/>
-          </div>
-        </div>
-      </div>
-
-      {/* Sukan */}
-      <div style={{background:'#fffbeb', borderRadius:10, padding:'10px 12px', marginBottom:10}}>
-        <div style={{fontWeight:900, fontSize:11, color:'#b45309', marginBottom:8, letterSpacing:'0.06em'}}>⚽ SUKAN & PERMAINAN</div>
-        <div className="form-field"><label className="form-label">Jenis Sukan/Permainan</label><input className="form-input" value={val.sukan||''} onChange={e=>set(f=>({...f,sukan:e.target.value}))}/></div>
-        <div className="form-row">
-          <div className="form-field"><label className="form-label">Jawatan</label>
-            <select className="form-input" value={val.jawatan_sukan||'Ahli'} onChange={e=>set(f=>({...f,jawatan_sukan:e.target.value}))}>
-              {JAWATAN_SUKAN.map(j=><option key={j}>{j}</option>)}
-            </select>
-          </div>
-          <div className="form-field"><label className="form-label">Markah (/10)</label>
-            <input className="form-input" type="number" min="0" max="10" value={val.m_sukan??5} onChange={e=>set(f=>({...f,m_sukan:+e.target.value}))}/>
-          </div>
-        </div>
-      </div>
-
-      <div className="form-field"><label className="form-label">Catatan</label>
-        <input className="form-input" placeholder="Catatan tambahan (jika ada)" value={val.catatan||''} onChange={e=>set(f=>({...f,catatan:e.target.value}))}/>
-      </div>
-    </>);
-  }
 
   const statsCards = [
     { ico:'👦', val:data.length,  lbl:'Jumlah Rekod' },
@@ -7956,7 +7950,7 @@ function ProfilMuridKoku() {
       {showAdd && (
         <Modal title="Tambah Profil Murid Kokurikulum" onClose={() => setShowAdd(false)}>
           <form onSubmit={handleAdd}>
-            <ProfilFormFields val={form} set={setForm}/>
+            <ProfilFormFields val={form} set={setForm} tahunNow={tahunNow}/>
             <div style={{
               background:'var(--surface)', border:'2px solid var(--border)', borderRadius:10,
               padding:'10px 12px', marginBottom:12, textAlign:'center',
@@ -7976,7 +7970,7 @@ function ProfilMuridKoku() {
       {editItem && (
         <Modal title={`Edit — ${editItem.nama}`} onClose={() => setEditItem(null)}>
           <form onSubmit={handleEdit}>
-            <ProfilFormFields val={editItem} set={setEditItem}/>
+            <ProfilFormFields val={editItem} set={setEditItem} tahunNow={tahunNow}/>
             <div style={{
               background:'var(--surface)', border:'2px solid var(--border)', borderRadius:10,
               padding:'10px 12px', marginBottom:12, textAlign:'center',
