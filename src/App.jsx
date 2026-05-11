@@ -1019,7 +1019,22 @@ body {
 @media (max-width:600px) {
   .panitia-grid { grid-template-columns:1fr 1fr; }
   .prog-grid { grid-template-columns:1fr; }
+  .form-row { grid-template-columns:1fr; }
+  .kur-stats { grid-template-columns:1fr 1fr; }
+  .modal-card { border-radius:14px; }
 }
+/* Murid card (mobile list view) */
+.murid-card {
+  background:var(--surface); border:2.5px solid var(--border);
+  border-radius:14px; padding:14px 14px 10px;
+  box-shadow:var(--shadow); margin-bottom:10px;
+}
+.murid-card-row { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.murid-card-acts { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin:10px 0 8px; }
+.murid-card-act { background:var(--card2); border-radius:8px; padding:7px 8px; font-size:11px; }
+.murid-card-act-label { font-size:9px; font-weight:900; color:var(--text3); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:2px; }
+.murid-card-act-name { font-weight:700; color:var(--text); font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.murid-card-act-mark { font-weight:900; font-size:13px; color:var(--accent); margin-top:2px; }
 
 /* ── MODAL ── */
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
@@ -7522,6 +7537,12 @@ function ProfilMuridKoku() {
   const [filterKelas, setFilterKelas] = useState('');
   const [filterTahun, setFilterTahun] = useState(new Date().getFullYear().toString());
   const [filterGred, setFilterGred]   = useState('');
+  const [isMobile, setIsMobile]     = useState(window.innerWidth < 640);
+  useEffect(() => {
+    const fn = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', fn);
+    return () => window.removeEventListener('resize', fn);
+  }, []);
 
   const tahunNow = new Date().getFullYear().toString();
   const blank = {
@@ -7685,7 +7706,7 @@ function ProfilMuridKoku() {
     <KurPage title="Profil Murid Kokurikulum" sub="Kokurikulum · SK Darau" stats={statsCards}>
 
       {/* Sub-tab strip */}
-      <div style={{display:'flex', gap:6, marginBottom:16}}>
+      <div style={{display:'flex', gap:6, marginBottom:16, flexWrap:'wrap'}}>
         <button style={subTabStyle(0)} onClick={() => setSubtab(0)}>📋 Senarai Murid</button>
         <button style={subTabStyle(1)} onClick={() => setSubtab(1)}>📊 Statistik</button>
       </div>
@@ -7695,17 +7716,20 @@ function ProfilMuridKoku() {
         {/* ── SUBTAB 0: SENARAI ── */}
         {subtab === 0 && (
           <div>
-            {/* Top toolbar */}
-            <div className="kur-header" style={{flexWrap:'wrap', gap:8, marginBottom:10}}>
-              <button className="btn-add" onClick={() => { setForm(blank); setShowAdd(true); }}>+ Tambah Profil</button>
-              <div className="kur-search-wrap" style={{flex:1, minWidth:160}}>
+            {/* Top toolbar — row 1: add + search */}
+            <div style={{display:'flex', gap:8, marginBottom:8, flexWrap:'wrap'}}>
+              <button className="btn-add" style={{whiteSpace:'nowrap'}} onClick={() => { setForm(blank); setShowAdd(true); }}>+ Tambah Profil</button>
+              <div className="kur-search-wrap" style={{flex:1, minWidth:140}}>
                 <span className="kur-search-ico">🔍</span>
                 <input className="kur-search" placeholder="Cari nama / no. daftar…" value={q} onChange={e=>setQ(e.target.value)}/>
               </div>
-              <select className="kur-select" value={filterTahun} onChange={e=>setFilterTahun(e.target.value)}>
+            </div>
+            {/* row 2: filters */}
+            <div style={{display:'flex', gap:8, marginBottom:10, flexWrap:'wrap'}}>
+              <select className="kur-select" style={{flex:1, minWidth:90}} value={filterTahun} onChange={e=>setFilterTahun(e.target.value)}>
                 {['2023','2024','2025','2026'].map(y=><option key={y}>{y}</option>)}
               </select>
-              <select className="kur-select" value={filterGred} onChange={e=>setFilterGred(e.target.value)}>
+              <select className="kur-select" style={{flex:1, minWidth:110}} value={filterGred} onChange={e=>setFilterGred(e.target.value)}>
                 <option value="">Semua Gred</option>
                 {['A','B','C','D','E'].map(g=><option key={g}>{g}</option>)}
               </select>
@@ -7713,11 +7737,10 @@ function ProfilMuridKoku() {
 
             {/* Kelas pill selector */}
             <div style={{background:'var(--surface)', border:'2px solid var(--border)', borderRadius:12, padding:'10px 12px', marginBottom:12}}>
-              {/* Semua button */}
               <button
                 onClick={() => setFilterKelas('')}
                 style={{
-                  padding:'5px 14px', borderRadius:20, fontSize:12, fontWeight:900,
+                  padding:'5px 12px', borderRadius:20, fontSize:11, fontWeight:900,
                   border:'2px solid', cursor:'pointer', marginBottom:8, marginRight:6,
                   fontFamily:"'Nunito',sans-serif", transition:'all 0.15s',
                   background: filterKelas==='' ? 'var(--accent)' : 'var(--surface)',
@@ -7726,30 +7749,26 @@ function ProfilMuridKoku() {
                 }}>
                 Semua ({data.length})
               </button>
-
-              {/* Group by Tahun */}
               {[1,2,3,4,5,6].map(t => {
                 const suffix = ['Unik','Aplikasi','Revolusi','Aspirasi','Dedikasi'];
                 return (
-                  <div key={t} style={{display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginBottom:6}}>
-                    <span style={{fontSize:11, fontWeight:900, color:'var(--text3)', minWidth:52, letterSpacing:'0.04em'}}>
-                      THN {t}
-                    </span>
+                  <div key={t} style={{display:'flex', alignItems:'center', gap:5, flexWrap:'wrap', marginBottom:5}}>
+                    <span style={{fontSize:10, fontWeight:900, color:'var(--text3)', minWidth:42, letterSpacing:'0.04em'}}>THN {t}</span>
                     {suffix.map(s => {
                       const k = `Tahun ${t} ${s}`;
                       const cnt = data.filter(r => r.kelas === k).length;
                       const active = filterKelas === k;
                       return (
                         <button key={k} onClick={() => setFilterKelas(active ? '' : k)} style={{
-                          padding:'4px 12px', borderRadius:20, fontSize:11, fontWeight:800,
+                          padding:'3px 10px', borderRadius:20, fontSize:10, fontWeight:800,
                           border:'2px solid', cursor:'pointer', fontFamily:"'Nunito',sans-serif",
                           transition:'all 0.12s',
-                          background: active ? 'var(--accent)' : cnt===0 ? 'transparent' : 'var(--surface)',
-                          borderColor: active ? 'var(--accent)' : cnt===0 ? 'var(--border)' : 'var(--border)',
+                          background: active ? 'var(--accent)' : 'var(--surface)',
+                          borderColor: active ? 'var(--accent)' : 'var(--border)',
                           color: active ? '#fff' : cnt===0 ? 'var(--text3)' : 'var(--text)',
                           opacity: cnt===0 ? 0.45 : 1,
                         }}>
-                          {s} {cnt > 0 && <span style={{opacity:0.7, fontSize:10}}>({cnt})</span>}
+                          {s}{cnt > 0 && <span style={{opacity:0.7, fontSize:9}}> ({cnt})</span>}
                         </button>
                       );
                     })}
@@ -7758,59 +7777,105 @@ function ProfilMuridKoku() {
               })}
             </div>
 
-            <div className="kur-table-wrap">
-              <table className="kur-table">
-                <thead>
-                  <tr>
-                    <th>#</th><th>Nama</th><th>Kelas</th>
-                    <th>Kelab / Jawatan</th>
-                    <th>Uniform / Pangkat</th>
-                    <th>Sukan / Jawatan</th>
-                    <th>Jml</th><th>Gred</th><th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.length === 0 && (
-                    <tr><td colSpan={9} style={{textAlign:'center', color:'var(--text3)', padding:28}}>Tiada rekod. Tambah profil murid.</td></tr>
-                  )}
-                  {filtered.map((r, i) => {
-                    const j = jumlah(r);
-                    const g = gradeOPR(j);
-                    return (
-                      <tr key={r.id}>
-                        <td style={{color:'var(--text3)', fontWeight:800}}>{i+1}</td>
-                        <td>
-                          <div style={{fontWeight:800}}>{r.nama}</div>
+            {/* Card list on mobile, table on desktop */}
+            {filtered.length === 0 && (
+              <div style={{textAlign:'center', padding:32, color:'var(--text3)', fontSize:14}}>Tiada rekod. Tambah profil murid.</div>
+            )}
+
+            {isMobile ? (
+              <div>
+                {filtered.map((r, i) => {
+                  const j = jumlah(r); const g = gradeOPR(j);
+                  return (
+                    <div key={r.id} className="murid-card">
+                      <div className="murid-card-row">
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:900, fontSize:14}}>{r.nama}</div>
                           {r.no_daftar && <div style={{fontSize:10, color:'var(--text3)', fontFamily:'monospace'}}>{r.no_daftar}</div>}
-                        </td>
-                        <td style={{fontSize:12, color:'var(--text3)'}}>{r.kelas}</td>
-                        <td>
-                          <div style={{fontSize:12, fontWeight:700}}>{r.kelab||'—'}</div>
-                          {r.jawatan_kelab && <span className="badge b-blue" style={{fontSize:9, marginTop:2}}>{r.jawatan_kelab}</span>}
-                          <div style={{fontSize:11, color:'var(--text3)', marginTop:2}}>Markah: <strong>{r.m_kelab??'—'}</strong>/10</div>
-                        </td>
-                        <td>
-                          <div style={{fontSize:12, fontWeight:700}}>{r.uniform||'—'}</div>
-                          {r.pangkat_uniform && <span className="badge b-green" style={{fontSize:9, marginTop:2}}>{r.pangkat_uniform}</span>}
-                          <div style={{fontSize:11, color:'var(--text3)', marginTop:2}}>Markah: <strong>{r.m_uniform??'—'}</strong>/10</div>
-                        </td>
-                        <td>
-                          <div style={{fontSize:12, fontWeight:700}}>{r.sukan||'—'}</div>
-                          {r.jawatan_sukan && <span className="badge b-yellow" style={{fontSize:9, marginTop:2}}>{r.jawatan_sukan}</span>}
-                          <div style={{fontSize:11, color:'var(--text3)', marginTop:2}}>Markah: <strong>{r.m_sukan??'—'}</strong>/10</div>
-                        </td>
-                        <td style={{fontWeight:900, fontSize:15}}>{j}<span style={{fontSize:10, color:'var(--text3)', fontWeight:400}}>/30</span></td>
-                        <td><span className={`badge ${GRED_COLOR[g]||'b-gray'}`}>{g}</span></td>
-                        <td style={{display:'flex', gap:4}}>
-                          <button className="btn-add" style={{padding:'4px 8px', fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
-                          <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          <div style={{fontSize:11, color:'var(--text2)', marginTop:2}}>{r.kelas} · {r.tahun}</div>
+                        </div>
+                        <div style={{textAlign:'center', minWidth:52}}>
+                          <div style={{fontWeight:900, fontSize:20, lineHeight:1}}>{j}<span style={{fontSize:10, color:'var(--text3)'}}>/30</span></div>
+                          <span className={`badge ${GRED_COLOR[g]||'b-gray'}`} style={{fontSize:12, marginTop:4, display:'inline-block'}}>{g}</span>
+                        </div>
+                      </div>
+                      <div className="murid-card-acts">
+                        <div className="murid-card-act">
+                          <div className="murid-card-act-label">🏛️ Kelab</div>
+                          <div className="murid-card-act-name">{r.kelab||'—'}</div>
+                          <div className="murid-card-act-mark">{r.m_kelab??0}/10</div>
+                        </div>
+                        <div className="murid-card-act">
+                          <div className="murid-card-act-label">🎖️ Uniform</div>
+                          <div className="murid-card-act-name">{r.uniform||'—'}</div>
+                          <div className="murid-card-act-mark">{r.m_uniform??0}/10</div>
+                        </div>
+                        <div className="murid-card-act">
+                          <div className="murid-card-act-label">⚽ Sukan</div>
+                          <div className="murid-card-act-name">{r.sukan||'—'}</div>
+                          <div className="murid-card-act-mark">{r.m_sukan??0}/10</div>
+                        </div>
+                      </div>
+                      <div style={{display:'flex', gap:6, justifyContent:'flex-end'}}>
+                        <button className="btn-add" style={{padding:'6px 14px', fontSize:12}} onClick={() => setEditItem({...r})}>✏️ Edit</button>
+                        <button className="btn-del" style={{padding:'6px 10px', fontSize:12}} onClick={() => handleDel(r.id)}>🗑</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="kur-table-wrap">
+                <table className="kur-table">
+                  <thead>
+                    <tr>
+                      <th>#</th><th>Nama</th><th>Kelas</th>
+                      <th>Kelab / Jawatan</th>
+                      <th>Uniform / Pangkat</th>
+                      <th>Sukan / Jawatan</th>
+                      <th>Jml</th><th>Gred</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((r, i) => {
+                      const j = jumlah(r);
+                      const g = gradeOPR(j);
+                      return (
+                        <tr key={r.id}>
+                          <td style={{color:'var(--text3)', fontWeight:800}}>{i+1}</td>
+                          <td>
+                            <div style={{fontWeight:800}}>{r.nama}</div>
+                            {r.no_daftar && <div style={{fontSize:10, color:'var(--text3)', fontFamily:'monospace'}}>{r.no_daftar}</div>}
+                          </td>
+                          <td style={{fontSize:12, color:'var(--text3)'}}>{r.kelas}</td>
+                          <td>
+                            <div style={{fontSize:12, fontWeight:700}}>{r.kelab||'—'}</div>
+                            {r.jawatan_kelab && <span className="badge b-blue" style={{fontSize:9, marginTop:2}}>{r.jawatan_kelab}</span>}
+                            <div style={{fontSize:11, color:'var(--text3)', marginTop:2}}>Markah: <strong>{r.m_kelab??'—'}</strong>/10</div>
+                          </td>
+                          <td>
+                            <div style={{fontSize:12, fontWeight:700}}>{r.uniform||'—'}</div>
+                            {r.pangkat_uniform && <span className="badge b-green" style={{fontSize:9, marginTop:2}}>{r.pangkat_uniform}</span>}
+                            <div style={{fontSize:11, color:'var(--text3)', marginTop:2}}>Markah: <strong>{r.m_uniform??'—'}</strong>/10</div>
+                          </td>
+                          <td>
+                            <div style={{fontSize:12, fontWeight:700}}>{r.sukan||'—'}</div>
+                            {r.jawatan_sukan && <span className="badge b-yellow" style={{fontSize:9, marginTop:2}}>{r.jawatan_sukan}</span>}
+                            <div style={{fontSize:11, color:'var(--text3)', marginTop:2}}>Markah: <strong>{r.m_sukan??'—'}</strong>/10</div>
+                          </td>
+                          <td style={{fontWeight:900, fontSize:15}}>{j}<span style={{fontSize:10, color:'var(--text3)', fontWeight:400}}>/30</span></td>
+                          <td><span className={`badge ${GRED_COLOR[g]||'b-gray'}`}>{g}</span></td>
+                          <td style={{display:'flex', gap:4}}>
+                            <button className="btn-add" style={{padding:'4px 8px', fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
+                            <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
@@ -7824,36 +7889,45 @@ function ProfilMuridKoku() {
               </select>
             </div>
 
-            {/* Grade distribution bar chart */}
-            <div style={{background:'var(--surface)', border:'2px solid var(--border)', borderRadius:14, padding:20, marginBottom:16}}>
-              <div style={{fontWeight:900, fontSize:13, marginBottom:16}}>📊 Agihan Gred OPR — {filterTahun}</div>
-              <div style={{display:'flex', alignItems:'flex-end', gap:12, height:120}}>
-                {gradeDist.map(g => (
-                  <div key={g.gred} style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4}}>
-                    <div style={{fontSize:12, fontWeight:900, color:g.color}}>{g.count}</div>
-                    <div style={{
-                      width:'100%', borderRadius:'6px 6px 0 0',
-                      background:g.color, opacity:0.85,
-                      height: `${Math.max(g.count/distMax*90, g.count>0?8:0)}px`,
-                      transition:'height 0.4s',
-                    }}/>
-                    <div style={{fontSize:13, fontWeight:900, color:g.color}}>Gred {g.gred}</div>
-                  </div>
-                ))}
-              </div>
+            {/* Grade distribution — horizontal bars on mobile, vertical bars on desktop */}
+            <div style={{background:'var(--surface)', border:'2px solid var(--border)', borderRadius:14, padding:16, marginBottom:16}}>
+              <div style={{fontWeight:900, fontSize:13, marginBottom:14}}>📊 Agihan Gred OPR — {filterTahun}</div>
+              {isMobile ? (
+                <div style={{display:'flex', flexDirection:'column', gap:10}}>
+                  {gradeDist.map(g => (
+                    <div key={g.gred} style={{display:'flex', alignItems:'center', gap:10}}>
+                      <span style={{fontSize:13, fontWeight:900, color:g.color, minWidth:56}}>Gred {g.gred}</span>
+                      <div style={{flex:1, background:'var(--divider)', borderRadius:99, height:18, overflow:'hidden'}}>
+                        <div style={{width:`${g.count/distMax*100}%`, minWidth:g.count>0?8:0, background:g.color, height:'100%', borderRadius:99, transition:'width 0.4s'}}/>
+                      </div>
+                      <span style={{fontSize:13, fontWeight:900, color:g.color, minWidth:24, textAlign:'right'}}>{g.count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{display:'flex', alignItems:'flex-end', gap:12, height:120}}>
+                  {gradeDist.map(g => (
+                    <div key={g.gred} style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4}}>
+                      <div style={{fontSize:12, fontWeight:900, color:g.color}}>{g.count}</div>
+                      <div style={{width:'100%', borderRadius:'6px 6px 0 0', background:g.color, opacity:0.85, height:`${Math.max(g.count/distMax*90, g.count>0?8:0)}px`, transition:'height 0.4s'}}/>
+                      <div style={{fontSize:13, fontWeight:900, color:g.color}}>Gred {g.gred}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Coverage by kelas */}
-            <div style={{background:'var(--surface)', border:'2px solid var(--border)', borderRadius:14, padding:20}}>
+            <div style={{background:'var(--surface)', border:'2px solid var(--border)', borderRadius:14, padding:16}}>
               <div style={{fontWeight:900, fontSize:13, marginBottom:14}}>🏫 Pecahan Gred Mengikut Kelas — {filterTahun}</div>
               {kelasCoverage.length === 0 && <div style={{fontSize:12, color:'var(--text3)'}}>Tiada data untuk {filterTahun}.</div>}
               {kelasCoverage.map(c => (
-                <div key={c.kelas} style={{marginBottom:12}}>
-                  <div style={{display:'flex', justifyContent:'space-between', marginBottom:4}}>
-                    <span style={{fontSize:12, fontWeight:800}}>{c.kelas}</span>
+                <div key={c.kelas} style={{marginBottom:14}}>
+                  <div style={{display:'flex', justifyContent:'space-between', marginBottom:5}}>
+                    <span style={{fontSize:13, fontWeight:800}}>{c.kelas}</span>
                     <span style={{fontSize:11, color:'var(--text3)'}}>{c.total} murid</span>
                   </div>
-                  <div style={{display:'flex', height:14, borderRadius:99, overflow:'hidden', gap:1}}>
+                  <div style={{display:'flex', height:16, borderRadius:99, overflow:'hidden', gap:1}}>
                     {['A','B','C','D','E'].map(g => {
                       const clr = g==='A'?'#22c55e': g==='B'?'#3b82f6': g==='C'?'#f59e0b':'#ef4444';
                       const pct = c.total ? c.grads[g]/c.total*100 : 0;
@@ -7862,10 +7936,10 @@ function ProfilMuridKoku() {
                       ) : null;
                     })}
                   </div>
-                  <div style={{display:'flex', gap:8, marginTop:4, flexWrap:'wrap'}}>
+                  <div style={{display:'flex', gap:10, marginTop:5, flexWrap:'wrap'}}>
                     {['A','B','C','D','E'].map(g => c.grads[g] > 0 && (
-                      <span key={g} style={{fontSize:10, color:'var(--text3)'}}>
-                        <strong>{g}</strong>: {c.grads[g]}
+                      <span key={g} style={{fontSize:11, color:'var(--text2)', fontWeight:700}}>
+                        <strong style={{color:g==='A'?'#16a34a':g==='B'?'#2563eb':g==='C'?'#d97706':'#dc2626'}}>{g}</strong>: {c.grads[g]}
                       </span>
                     ))}
                   </div>
