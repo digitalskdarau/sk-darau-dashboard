@@ -478,3 +478,154 @@ create table public.notis (
 );
 alter table public.notis enable row level security;
 create policy "anon full access" on public.notis for all to anon using (true) with check (true);
+
+-- ═══════════════════════════════════════════════════════
+--  KOKURIKULUM — Sukan, PAJSK, Pencapaian, OPR, Takwim
+-- ═══════════════════════════════════════════════════════
+
+-- ─── 17. KOKU_SUKAN ─────────────────────────────────────
+drop table if exists public.koku_sukan_pajsk cascade;
+drop table if exists public.koku_sukan_latihan cascade;
+drop table if exists public.koku_sukan_atlet cascade;
+drop table if exists public.koku_sukan cascade;
+create table public.koku_sukan (
+  id              uuid primary key default gen_random_uuid(),
+  nama            text not null,
+  kategori        text default 'Campuran',
+  guru_jurulatih  text,
+  hari            text,
+  masa            text,
+  lokasi          text,
+  min_latihan     int  default 10,
+  tahun           text default '2025',
+  status          text default 'Aktif',
+  created_at      timestamptz default now()
+);
+alter table public.koku_sukan enable row level security;
+create policy "anon full access" on public.koku_sukan for all to anon using (true) with check (true);
+
+-- ─── 18. KOKU_SUKAN_ATLET ───────────────────────────────
+create table public.koku_sukan_atlet (
+  id          uuid primary key default gen_random_uuid(),
+  sukan_id    uuid references public.koku_sukan(id) on delete cascade,
+  no_daftar   text,
+  nama_murid  text not null,
+  kelas       text,
+  jawatan     text default 'Ahli Biasa',
+  tahun       text default '2025',
+  status      text default 'Aktif',
+  created_at  timestamptz default now()
+);
+alter table public.koku_sukan_atlet enable row level security;
+create policy "anon full access" on public.koku_sukan_atlet for all to anon using (true) with check (true);
+
+-- ─── 19. KOKU_SUKAN_LATIHAN ─────────────────────────────
+create table public.koku_sukan_latihan (
+  id          uuid primary key default gen_random_uuid(),
+  sukan_id    uuid references public.koku_sukan(id) on delete cascade,
+  tarikh      date,
+  jenis       text default 'Latihan',
+  lawan       text,
+  aktiviti    text,
+  lokasi      text,
+  hadir       int  default 0,
+  guru_hadir  text,
+  catatan     text,
+  created_at  timestamptz default now()
+);
+alter table public.koku_sukan_latihan enable row level security;
+create policy "anon full access" on public.koku_sukan_latihan for all to anon using (true) with check (true);
+
+-- ─── 20. KOKU_SUKAN_PAJSK ───────────────────────────────
+create table public.koku_sukan_pajsk (
+  id                uuid primary key default gen_random_uuid(),
+  sukan_id          uuid references public.koku_sukan(id) on delete cascade,
+  atlet_id          uuid references public.koku_sukan_atlet(id) on delete cascade,
+  nama_murid        text not null,
+  kelas             text,
+  jawatan           text default 'Ahli Biasa',
+  kehadiran_hadir   int  default 0,
+  kehadiran_total   int  default 10,
+  peringkat         text default 'Tiada',
+  pencapaian        text default 'Tiada',
+  komitmen          int  default 2,
+  khidmat           text default 'Ahli Biasa',
+  tahun             text default '2025',
+  created_at        timestamptz default now()
+);
+alter table public.koku_sukan_pajsk enable row level security;
+create policy "anon full access" on public.koku_sukan_pajsk for all to anon using (true) with check (true);
+
+-- ─── 21. KOKU_PENCAPAIAN ────────────────────────────────
+drop table if exists public.koku_pencapaian cascade;
+create table public.koku_pencapaian (
+  id          uuid primary key default gen_random_uuid(),
+  acara       text not null,
+  kategori    text default 'Umum',
+  tahap       text,
+  penyertaan  text default 'Pasukan',
+  peserta     int  default 1,
+  tempat      text,
+  tarikh      date,
+  status      text default 'Akan Datang',
+  catatan     text,
+  created_at  timestamptz default now()
+);
+alter table public.koku_pencapaian enable row level security;
+create policy "anon full access" on public.koku_pencapaian for all to anon using (true) with check (true);
+
+-- ─── 22. KOKU_PAJSK_RINGKASAN ───────────────────────────
+drop table if exists public.koku_pajsk_ringkasan cascade;
+create table public.koku_pajsk_ringkasan (
+  id          uuid primary key default gen_random_uuid(),
+  nama_murid  text not null,
+  kelas       text,
+  m_kelab     int  default 0,
+  m_uniform   int  default 0,
+  m_sukan     int  default 0,
+  jumlah      int  default 0,
+  gred        text,
+  catatan     text,
+  tahun       text default '2025',
+  created_at  timestamptz default now()
+);
+alter table public.koku_pajsk_ringkasan enable row level security;
+create policy "anon full access" on public.koku_pajsk_ringkasan for all to anon using (true) with check (true);
+
+-- ─── 23. KOKU_OPR ───────────────────────────────────────
+drop table if exists public.koku_opr cascade;
+create table public.koku_opr (
+  id          uuid primary key default gen_random_uuid(),
+  nama_murid  text not null,
+  kelas       text,
+  kelab       text,
+  m_kelab     int  default 0,
+  uniform     text,
+  m_uniform   int  default 0,
+  sukan       text,
+  m_sukan     int  default 0,
+  jumlah      int  default 0,
+  gred        text,
+  catatan     text,
+  tahun       text default '2025',
+  created_at  timestamptz default now()
+);
+alter table public.koku_opr enable row level security;
+create policy "anon full access" on public.koku_opr for all to anon using (true) with check (true);
+
+-- ─── 24. KOKU_TAKWIM ────────────────────────────────────
+drop table if exists public.koku_takwim cascade;
+create table public.koku_takwim (
+  id                uuid primary key default gen_random_uuid(),
+  aktiviti          text not null,
+  jenis             text default 'Umum',
+  tarikh            date,
+  masa              text,
+  tempat            text,
+  penanggung_jawab  text,
+  status            text default 'Akan Datang',
+  catatan           text,
+  created_at        timestamptz default now()
+);
+alter table public.koku_takwim enable row level security;
+create policy "anon full access" on public.koku_takwim for all to anon using (true) with check (true);
