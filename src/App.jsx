@@ -5009,21 +5009,46 @@ function HemMurid() {
 }
 
 // ─── HEM 2. DISIPLIN ─────────────────────────────────────────────────────────
+const KESALAHAN_LIST = [
+  "Ponteng Sekolah","Ponteng Kelas","Lewat ke Sekolah",
+  "Tidak Menghormati Guru","Biadab / Bercakap Kasar",
+  "Bergaduh / Berkelahi","Buli","Ugutan / Ancaman",
+  "Merokok","Membawa / Menghisap Vape",
+  "Membawa Telefon Bimbit","Membawa Senjata",
+  "Tidak Berpakaian Kemas","Rambut Tidak Kemas",
+  "Menipu / Meniru dalam Peperiksaan",
+  "Vandalisma / Merosakkan Harta Sekolah",
+  "Mencuri","Ganguan Seksual",
+  "Lain-lain",
+];
+const TINDAKAN_LIST = [
+  "Amaran Lisan","Surat Amaran","Denda",
+  "Rotan","Digantung Persekolahan",
+  "Dirujuk Kaunselor","Dirujuk Pengetua",
+  "Panggil Ibu Bapa / Penjaga","Dibuang Sekolah","Lain-lain",
+];
+
 function HemDisiplin() {
-  const TABS_DS=['📋 Rekod Kes','📊 Analisis','⚠️ Murid Bermasalah'];
-  const [subtab,setSubtab]=useState(0);
+  const TABS_DS = ['📋 Rekod Kes','📊 Analisis','⚠️ Murid Bermasalah'];
+  const [subtab, setSubtab] = useState(0);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [q,setQ]=useState(''); const [filterKelas,setFilterKelas]=useState(''); const [filterStatus,setFilterStatus]=useState('');
-  const blank = { nama_murid:"", kelas:"", tarikh:"", kesalahan:"", tindakan:"", status:"Dalam Proses" };
+  const [q, setQ] = useState('');
+  const [filterKelas, setFilterKelas] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterKesalahan, setFilterKesalahan] = useState('');
+
+  const blank = { nama_murid:"", kelas:"", tarikh: new Date().toISOString().slice(0,10), kesalahan:"", tindakan:"", status:"Dalam Proses" };
   const [form, setForm] = useState(blank);
   const badgeMap = { "Selesai":"b-green","Dalam Proses":"b-yellow","Dirujuk":"b-red" };
+  const statusColor = { "Selesai":"#16a34a","Dalam Proses":"#d97706","Dirujuk":"#dc2626" };
 
   const load = async () => {
     setLoading(true);
-    const { data: rows } = await supabase.from('hem_disiplin').select('*').order('created_at', { ascending: false });
+    const { data: rows } = await supabase.from('hem_disiplin').select('*').order('tarikh', { ascending: false });
     setData(rows || []); setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -5032,178 +5057,319 @@ function HemDisiplin() {
     e.preventDefault();
     const ok = await dbRun(() => supabase.from('hem_disiplin').insert([form]));
     if (!ok) return;
-    toast("Rekod ditambah!", "success"); setShowAdd(false); setForm(blank); load();
+    toast("Kes disiplin ditambah!", "success"); setShowAdd(false); setForm(blank); load();
   };
   const handleEdit = async (e) => {
     e.preventDefault();
     const { nama_murid, kelas, tarikh, kesalahan, tindakan, status } = editItem;
     const ok = await dbRun(() => supabase.from('hem_disiplin').update({ nama_murid, kelas, tarikh, kesalahan, tindakan, status }).eq('id', editItem.id));
     if (!ok) return;
-    toast("Dikemaskini!", "success"); setEditItem(null); load();
+    toast("Rekod dikemaskini!", "success"); setEditItem(null); load();
   };
   const handleDel = async (id) => {
+    if (!window.confirm("Padam rekod kes disiplin ini?")) return;
     const ok = await dbRun(() => supabase.from('hem_disiplin').delete().eq('id', id));
-    if (ok) setData(d => d.filter(r => r.id !== id));
+    if (ok) { toast("Rekod dipadam.", "success"); setData(d => d.filter(r => r.id !== id)); }
   };
 
   const filtered = data.filter(r => {
-    if(q && !r.nama_murid?.toLowerCase().includes(q.toLowerCase()) && !r.kesalahan?.toLowerCase().includes(q.toLowerCase())) return false;
-    if(filterKelas && r.kelas !== filterKelas) return false;
-    if(filterStatus && r.status !== filterStatus) return false;
-    return true;
+    const matchQ = !q || r.nama_murid?.toLowerCase().includes(q.toLowerCase()) || r.kesalahan?.toLowerCase().includes(q.toLowerCase());
+    const matchK = !filterKelas || r.kelas === filterKelas;
+    const matchT = !filterTahun || r.kelas?.startsWith(`Tahun ${filterTahun} `);
+    const matchS = !filterStatus || r.status === filterStatus;
+    const matchKes = !filterKesalahan || r.kesalahan === filterKesalahan;
+    return matchQ && matchK && matchT && matchS && matchKes;
   });
-  const kelasList = [...new Set(data.map(r=>r.kelas).filter(Boolean))].sort();
-  const byKesalahan = Object.entries(data.reduce((a,r)=>{ a[r.kesalahan||'Lain-lain']=(a[r.kesalahan||'Lain-lain']||0)+1; return a; },{})).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const byKelas = kelasList.map(k=>({ kelas:k, count:data.filter(r=>r.kelas===k).length })).sort((a,b)=>b.count-a.count);
-  const byMurid = Object.entries(data.reduce((a,r)=>{ const key=`${r.nama_murid}||${r.kelas}`; a[key]=(a[key]||0)+1; return a; },{})).map(([k,c])=>({ nama:k.split('||')[0], kelas:k.split('||')[1], count:c })).sort((a,b)=>b.count-a.count).slice(0,15);
-  const maxKes = byKesalahan[0]?.[1]||1; const maxKls = byKelas[0]?.count||1;
 
-  const selesai = data.filter(r => r.status === "Selesai").length;
+  // analytics
+  const byKesalahan = Object.entries(
+    data.reduce((a,r)=>{ a[r.kesalahan||'Lain-lain']=(a[r.kesalahan||'Lain-lain']||0)+1; return a; },{})
+  ).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+  const byKelas = KELAS_LIST.map(k=>({ kelas:k, count:data.filter(r=>r.kelas===k).length }))
+    .filter(x=>x.count>0).sort((a,b)=>b.count-a.count).slice(0,10);
+
+  const byMurid = Object.entries(
+    data.reduce((a,r)=>{ const key=`${r.nama_murid}||${r.kelas}`; a[key]=(a[key]||0)+1; return a; },{})
+  ).map(([k,c])=>({ nama:k.split('||')[0], kelas:k.split('||')[1], count:c }))
+   .sort((a,b)=>b.count-a.count).slice(0,15);
+
+  const maxKes = byKesalahan[0]?.[1]||1;
+  const maxKls = byKelas[0]?.count||1;
+  const selesai = data.filter(r=>r.status==="Selesai").length;
+  const dalamProses = data.filter(r=>r.status==="Dalam Proses").length;
+  const dirujuk = data.filter(r=>r.status==="Dirujuk").length;
+
+  const TS = (i) => ({
+    padding:'7px 18px', borderRadius:20,
+    border:`2px solid ${subtab===i?'var(--accent)':'var(--divider)'}`,
+    cursor:'pointer', fontWeight:800,
+    background: subtab===i?'var(--accent)':'transparent',
+    color: subtab===i?'#fff':'var(--text2)', fontSize:13, transition:'all 0.15s',
+  });
+
+  const fmtTarikh = (t) => {
+    if (!t) return '—';
+    const d = new Date(t);
+    return isNaN(d) ? t : d.toLocaleDateString('ms-MY',{day:'numeric',month:'short',year:'numeric'});
+  };
+
+  const DisiplinForm = ({ val, set, onSubmit, btnLabel }) => (
+    <form onSubmit={onSubmit}>
+      <div className="form-row">
+        <div className="form-field">
+          <label className="form-label">Nama Murid</label>
+          <input className="form-input" required value={val.nama_murid} onChange={e=>set(f=>({...f,nama_murid:e.target.value}))} placeholder="Nama penuh murid"/>
+        </div>
+        <div className="form-field">
+          <label className="form-label">Kelas</label>
+          <select className="form-input" required value={val.kelas} onChange={e=>set(f=>({...f,kelas:e.target.value}))}>
+            <option value="">— Pilih Kelas —</option>
+            {[1,2,3,4,5,6].map(t=>(
+              <optgroup key={t} label={`── Tahun ${t} ──`}>
+                {KELAS_NAMA_LIST.map(n=><option key={n} value={`Tahun ${t} ${n}`}>Tahun {t} {n}</option>)}
+              </optgroup>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-field">
+          <label className="form-label">Tarikh Kejadian</label>
+          <input className="form-input" type="date" required value={val.tarikh} onChange={e=>set(f=>({...f,tarikh:e.target.value}))}/>
+        </div>
+        <div className="form-field">
+          <label className="form-label">Status</label>
+          <select className="form-input" value={val.status} onChange={e=>set(f=>({...f,status:e.target.value}))}>
+            <option>Dalam Proses</option><option>Selesai</option><option>Dirujuk</option>
+          </select>
+        </div>
+      </div>
+      <div className="form-field">
+        <label className="form-label">Jenis Kesalahan</label>
+        <select className="form-input" required value={val.kesalahan} onChange={e=>set(f=>({...f,kesalahan:e.target.value}))}>
+          <option value="">— Pilih Kesalahan —</option>
+          {KESALAHAN_LIST.map(k=><option key={k}>{k}</option>)}
+        </select>
+      </div>
+      <div className="form-field">
+        <label className="form-label">Tindakan Diambil</label>
+        <select className="form-input" value={val.tindakan} onChange={e=>set(f=>({...f,tindakan:e.target.value}))}>
+          <option value="">— Pilih Tindakan —</option>
+          {TINDAKAN_LIST.map(t=><option key={t}>{t}</option>)}
+        </select>
+      </div>
+      <button className="btn-primary" type="submit">{btnLabel}</button>
+    </form>
+  );
+
+  const hasFilter = q||filterKelas||filterTahun||filterStatus||filterKesalahan;
+
   return (
-    <KurPage title="Disiplin" sub="HEM · SK Darau, Kota Kinabalu"
+    <KurPage title="Disiplin Murid" sub="HEM · SK Darau, Kota Kinabalu"
       stats={[
         { ico:"📋", val:data.length, lbl:"Jumlah Kes" },
         { ico:"✅", val:selesai, lbl:"Selesai" },
-        { ico:"⏳", val:data.filter(r=>r.status==="Dalam Proses").length, lbl:"Dalam Proses" },
-        { ico:"🚨", val:data.filter(r=>r.status==="Dirujuk").length, lbl:"Dirujuk" },
+        { ico:"⏳", val:dalamProses, lbl:"Dalam Proses" },
+        { ico:"🚨", val:dirujuk, lbl:"Dirujuk" },
       ]}>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
-        {TABS_DS.map((t,i)=><button key={i} onClick={()=>setSubtab(i)} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,background:subtab===i?"var(--accent)":"var(--card2)",color:subtab===i?"#fff":"var(--text2)"}}>{t}</button>)}
+
+      {/* Tab bar */}
+      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:18}}>
+        {TABS_DS.map((t,i)=><button key={i} style={TS(i)} onClick={()=>setSubtab(i)}>{t}</button>)}
+        <button className="btn-add" style={{marginLeft:'auto'}} onClick={()=>setShowAdd(true)}>+ Tambah Kes</button>
       </div>
-      {subtab===0 && (<>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8,alignItems:"center"}}>
-          <input className="form-input" style={{maxWidth:200,marginBottom:0}} placeholder="🔍 Cari nama / kesalahan…" value={q} onChange={e=>setQ(e.target.value)}/>
-          <select className="form-input" style={{maxWidth:160,marginBottom:0}} value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}>
-            <option value="">Semua Kelas</option>{kelasList.map(k=><option key={k}>{k}</option>)}
-          </select>
-          <select className="form-input" style={{maxWidth:160,marginBottom:0}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
-            <option value="">Semua Status</option><option>Dalam Proses</option><option>Selesai</option><option>Dirujuk</option>
-          </select>
-          <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Kes</button>
-        </div>
-        {loading ? <div className="loading">⏳ Memuatkan…</div> : (
+
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (<>
+
+        {/* ── TAB 0: REKOD KES ── */}
+        {subtab===0&&(<>
+          {/* Search & filter */}
+          <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10,alignItems:'center'}}>
+            <div className="kur-search-wrap" style={{flex:1,minWidth:160,position:'relative'}}>
+              <span className="kur-search-ico">🔍</span>
+              <input className="kur-search" placeholder="Cari nama murid atau jenis kesalahan…" value={q} onChange={e=>setQ(e.target.value)}/>
+              {q&&<button onClick={()=>setQ('')} style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:14,color:'var(--text3)'}}>✕</button>}
+            </div>
+            <select className="kur-select" value={filterTahun} onChange={e=>{setFilterTahun(e.target.value);setFilterKelas('');}}>
+              <option value="">Semua Tahun</option>
+              {[1,2,3,4,5,6].map(t=><option key={t} value={t}>Tahun {t}</option>)}
+            </select>
+            <select className="kur-select" value={filterKelas} onChange={e=>{setFilterKelas(e.target.value);setFilterTahun('');}}>
+              <option value="">Semua Kelas</option>
+              {[1,2,3,4,5,6].map(t=>(
+                <optgroup key={t} label={`Tahun ${t}`}>
+                  {KELAS_NAMA_LIST.map(n=><option key={n} value={`Tahun ${t} ${n}`}>Tahun {t} {n}</option>)}
+                </optgroup>
+              ))}
+            </select>
+            <select className="kur-select" value={filterKesalahan} onChange={e=>setFilterKesalahan(e.target.value)}>
+              <option value="">Semua Kesalahan</option>
+              {KESALAHAN_LIST.map(k=><option key={k}>{k}</option>)}
+            </select>
+            <select className="kur-select" value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+              <option value="">Semua Status</option>
+              <option>Dalam Proses</option><option>Selesai</option><option>Dirujuk</option>
+            </select>
+            {hasFilter&&(
+              <button onClick={()=>{setQ('');setFilterKelas('');setFilterTahun('');setFilterStatus('');setFilterKesalahan('');}}
+                style={{padding:'6px 12px',borderRadius:10,border:'1.5px solid var(--divider)',background:'var(--surface)',color:'var(--text3)',fontWeight:700,fontSize:12,cursor:'pointer'}}>
+                ✕ Reset
+              </button>
+            )}
+          </div>
+          <div style={{fontSize:12,color:'var(--text3)',fontWeight:700,marginBottom:8}}>
+            {filtered.length} rekod
+            {filterKelas&&<span style={{marginLeft:8,padding:'2px 10px',borderRadius:20,background:'#fef2f2',color:'#dc2626',fontSize:11}}>📌 {filterKelas}</span>}
+            {filterTahun&&<span style={{marginLeft:8,padding:'2px 10px',borderRadius:20,background:'#fef2f2',color:'#dc2626',fontSize:11}}>📌 Tahun {filterTahun}</span>}
+            {filterKesalahan&&<span style={{marginLeft:8,padding:'2px 10px',borderRadius:20,background:'#fef2f2',color:'#dc2626',fontSize:11}}>📌 {filterKesalahan}</span>}
+          </div>
           <div className="kur-table-wrap">
             <table className="kur-table">
-              <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Kesalahan</th><th>Tindakan</th><th>Status</th><th></th></tr></thead>
+              <thead>
+                <tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Kesalahan</th><th>Tindakan</th><th>Status</th><th style={{width:80}}></th></tr>
+              </thead>
               <tbody>
-                {filtered.map(r => (
+                {filtered.length===0&&(
+                  <tr><td colSpan={8} style={{textAlign:'center',color:'var(--text3)',padding:32}}>
+                    {hasFilter ? '🔍 Tiada rekod sepadan.' : '📭 Tiada kes. Klik "+ Tambah Kes" untuk mula.'}
+                  </td></tr>
+                )}
+                {filtered.map((r,i)=>(
                   <tr key={r.id}>
+                    <td style={{fontWeight:900,color:'var(--accent)',fontSize:12}}>{i+1}</td>
                     <td style={{fontWeight:800}}>{r.nama_murid}</td>
-                    <td style={{color:"var(--text3)"}}>{r.kelas}</td>
-                    <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
-                    <td>{r.kesalahan}</td>
-                    <td style={{fontSize:12,color:"var(--text2)"}}>{r.tindakan}</td>
-                    <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
-                    <td style={{display:"flex",gap:4}}>
-                      <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
-                      <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                    <td>
+                      <span style={{padding:'2px 8px',borderRadius:8,fontSize:11,fontWeight:700,
+                        background: TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1]+'18',
+                        color: TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1]}}>
+                        {r.kelas}
+                      </span>
+                    </td>
+                    <td style={{color:'var(--text3)',whiteSpace:'nowrap',fontSize:12}}>{fmtTarikh(r.tarikh)}</td>
+                    <td>
+                      <span style={{padding:'2px 10px',borderRadius:8,fontSize:11,fontWeight:700,background:'#fef2f2',color:'#dc2626'}}>
+                        {r.kesalahan}
+                      </span>
+                    </td>
+                    <td style={{fontSize:12,color:'var(--text2)'}}>{r.tindakan||'—'}</td>
+                    <td><span className={`badge ${badgeMap[r.status]||'b-gray'}`}>{r.status}</span></td>
+                    <td>
+                      <div style={{display:'flex',gap:4}}>
+                        <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditItem({...r})}>✏️</button>
+                        <button className="btn-del" onClick={()=>handleDel(r.id)}>🗑</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
-                {filtered.length===0 && <tr><td colSpan={7} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada rekod</td></tr>}
               </tbody>
             </table>
           </div>
-        )}
-      </>)}
-      {subtab===1 && (<>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-          <div className="kur-card" style={{padding:16}}>
-            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Jenis Kesalahan</div>
-            {byKesalahan.map(([k,c])=>(
-              <div key={k} style={{marginBottom:8}}>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span>{k}</span><b>{c}</b></div>
-                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(c/maxKes)*100}%`,height:8,borderRadius:4,background:"var(--accent)"}}></div></div>
+        </>)}
+
+        {/* ── TAB 1: ANALISIS ── */}
+        {subtab===1&&(<>
+          {/* Status summary cards */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:18}}>
+            {[['✅','Selesai',selesai,'#16a34a'],['⏳','Dalam Proses',dalamProses,'#d97706'],['🚨','Dirujuk',dirujuk,'#dc2626']].map(([ico,lbl,val,clr])=>(
+              <div key={lbl} style={{background:`${clr}10`,border:`1.5px solid ${clr}30`,borderRadius:16,padding:'16px 14px',textAlign:'center'}}>
+                <div style={{fontSize:26,marginBottom:4}}>{ico}</div>
+                <div style={{fontFamily:"'Fredoka One',cursive",fontSize:32,color:clr,lineHeight:1}}>{val}</div>
+                <div style={{fontSize:12,color:'var(--text3)',fontWeight:700,marginTop:4}}>{lbl}</div>
               </div>
             ))}
-            {byKesalahan.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
           </div>
-          <div className="kur-card" style={{padding:16}}>
-            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Kes Mengikut Kelas</div>
-            {byKelas.map(({kelas,count})=>(
-              <div key={kelas} style={{marginBottom:8}}>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span>{kelas}</span><b>{count}</b></div>
-                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(count/maxKls)*100}%`,height:8,borderRadius:4,background:"var(--accent2)"}}></div></div>
-              </div>
-            ))}
-            {byKelas.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
-          </div>
-        </div>
-        <div className="kur-card" style={{padding:16,marginTop:16}}>
-          <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Status Keseluruhan</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
-            {[["Selesai","b-green","✅"],["Dalam Proses","b-yellow","⏳"],["Dirujuk","b-red","🚨"]].map(([s,b,ico])=>{
-              const cnt=data.filter(r=>r.status===s).length;
-              return <div key={s} style={{textAlign:"center",padding:"12px 8px",background:"var(--card2)",borderRadius:10}}>
-                <div style={{fontSize:22}}>{ico}</div>
-                <div style={{fontWeight:900,fontSize:22,color:"var(--accent)"}}>{cnt}</div>
-                <div style={{fontSize:11,color:"var(--text3)"}}>{s}</div>
-              </div>;
-            })}
-          </div>
-        </div>
-      </>)}
-      {subtab===2 && (<>
-        <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Murid dengan Kes Paling Banyak</div>
-        <div className="kur-table-wrap">
-          <table className="kur-table">
-            <thead><tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>Bilangan Kes</th><th>Status Semasa</th></tr></thead>
-            <tbody>
-              {byMurid.map((m,i)=>{
-                const latest = data.find(r=>r.nama_murid===m.nama && r.kelas===m.kelas);
-                return <tr key={i}>
-                  <td style={{fontWeight:900,color:i<3?"var(--accent)":"var(--text3)"}}>{i+1}</td>
-                  <td style={{fontWeight:800}}>{m.nama}</td>
-                  <td style={{color:"var(--text3)"}}>{m.kelas}</td>
-                  <td><span style={{fontWeight:900,color:"var(--accent)",fontSize:16}}>{m.count}</span> kes</td>
-                  <td>{latest && <span className={`badge ${badgeMap[latest.status]||"b-gray"}`}>{latest.status}</span>}</td>
-                </tr>;
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+            {/* Jenis kesalahan */}
+            <div style={{background:'var(--surface)',border:'1.5px solid var(--divider)',borderRadius:16,padding:18}}>
+              <p style={{fontWeight:800,fontSize:14,marginBottom:14}}>🔴 Jenis Kesalahan Tertinggi</p>
+              {byKesalahan.length===0&&<p style={{color:'var(--text3)',fontSize:13}}>Tiada data.</p>}
+              {byKesalahan.map(([k,c])=>(
+                <div key={k} style={{marginBottom:10}}>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4,fontWeight:700}}>
+                    <span style={{flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',paddingRight:8}}>{k}</span>
+                    <span style={{color:'#dc2626',fontWeight:900,flexShrink:0}}>{c} kes</span>
+                  </div>
+                  <div style={{background:'var(--divider)',borderRadius:99,height:10,overflow:'hidden'}}>
+                    <div style={{height:'100%',background:'#dc2626',width:`${(c/maxKes)*100}%`,borderRadius:99,opacity:0.75,transition:'width 0.6s'}}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Kes mengikut kelas */}
+            <div style={{background:'var(--surface)',border:'1.5px solid var(--divider)',borderRadius:16,padding:18}}>
+              <p style={{fontWeight:800,fontSize:14,marginBottom:14}}>🏫 Kes Mengikut Kelas</p>
+              {byKelas.length===0&&<p style={{color:'var(--text3)',fontSize:13}}>Tiada data.</p>}
+              {byKelas.map(({kelas,count})=>{
+                const tc = TAHUN_COLORS[(parseInt(kelas?.split(' ')[1])||1)-1];
+                return(
+                  <div key={kelas} style={{marginBottom:10}}>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4,fontWeight:700}}>
+                      <span style={{color:tc}}>{kelas}</span>
+                      <span style={{fontWeight:900}}>{count}</span>
+                    </div>
+                    <div style={{background:'var(--divider)',borderRadius:99,height:10,overflow:'hidden'}}>
+                      <div style={{height:'100%',background:tc,width:`${(count/maxKls)*100}%`,borderRadius:99,opacity:0.7,transition:'width 0.6s'}}/>
+                    </div>
+                  </div>
+                );
               })}
-              {byMurid.length===0 && <tr><td colSpan={5} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada data</td></tr>}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          </div>
+        </>)}
+
+        {/* ── TAB 2: MURID BERMASALAH ── */}
+        {subtab===2&&(<>
+          <div style={{marginBottom:14,padding:'10px 14px',background:'#fef2f2',border:'1.5px solid #fca5a5',borderRadius:12,fontSize:13,color:'#dc2626',fontWeight:700}}>
+            ⚠️ Senarai murid mengikut jumlah kes disiplin tertinggi. Semak rekod lanjut sebelum ambil tindakan.
+          </div>
+          <div className="kur-table-wrap">
+            <table className="kur-table">
+              <thead>
+                <tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>Jumlah Kes</th><th>Kes Terkini</th><th>Status Terkini</th></tr>
+              </thead>
+              <tbody>
+                {byMurid.length===0&&(
+                  <tr><td colSpan={6} style={{textAlign:'center',color:'var(--text3)',padding:32}}>📭 Tiada data rekod kes.</td></tr>
+                )}
+                {byMurid.map((m,i)=>{
+                  const latest = data.find(r=>r.nama_murid===m.nama&&r.kelas===m.kelas);
+                  const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+                  return (
+                    <tr key={i} style={{background: i<3?'#fef2f2':''}}>
+                      <td style={{fontWeight:900,color:i<3?'#dc2626':'var(--text3)',fontSize:13}}>{medal||i+1}</td>
+                      <td style={{fontWeight:800}}>{m.nama}</td>
+                      <td>
+                        <span style={{padding:'2px 8px',borderRadius:8,fontSize:11,fontWeight:700,
+                          background:TAHUN_COLORS[(parseInt(m.kelas?.split(' ')[1])||1)-1]+'18',
+                          color:TAHUN_COLORS[(parseInt(m.kelas?.split(' ')[1])||1)-1]}}>
+                          {m.kelas}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{fontFamily:"'Fredoka One',cursive",fontSize:20,color:i<3?'#dc2626':'var(--accent)'}}>{m.count}</span>
+                        <span style={{fontSize:12,color:'var(--text3)',marginLeft:4}}>kes</span>
+                      </td>
+                      <td style={{fontSize:12,color:'var(--text2)'}}>{latest?.kesalahan||'—'}</td>
+                      <td>{latest&&<span className={`badge ${badgeMap[latest.status]||'b-gray'}`}>{latest.status}</span>}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>)}
+
       </>)}
-      {showAdd && (
-        <Modal title="Tambah Kes Disiplin" onClose={() => setShowAdd(false)}>
-          <form onSubmit={handleAdd}>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" required value={form.nama_murid} onChange={e=>setForm(f=>({...f,nama_murid:e.target.value}))} placeholder="Nama penuh"/></div>
-              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))} placeholder="cth: Tahun 4"/></div>
-            </div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={form.tarikh} onChange={e=>setForm(f=>({...f,tarikh:e.target.value}))} placeholder="cth: 5 Mei 2025"/></div>
-              <div className="form-field"><label className="form-label">Status</label>
-                <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
-                  <option>Dalam Proses</option><option>Selesai</option><option>Dirujuk</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-field"><label className="form-label">Kesalahan</label><input className="form-input" value={form.kesalahan} onChange={e=>setForm(f=>({...f,kesalahan:e.target.value}))} placeholder="Jenis kesalahan"/></div>
-            <div className="form-field"><label className="form-label">Tindakan</label><textarea className="form-input" rows={2} value={form.tindakan} onChange={e=>setForm(f=>({...f,tindakan:e.target.value}))}/></div>
-            <button className="btn-primary" type="submit">+ Tambah</button>
-          </form>
+
+      {showAdd&&(
+        <Modal title="➕ Tambah Kes Disiplin" onClose={()=>{setShowAdd(false);setForm(blank);}}>
+          <DisiplinForm val={form} set={setForm} onSubmit={handleAdd} btnLabel="✅ Simpan Kes"/>
         </Modal>
       )}
-      {editItem && (
-        <Modal title={`Edit — ${editItem.nama_murid}`} onClose={() => setEditItem(null)}>
-          <form onSubmit={handleEdit}>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" value={editItem.nama_murid} onChange={e=>setEditItem(f=>({...f,nama_murid:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}/></div>
-            </div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={editItem.tarikh} onChange={e=>setEditItem(f=>({...f,tarikh:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Status</label>
-                <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
-                  <option>Dalam Proses</option><option>Selesai</option><option>Dirujuk</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-field"><label className="form-label">Kesalahan</label><input className="form-input" value={editItem.kesalahan} onChange={e=>setEditItem(f=>({...f,kesalahan:e.target.value}))}/></div>
-            <div className="form-field"><label className="form-label">Tindakan</label><textarea className="form-input" rows={2} value={editItem.tindakan} onChange={e=>setEditItem(f=>({...f,tindakan:e.target.value}))}/></div>
-            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
-          </form>
+      {editItem&&(
+        <Modal title={`✏️ Edit — ${editItem.nama_murid}`} onClose={()=>setEditItem(null)}>
+          <DisiplinForm val={editItem} set={setEditItem} onSubmit={handleEdit} btnLabel="💾 Simpan Perubahan"/>
         </Modal>
       )}
     </KurPage>
