@@ -2507,114 +2507,591 @@ function PanitiaMP() {
 
 // ─── 3. PEPERIKSAAN & PENILAIAN ───────────────────────────────────────────────
 function Peperiksaan() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const [editItem, setEditItem] = useState(null);
-  const [form, setForm] = useState({ nama:"", tarikh:"", kelas:"Tahun 1–6", status:"Akan Datang" });
-  const badgeMap = { "Selesai":"b-green","Akan Datang":"b-yellow","Semasa":"b-blue" };
+  const TABS_PEP = ["📋 Senarai","📝 Markah Murid","📊 Analisis","🏆 Ranking","📅 Jadual Peprik"];
+  const JENIS_LIST = ["Ujian 1","Pertengahan Tahun","Ujian 2","Akhir Tahun","Lain-lain"];
+  const SUBJECT_LIST = ["BM","BI","Math","Sains","Sejarah","Geografi","PI/Moral","PJK","Seni","Muzik","TMK","RBT"];
+  const BAND_DESC = {1:"Tahu",2:"Tahu dan Faham",3:"Tahu, Faham dan Boleh Buat",4:"Tahu, Faham, Boleh Buat dengan Beradab",5:"Tahu, Faham, Boleh Buat dengan Beradab Terpuji",6:"Tahu, Faham, Boleh Buat dengan Beradab Terpuji Mithali"};
   const STATUS_CYCLE = ["Akan Datang","Semasa","Selesai"];
+  const badgeMap = { "Selesai":"b-green","Akan Datang":"b-yellow","Semasa":"b-blue" };
 
-  const load = async () => {
+  const [subtab, setSubtab] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // Tab 0 state
+  const [pepList, setPepList] = useState([]);
+  const [showAddPep, setShowAddPep] = useState(false);
+  const [editPep, setEditPep] = useState(null);
+  const blankPep = { nama:"", jenis:"Ujian 1", tarikh_mula:"", tarikh_tamat:"", kelas_sasaran:"Semua", status:"Akan Datang" };
+  const [formPep, setFormPep] = useState({...blankPep});
+
+  // Tab 1 state
+  const [selPepId, setSelPepId] = useState("");
+  const [selKelas1, setSelKelas1] = useState("");
+  const [selSubjek, setSelSubjek] = useState("BM");
+  const [markahList, setMarkahList] = useState([]);
+  const [muridList, setMuridList] = useState([]);
+  const [markahEdit, setMarkahEdit] = useState({});
+  const [savingMarkah, setSavingMarkah] = useState(false);
+
+  // Tab 2 + 3 state (shared filter)
+  const [analisisPepId, setAnalisisPepId] = useState("");
+  const [analisisKelas, setAnalisisKelas] = useState("");
+  const [analisisData, setAnalisisData] = useState([]);
+
+  // Tab 4 state
+  const [jadualList, setJadualList] = useState([]);
+  const [showAddJadual, setShowAddJadual] = useState(false);
+  const blankJadual = { peperiksaan_id:"", tarikh:"", masa_mula:"", masa_tamat:"", mata_pelajaran:"BM", kelas:"Semua", bilik:"Dewan", pengawas:"" };
+  const [formJadual, setFormJadual] = useState({...blankJadual});
+  const [filterJadualId, setFilterJadualId] = useState("");
+
+  const isTahunRendah = (k) => /Tahun [123]/.test(k);
+
+  const getGred = (m) => {
+    if (m==null||m==="") return "-";
+    const n = Number(m);
+    if (n>=90) return "A+"; if (n>=80) return "A"; if (n>=70) return "B";
+    if (n>=60) return "C"; if (n>=50) return "D"; return "E";
+  };
+
+  const loadAll = async () => {
     setLoading(true);
+    const [r1,r2] = await Promise.all([
+      supabase.from('peperiksaan').select('*').order('created_at',{ascending:false}),
+      supabase.from('peperiksaan_jadual').select('*').order('tarikh'),
+    ]);
+    setPepList(r1.data||[]); setJadualList(r2.data||[]); setLoading(false);
+  };
 
-    const { data: rows } = await supabase.from('peperiksaan').select('*').order('created_at');
-    setData(rows||[]); setLoading(false);
+  const loadMurid = async (kelas) => {
+    if (!kelas) return;
+    const { data } = await supabase.from('hem_murid').select('id,nama,no_kelas').eq('kelas',kelas).order('nama');
+    setMuridList(data||[]);
   };
-  useEffect(()=>{ load(); },[]);
 
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    const ok = await dbRun(() => supabase.from('peperiksaan').insert([form]));
-    if (!ok) return;
-    toast("Peperiksaan ditambah!", "success");
-    setShowAdd(false); setForm({ nama:"", tarikh:"", kelas:"Tahun 1–6", status:"Akan Datang" }); load();
+  const loadMarkah = async (pepId, kelas, subjek) => {
+    if (!pepId||!kelas||!subjek) return;
+    const { data } = await supabase.from('peperiksaan_markah').select('*')
+      .eq('peperiksaan_id',pepId).eq('kelas',kelas).eq('mata_pelajaran',subjek);
+    setMarkahList(data||[]);
+    const map = {};
+    (data||[]).forEach(r => { map[r.nama_murid] = r.markah??r.band??""; });
+    setMarkahEdit(map);
   };
-  const handleEdit = async (e) => {
-    e.preventDefault();
-    const ok = await dbRun(() => supabase.from('peperiksaan').update({ nama:editItem.nama, tarikh:editItem.tarikh, kelas:editItem.kelas, status:editItem.status }).eq('id', editItem.id));
-    if (!ok) return;
-    toast("Dikemaskini!", "success");
-    setEditItem(null); load();
+
+  const loadAnalisis = async (pepId, kelas) => {
+    if (!pepId) return;
+    let q = supabase.from('peperiksaan_markah').select('*').eq('peperiksaan_id',pepId);
+    if (kelas) q = q.eq('kelas',kelas);
+    const { data } = await q;
+    setAnalisisData(data||[]);
   };
-  const handleDel = async (id) => {
-    const ok = await dbRun(() => supabase.from('peperiksaan').delete().eq('id',id));
-    if (ok) setData(d=>d.filter(r=>r.id!==id));
+
+  useEffect(()=>{ loadAll(); },[]);
+  useEffect(()=>{ if(selKelas1) loadMurid(selKelas1); else setMuridList([]); },[selKelas1]);
+  useEffect(()=>{ loadMarkah(selPepId,selKelas1,selSubjek); },[selPepId,selKelas1,selSubjek]);
+  useEffect(()=>{ loadAnalisis(analisisPepId,analisisKelas); },[analisisPepId,analisisKelas]);
+
+  // --- Tab 0 ---
+  const handleAddPep = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(()=>supabase.from('peperiksaan').insert([formPep]));
+    if (!ok) return;
+    toast("Peperiksaan ditambah!","success"); setShowAddPep(false); setFormPep({...blankPep}); loadAll();
+  };
+  const handleEditPep = async (e) => {
+    e.preventDefault();
+    const { id, created_at, ...upd } = editPep;
+    const ok = await dbRun(()=>supabase.from('peperiksaan').update(upd).eq('id',id));
+    if (!ok) return;
+    toast("Dikemaskini!","success"); setEditPep(null); loadAll();
+  };
+  const handleDelPep = async (id) => {
+    const ok = await dbRun(()=>supabase.from('peperiksaan').delete().eq('id',id));
+    if (ok) setPepList(d=>d.filter(r=>r.id!==id));
   };
   const cycleStatus = async (p) => {
-    const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(p.status)+1) % STATUS_CYCLE.length];
-    const ok = await dbRun(() => supabase.from('peperiksaan').update({ status:next }).eq('id',p.id));
-    if (ok) setData(d=>d.map(r=>r.id===p.id?{...r,status:next}:r));
+    const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(p.status)+1)%STATUS_CYCLE.length];
+    const ok = await dbRun(()=>supabase.from('peperiksaan').update({status:next}).eq('id',p.id));
+    if (ok) setPepList(d=>d.map(r=>r.id===p.id?{...r,status:next}:r));
   };
 
-  const selesai = data.filter(p=>p.status==="Selesai").length;
+  // --- Tab 1 ---
+  const handleSaveMarkah = async () => {
+    if (!selPepId||!selKelas1||!selSubjek) return toast("Pilih peperiksaan, kelas dan subjek dulu.","error");
+    setSavingMarkah(true);
+    const isRendah = isTahunRendah(selKelas1);
+    const upserts = muridList.map(m => {
+      const val = markahEdit[m.nama]??"";
+      if (val==="") return null;
+      return {
+        peperiksaan_id:selPepId, nama_murid:m.nama, kelas:selKelas1, mata_pelajaran:selSubjek,
+        markah: isRendah?null:Number(val),
+        band: isRendah?Number(val):null,
+        gred: isRendah?null:getGred(val),
+      };
+    }).filter(Boolean);
+    await supabase.from('peperiksaan_markah').delete()
+      .eq('peperiksaan_id',selPepId).eq('kelas',selKelas1).eq('mata_pelajaran',selSubjek);
+    if (upserts.length>0) {
+      const ok = await dbRun(()=>supabase.from('peperiksaan_markah').insert(upserts));
+      if (!ok) { setSavingMarkah(false); return; }
+    }
+    toast(`${upserts.length} rekod markah disimpan!`,"success");
+    setSavingMarkah(false); loadMarkah(selPepId,selKelas1,selSubjek);
+  };
+
+  // --- Tab 4 ---
+  const handleAddJadual = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(()=>supabase.from('peperiksaan_jadual').insert([formJadual]));
+    if (!ok) return;
+    toast("Jadual ditambah!","success"); setShowAddJadual(false); setFormJadual({...blankJadual}); loadAll();
+  };
+  const handleDelJadual = async (id) => {
+    const ok = await dbRun(()=>supabase.from('peperiksaan_jadual').delete().eq('id',id));
+    if (ok) setJadualList(d=>d.filter(r=>r.id!==id));
+  };
+
+  // --- Analisis compute ---
+  const getAnalisisSummary = () => {
+    const grouped = {};
+    analisisData.forEach(r=>{ if(!grouped[r.mata_pelajaran]) grouped[r.mata_pelajaran]=[]; grouped[r.mata_pelajaran].push(r); });
+    return Object.entries(grouped).map(([subj,rows])=>{
+      const withM = rows.filter(r=>r.markah!==null);
+      const withB = rows.filter(r=>r.band!==null);
+      if (withM.length>0) {
+        const marks = withM.map(r=>Number(r.markah));
+        const purata = (marks.reduce((a,b)=>a+b,0)/marks.length).toFixed(1);
+        const lulus = marks.filter(m=>m>=50).length;
+        const cemerlang = marks.filter(m=>m>=80).length;
+        return { subj, total:withM.length, purata, pctLulus:((lulus/withM.length)*100).toFixed(0), pctCemerlang:((cemerlang/withM.length)*100).toFixed(0), isPBD:false };
+      } else {
+        const bands = withB.map(r=>Number(r.band));
+        const purata = (bands.reduce((a,b)=>a+b,0)/bands.length).toFixed(1);
+        const lulus = bands.filter(b=>b>=3).length;
+        return { subj, total:withB.length, purata, pctLulus:((lulus/withB.length)*100).toFixed(0), pctCemerlang:null, isPBD:true };
+      }
+    });
+  };
+
+  const getRanking = () => {
+    const markahOnly = analisisData.filter(r=>r.markah!==null);
+    const byMurid = {};
+    markahOnly.forEach(r=>{
+      if (!byMurid[r.nama_murid]) byMurid[r.nama_murid]={nama:r.nama_murid,kelas:r.kelas,total:0,count:0};
+      byMurid[r.nama_murid].total+=Number(r.markah); byMurid[r.nama_murid].count+=1;
+    });
+    return Object.values(byMurid)
+      .map(m=>({...m,purata:m.count>0?(m.total/m.count).toFixed(1):0}))
+      .sort((a,b)=>b.total-a.total);
+  };
+
+  const selesai = pepList.filter(p=>p.status==="Selesai").length;
+  const aktif = pepList.filter(p=>p.status==="Semasa").length;
+  const selPep = pepList.find(p=>p.id===selPepId);
+  const isRendahKelas = isTahunRendah(selKelas1);
+
   return (
     <KurPage title="Peperiksaan & Penilaian" sub="Kurikulum · SK Darau, Kota Kinabalu"
       stats={[
-        {ico:"📝",val:data.length,lbl:"Jumlah Peperiksaan"},
+        {ico:"📝",val:pepList.length,lbl:"Jumlah Peperiksaan"},
         {ico:"✅",val:selesai,lbl:"Selesai"},
-        {ico:"⏳",val:data.length-selesai,lbl:"Akan Datang"},
-        {ico:"🎓",val:"Nov",lbl:"Peperiksaan Akhir"},
+        {ico:"🔵",val:aktif,lbl:"Sedang Berjalan"},
+        {ico:"⏳",val:pepList.length-selesai-aktif,lbl:"Akan Datang"},
       ]}>
-      <div className="kur-header">
-        <button className="btn-add" onClick={()=>setShowAdd(true)}>+ Tambah Peperiksaan</button>
+      <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
+        {TABS_PEP.map((t,i)=>(
+          <button key={i} onClick={()=>setSubtab(i)}
+            style={{padding:"7px 14px",borderRadius:8,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,
+              background:subtab===i?"var(--primary)":"var(--surface2)",color:subtab===i?"#fff":"var(--text2)",transition:"all .15s"}}>
+            {t}
+          </button>
+        ))}
       </div>
-      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
-        <div className="kur-table-wrap">
-          <table className="kur-table">
-            <thead><tr><th>#</th><th>Nama Peperiksaan</th><th>Tarikh</th><th>Kelas</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              {data.map((p,i)=>(
-                <tr key={p.id}>
-                  <td style={{color:"var(--text3)",fontWeight:800}}>{i+1}</td>
-                  <td style={{fontWeight:800}}>{p.nama}</td>
-                  <td style={{color:"var(--text2)"}}>{p.tarikh}</td>
-                  <td>{p.kelas}</td>
-                  <td><span className={`badge ${badgeMap[p.status]||"b-gray"}`} style={{cursor:"pointer"}} onClick={()=>cycleStatus(p)} title="Klik untuk tukar status">{p.status}</span></td>
-                  <td style={{display:"flex",gap:4}}>
-                    <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={()=>setEditItem({...p})}>✏️</button>
-                    <button className="btn-del" onClick={()=>handleDel(p.id)}>🗑</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {showAdd && (
-        <Modal title="Tambah Peperiksaan" onClose={()=>setShowAdd(false)}>
-          <form onSubmit={handleAdd}>
-            <div className="form-field"><label className="form-label">Nama Peperiksaan</label><input className="form-input" required value={form.nama} onChange={e=>setForm(f=>({...f,nama:e.target.value}))}/></div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" placeholder="cth: 3–7 Nov 2025" value={form.tarikh} onChange={e=>setForm(f=>({...f,tarikh:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))}/></div>
-            </div>
-            <div className="form-field"><label className="form-label">Status</label>
-              <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
-                <option>Akan Datang</option><option>Semasa</option><option>Selesai</option>
+
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (<>
+
+        {/* ── TAB 0: SENARAI PEPERIKSAAN ── */}
+        {subtab===0 && (<>
+          <div className="kur-header">
+            <span style={{fontWeight:800,fontSize:14,color:"var(--text2)"}}>Senarai Peperiksaan Tahun Semasa</span>
+            <button className="btn-add" onClick={()=>setShowAddPep(true)}>+ Tambah Peperiksaan</button>
+          </div>
+          <div className="kur-table-wrap">
+            <table className="kur-table">
+              <thead><tr><th>#</th><th>Nama Peperiksaan</th><th>Jenis</th><th>Tarikh Mula</th><th>Tarikh Tamat</th><th>Kelas Sasaran</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {pepList.length===0 && <tr><td colSpan={8} style={{textAlign:"center",color:"var(--text3)",padding:32}}>Tiada rekod. Tambah peperiksaan.</td></tr>}
+                {pepList.map((p,i)=>(
+                  <tr key={p.id}>
+                    <td style={{color:"var(--text3)",fontWeight:800}}>{i+1}</td>
+                    <td style={{fontWeight:800}}>{p.nama}</td>
+                    <td><span style={{fontSize:11,padding:"2px 8px",borderRadius:6,background:"var(--surface2)",fontWeight:700}}>{p.jenis||"—"}</span></td>
+                    <td style={{color:"var(--text2)",fontSize:12}}>{p.tarikh_mula||p.tarikh||"—"}</td>
+                    <td style={{color:"var(--text2)",fontSize:12}}>{p.tarikh_tamat||"—"}</td>
+                    <td style={{fontSize:12}}>{p.kelas_sasaran||"Semua"}</td>
+                    <td><span className={`badge ${badgeMap[p.status]||"b-gray"}`} style={{cursor:"pointer"}} onClick={()=>cycleStatus(p)} title="Klik tukar status">{p.status}</span></td>
+                    <td style={{display:"flex",gap:4}}>
+                      <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={()=>setEditPep({...p})}>✏️</button>
+                      <button className="btn-del" onClick={()=>handleDelPep(p.id)}>🗑</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {showAddPep && (
+            <Modal title="Tambah Peperiksaan" onClose={()=>{setShowAddPep(false);setFormPep({...blankPep});}}>
+              <form onSubmit={handleAddPep}>
+                <div className="form-field"><label className="form-label">Nama Peperiksaan</label>
+                  <input className="form-input" required value={formPep.nama} onChange={e=>setFormPep(f=>({...f,nama:e.target.value}))}/>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Jenis</label>
+                    <select className="form-input" value={formPep.jenis} onChange={e=>setFormPep(f=>({...f,jenis:e.target.value}))}>
+                      {JENIS_LIST.map(j=><option key={j}>{j}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field"><label className="form-label">Kelas Sasaran</label>
+                    <select className="form-input" value={formPep.kelas_sasaran} onChange={e=>setFormPep(f=>({...f,kelas_sasaran:e.target.value}))}>
+                      <option>Semua</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Tarikh Mula</label>
+                    <input className="form-input" type="date" value={formPep.tarikh_mula} onChange={e=>setFormPep(f=>({...f,tarikh_mula:e.target.value}))}/>
+                  </div>
+                  <div className="form-field"><label className="form-label">Tarikh Tamat</label>
+                    <input className="form-input" type="date" value={formPep.tarikh_tamat} onChange={e=>setFormPep(f=>({...f,tarikh_tamat:e.target.value}))}/>
+                  </div>
+                </div>
+                <div className="form-field"><label className="form-label">Status</label>
+                  <select className="form-input" value={formPep.status} onChange={e=>setFormPep(f=>({...f,status:e.target.value}))}>
+                    {STATUS_CYCLE.map(s=><option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <button className="btn-primary" type="submit">+ Tambah</button>
+              </form>
+            </Modal>
+          )}
+          {editPep && (
+            <Modal title={`Edit — ${editPep.nama}`} onClose={()=>setEditPep(null)}>
+              <form onSubmit={handleEditPep}>
+                <div className="form-field"><label className="form-label">Nama Peperiksaan</label>
+                  <input className="form-input" required value={editPep.nama} onChange={e=>setEditPep(f=>({...f,nama:e.target.value}))}/>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Jenis</label>
+                    <select className="form-input" value={editPep.jenis||""} onChange={e=>setEditPep(f=>({...f,jenis:e.target.value}))}>
+                      {JENIS_LIST.map(j=><option key={j}>{j}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field"><label className="form-label">Kelas Sasaran</label>
+                    <select className="form-input" value={editPep.kelas_sasaran||"Semua"} onChange={e=>setEditPep(f=>({...f,kelas_sasaran:e.target.value}))}>
+                      <option>Semua</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Tarikh Mula</label>
+                    <input className="form-input" type="date" value={editPep.tarikh_mula||""} onChange={e=>setEditPep(f=>({...f,tarikh_mula:e.target.value}))}/>
+                  </div>
+                  <div className="form-field"><label className="form-label">Tarikh Tamat</label>
+                    <input className="form-input" type="date" value={editPep.tarikh_tamat||""} onChange={e=>setEditPep(f=>({...f,tarikh_tamat:e.target.value}))}/>
+                  </div>
+                </div>
+                <div className="form-field"><label className="form-label">Status</label>
+                  <select className="form-input" value={editPep.status} onChange={e=>setEditPep(f=>({...f,status:e.target.value}))}>
+                    {STATUS_CYCLE.map(s=><option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+              </form>
+            </Modal>
+          )}
+        </>)}
+
+        {/* ── TAB 1: MARKAH MURID ── */}
+        {subtab===1 && (<>
+          <div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div className="form-field" style={{marginBottom:0,minWidth:200}}>
+              <label className="form-label">Peperiksaan</label>
+              <select className="form-input" value={selPepId} onChange={e=>setSelPepId(e.target.value)}>
+                <option value="">— Pilih Peperiksaan —</option>
+                {pepList.map(p=><option key={p.id} value={p.id}>{p.nama}</option>)}
               </select>
             </div>
-            <button className="btn-primary" type="submit">+ Tambah</button>
-          </form>
-        </Modal>
-      )}
-      {editItem && (
-        <Modal title={`Edit — ${editItem.nama}`} onClose={()=>setEditItem(null)}>
-          <form onSubmit={handleEdit}>
-            <div className="form-field"><label className="form-label">Nama Peperiksaan</label><input className="form-input" required value={editItem.nama} onChange={e=>setEditItem(f=>({...f,nama:e.target.value}))}/></div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={editItem.tarikh} onChange={e=>setEditItem(f=>({...f,tarikh:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}/></div>
-            </div>
-            <div className="form-field"><label className="form-label">Status</label>
-              <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
-                <option>Akan Datang</option><option>Semasa</option><option>Selesai</option>
+            <div className="form-field" style={{marginBottom:0,minWidth:160}}>
+              <label className="form-label">Kelas</label>
+              <select className="form-input" value={selKelas1} onChange={e=>setSelKelas1(e.target.value)}>
+                <option value="">— Pilih Kelas —</option>
+                {KELAS_LIST.map(k=><option key={k}>{k}</option>)}
               </select>
             </div>
-            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
-          </form>
-        </Modal>
-      )}
+            <div className="form-field" style={{marginBottom:0,minWidth:140}}>
+              <label className="form-label">Mata Pelajaran</label>
+              <select className="form-input" value={selSubjek} onChange={e=>setSelSubjek(e.target.value)}>
+                {SUBJECT_LIST.map(s=><option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {!selPepId||!selKelas1 ? (
+            <div style={{textAlign:"center",padding:60,color:"var(--text3)"}}>
+              <div style={{fontSize:32,marginBottom:8}}>📝</div>
+              <div style={{fontWeight:700}}>Pilih peperiksaan dan kelas untuk masuk markah</div>
+            </div>
+          ) : (<>
+            <div style={{marginBottom:12,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+              <span style={{fontWeight:800,fontSize:14}}>{selPep?.nama} — {selKelas1} — {selSubjek}</span>
+              {isRendahKelas
+                ? <span style={{fontSize:11,padding:"3px 10px",borderRadius:6,background:"#dbeafe",color:"#1d4ed8",fontWeight:700}}>🏫 PBD Band 1–6</span>
+                : <span style={{fontSize:11,padding:"3px 10px",borderRadius:6,background:"#dcfce7",color:"#166534",fontWeight:700}}>📊 Markah 0–100</span>
+              }
+              <span style={{fontSize:11,color:"var(--text3)"}}>({muridList.length} murid)</span>
+            </div>
+            {muridList.length===0 ? (
+              <div style={{textAlign:"center",padding:40,color:"var(--text3)"}}>Tiada murid dalam kelas ini. Pastikan data murid sudah dimuat naik.</div>
+            ) : (
+              <div className="kur-table-wrap">
+                <table className="kur-table">
+                  <thead>
+                    <tr>
+                      <th>#</th><th>Nama Murid</th>
+                      <th>{isRendahKelas?"Band (1–6)":"Markah (0–100)"}</th>
+                      {!isRendahKelas && <th>Gred</th>}
+                      {isRendahKelas && <th>Huraian Band</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {muridList.map((m,i)=>{
+                      const val = markahEdit[m.nama]??"";
+                      const gred = isRendahKelas?null:getGred(val);
+                      const gc = gred==="A+"||gred==="A"?"#16a34a":gred==="B"?"#2563eb":gred==="C"?"#d97706":gred==="D"?"#ea580c":gred==="E"?"#dc2626":"var(--text3)";
+                      return (
+                        <tr key={m.id}>
+                          <td style={{color:"var(--text3)",fontWeight:800}}>{i+1}</td>
+                          <td style={{fontWeight:700}}>{m.nama}</td>
+                          <td>
+                            <input type="number" min={isRendahKelas?1:0} max={isRendahKelas?6:100}
+                              style={{width:80,padding:"4px 8px",borderRadius:6,border:"1.5px solid var(--border)",fontSize:13,fontWeight:700,textAlign:"center"}}
+                              value={val} placeholder={isRendahKelas?"1–6":"0–100"}
+                              onChange={e=>setMarkahEdit(prev=>({...prev,[m.nama]:e.target.value}))}
+                            />
+                          </td>
+                          {!isRendahKelas && <td><span style={{fontWeight:800,color:gc}}>{gred}</span></td>}
+                          {isRendahKelas && <td style={{fontSize:11,color:"var(--text2)"}}>{val?BAND_DESC[Number(val)]||"":""}</td>}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div style={{marginTop:14}}>
+              <button className="btn-primary" onClick={handleSaveMarkah} disabled={savingMarkah}>
+                {savingMarkah?"⏳ Menyimpan…":"💾 Simpan Semua Markah"}
+              </button>
+            </div>
+          </>)}
+        </>)}
+
+        {/* ── TAB 2: ANALISIS ── */}
+        {subtab===2 && (<>
+          <div style={{display:"flex",gap:12,marginBottom:20,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div className="form-field" style={{marginBottom:0,minWidth:200}}>
+              <label className="form-label">Peperiksaan</label>
+              <select className="form-input" value={analisisPepId} onChange={e=>setAnalisisPepId(e.target.value)}>
+                <option value="">— Pilih Peperiksaan —</option>
+                {pepList.map(p=><option key={p.id} value={p.id}>{p.nama}</option>)}
+              </select>
+            </div>
+            <div className="form-field" style={{marginBottom:0,minWidth:160}}>
+              <label className="form-label">Kelas (kosong = semua)</label>
+              <select className="form-input" value={analisisKelas} onChange={e=>setAnalisisKelas(e.target.value)}>
+                <option value="">Semua Kelas</option>
+                {KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+              </select>
+            </div>
+          </div>
+          {!analisisPepId ? (
+            <div style={{textAlign:"center",padding:60,color:"var(--text3)"}}>
+              <div style={{fontSize:32,marginBottom:8}}>📊</div>
+              <div style={{fontWeight:700}}>Pilih peperiksaan untuk lihat analisis prestasi</div>
+            </div>
+          ) : (()=>{
+            const summary = getAnalisisSummary();
+            if (summary.length===0) return <div style={{textAlign:"center",padding:40,color:"var(--text3)"}}>Tiada data markah untuk peperiksaan ini. Masuk markah dahulu di tab Markah Murid.</div>;
+            return (
+              <div className="kur-table-wrap">
+                <table className="kur-table">
+                  <thead><tr><th>#</th><th>Mata Pelajaran</th><th>Bil Murid</th><th>Purata</th><th>% Lulus</th><th>% Cemerlang</th><th>Status</th></tr></thead>
+                  <tbody>
+                    {summary.map((s,i)=>{
+                      const lulus = Number(s.pctLulus);
+                      const stat = lulus>=80?"🟢 Baik":lulus>=60?"🟡 Sederhana":"🔴 Perlu Perhatian";
+                      return (
+                        <tr key={s.subj}>
+                          <td style={{color:"var(--text3)",fontWeight:800}}>{i+1}</td>
+                          <td style={{fontWeight:800}}>{s.subj}</td>
+                          <td>{s.total}</td>
+                          <td style={{fontWeight:800,color:"var(--primary)"}}>{s.isPBD?`Band ${s.purata}`:s.purata}</td>
+                          <td>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              <div style={{flex:1,height:8,borderRadius:4,background:"var(--surface2)",overflow:"hidden",minWidth:60}}>
+                                <div style={{height:"100%",borderRadius:4,background:lulus>=80?"#16a34a":lulus>=60?"#d97706":"#dc2626",width:`${lulus}%`}}/>
+                              </div>
+                              <span style={{fontWeight:700,fontSize:12,minWidth:32}}>{s.pctLulus}%</span>
+                            </div>
+                          </td>
+                          <td style={{fontWeight:700}}>{s.isPBD?"—":s.pctCemerlang+"%"}</td>
+                          <td>{stat}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
+        </>)}
+
+        {/* ── TAB 3: RANKING ── */}
+        {subtab===3 && (<>
+          <div style={{display:"flex",gap:12,marginBottom:20,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div className="form-field" style={{marginBottom:0,minWidth:200}}>
+              <label className="form-label">Peperiksaan</label>
+              <select className="form-input" value={analisisPepId} onChange={e=>setAnalisisPepId(e.target.value)}>
+                <option value="">— Pilih Peperiksaan —</option>
+                {pepList.map(p=><option key={p.id} value={p.id}>{p.nama}</option>)}
+              </select>
+            </div>
+            <div className="form-field" style={{marginBottom:0,minWidth:160}}>
+              <label className="form-label">Kelas</label>
+              <select className="form-input" value={analisisKelas} onChange={e=>setAnalisisKelas(e.target.value)}>
+                <option value="">Semua Kelas</option>
+                {KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+              </select>
+            </div>
+          </div>
+          {!analisisPepId ? (
+            <div style={{textAlign:"center",padding:60,color:"var(--text3)"}}>
+              <div style={{fontSize:32,marginBottom:8}}>🏆</div>
+              <div style={{fontWeight:700}}>Pilih peperiksaan untuk lihat ranking murid</div>
+            </div>
+          ) : (()=>{
+            const ranking = getRanking();
+            if (ranking.length===0) return <div style={{textAlign:"center",padding:40,color:"var(--text3)"}}>Tiada data markah angka untuk ranking. Hanya Tahun 4–6 disokong (bukan PBD).</div>;
+            return (
+              <div className="kur-table-wrap">
+                <table className="kur-table">
+                  <thead><tr><th>Kedudukan</th><th>Nama Murid</th><th>Kelas</th><th>Jumlah Markah</th><th>Purata</th><th>Gred Purata</th></tr></thead>
+                  <tbody>
+                    {ranking.slice(0,30).map((m,i)=>{
+                      const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":"";
+                      const gred = getGred(m.purata);
+                      return (
+                        <tr key={m.nama} style={{background:i<3?"var(--surface2)":""}}>
+                          <td style={{fontWeight:800,fontSize:16,color:i===0?"#ca8a04":i===1?"#64748b":i===2?"#b45309":"var(--text3)"}}>{medal} {i+1}</td>
+                          <td style={{fontWeight:800}}>{m.nama}</td>
+                          <td style={{color:"var(--text2)"}}>{m.kelas}</td>
+                          <td style={{fontWeight:800,color:"var(--primary)"}}>{m.total}</td>
+                          <td style={{fontWeight:700}}>{m.purata}</td>
+                          <td><span style={{fontWeight:800,padding:"2px 8px",borderRadius:6,background:"var(--surface2)"}}>{gred}</span></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
+        </>)}
+
+        {/* ── TAB 4: JADUAL PEPERIKSAAN ── */}
+        {subtab===4 && (<>
+          <div className="kur-header">
+            <select className="form-input" style={{minWidth:200}} value={filterJadualId} onChange={e=>setFilterJadualId(e.target.value)}>
+              <option value="">— Tapis ikut Peperiksaan —</option>
+              {pepList.map(p=><option key={p.id} value={p.id}>{p.nama}</option>)}
+            </select>
+            <button className="btn-add" onClick={()=>setShowAddJadual(true)}>+ Tambah Jadual</button>
+          </div>
+          <div className="kur-table-wrap">
+            <table className="kur-table">
+              <thead><tr><th>#</th><th>Peperiksaan</th><th>Tarikh</th><th>Masa</th><th>Mata Pelajaran</th><th>Kelas</th><th>Bilik/Dewan</th><th>Pengawas</th><th></th></tr></thead>
+              <tbody>
+                {jadualList.filter(j=>!filterJadualId||j.peperiksaan_id===filterJadualId).length===0 && (
+                  <tr><td colSpan={9} style={{textAlign:"center",color:"var(--text3)",padding:32}}>Tiada jadual peperiksaan. Tambah jadual.</td></tr>
+                )}
+                {jadualList.filter(j=>!filterJadualId||j.peperiksaan_id===filterJadualId).map((j,i)=>{
+                  const pep = pepList.find(p=>p.id===j.peperiksaan_id);
+                  return (
+                    <tr key={j.id}>
+                      <td style={{color:"var(--text3)",fontWeight:800}}>{i+1}</td>
+                      <td style={{fontWeight:700,fontSize:12}}>{pep?.nama||"—"}</td>
+                      <td style={{color:"var(--text2)",fontSize:12}}>{j.tarikh}</td>
+                      <td style={{fontSize:12}}>{j.masa_mula}–{j.masa_tamat}</td>
+                      <td><span style={{fontWeight:800,padding:"2px 8px",borderRadius:6,background:SC[j.mata_pelajaran]||"var(--surface2)",color:SC[j.mata_pelajaran]?"#fff":"var(--text1)",fontSize:11}}>{j.mata_pelajaran}</span></td>
+                      <td style={{fontSize:12}}>{j.kelas}</td>
+                      <td style={{fontSize:12,color:"var(--text2)"}}>{j.bilik}</td>
+                      <td style={{fontSize:12,color:"var(--text2)"}}>{j.pengawas||"—"}</td>
+                      <td><button className="btn-del" onClick={()=>handleDelJadual(j.id)}>🗑</button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {showAddJadual && (
+            <Modal title="Tambah Jadual Peperiksaan" onClose={()=>{setShowAddJadual(false);setFormJadual({...blankJadual});}}>
+              <form onSubmit={handleAddJadual}>
+                <div className="form-field"><label className="form-label">Peperiksaan</label>
+                  <select className="form-input" required value={formJadual.peperiksaan_id} onChange={e=>setFormJadual(f=>({...f,peperiksaan_id:e.target.value}))}>
+                    <option value="">— Pilih —</option>
+                    {pepList.map(p=><option key={p.id} value={p.id}>{p.nama}</option>)}
+                  </select>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Tarikh</label>
+                    <input className="form-input" type="date" required value={formJadual.tarikh} onChange={e=>setFormJadual(f=>({...f,tarikh:e.target.value}))}/>
+                  </div>
+                  <div className="form-field"><label className="form-label">Mata Pelajaran</label>
+                    <select className="form-input" value={formJadual.mata_pelajaran} onChange={e=>setFormJadual(f=>({...f,mata_pelajaran:e.target.value}))}>
+                      {SUBJECT_LIST.map(s=><option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Masa Mula</label>
+                    <input className="form-input" type="time" value={formJadual.masa_mula} onChange={e=>setFormJadual(f=>({...f,masa_mula:e.target.value}))}/>
+                  </div>
+                  <div className="form-field"><label className="form-label">Masa Tamat</label>
+                    <input className="form-input" type="time" value={formJadual.masa_tamat} onChange={e=>setFormJadual(f=>({...f,masa_tamat:e.target.value}))}/>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Kelas</label>
+                    <select className="form-input" value={formJadual.kelas} onChange={e=>setFormJadual(f=>({...f,kelas:e.target.value}))}>
+                      <option>Semua</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field"><label className="form-label">Bilik / Dewan</label>
+                    <input className="form-input" value={formJadual.bilik} onChange={e=>setFormJadual(f=>({...f,bilik:e.target.value}))}/>
+                  </div>
+                </div>
+                <div className="form-field"><label className="form-label">Pengawas</label>
+                  <input className="form-input" value={formJadual.pengawas} onChange={e=>setFormJadual(f=>({...f,pengawas:e.target.value}))} placeholder="Nama guru pengawas"/>
+                </div>
+                <button className="btn-primary" type="submit">+ Tambah Jadual</button>
+              </form>
+            </Modal>
+          )}
+        </>)}
+
+      </>)}
     </KurPage>
   );
 }
