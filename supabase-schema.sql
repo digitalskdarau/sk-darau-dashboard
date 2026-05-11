@@ -222,6 +222,86 @@ create table public.hem_koperasi (
 alter table public.hem_koperasi enable row level security;
 create policy "anon full access" on public.hem_koperasi for all to anon using (true) with check (true);
 
+-- ─── BANTUAN PELAJARAN (Full System) ───────────────────
+drop table if exists public.bantuan_rmt cascade;
+drop table if exists public.bantuan_permohonan cascade;
+drop table if exists public.bantuan_jenis cascade;
+drop table if exists public.bantuan_murid cascade;
+
+create table public.bantuan_murid (
+  id               uuid primary key default gen_random_uuid(),
+  no_daftar        text not null,
+  nama             text not null,
+  no_ic            text,
+  kelas            text,
+  jantina          text default 'L',
+  tarikh_lahir     text,
+  nama_waris       text,
+  no_tel           text,
+  pekerjaan_waris  text,
+  pendapatan       numeric(10,2) default 0,
+  kategori         text default 'T20',
+  sumber           text,
+  status           text default 'Aktif',
+  created_at       timestamptz default now()
+);
+alter table public.bantuan_murid enable row level security;
+create policy "anon full access" on public.bantuan_murid for all to anon using (true) with check (true);
+
+create table public.bantuan_jenis (
+  id          uuid primary key default gen_random_uuid(),
+  nama        text not null,
+  jenis       text default 'Wang',
+  jumlah_max  numeric(10,2) default 0,
+  sumber      text,
+  status      text default 'Aktif',
+  catatan     text,
+  created_at  timestamptz default now()
+);
+alter table public.bantuan_jenis enable row level security;
+create policy "anon full access" on public.bantuan_jenis for all to anon using (true) with check (true);
+
+insert into public.bantuan_jenis (nama, jenis, jumlah_max, sumber, catatan) values
+  ('Rancangan Makanan Tambahan (RMT)', 'Makanan', 0,   'KPM',    'Makanan tambahan harian'),
+  ('Bantuan Am Persekolahan (BAP)',    'Wang',    150,  'KPM',    'Bantuan pakaian & kelengkapan sekolah'),
+  ('KWAPM',                            'Wang',    500,  'Sekolah','Kumpulan Wang Amanah Pelajar Miskin'),
+  ('Bantuan Zakat Pendidikan',         'Wang',    300,  'Zakat',  'Daripada badan zakat negeri'),
+  ('Bantuan Kecemasan',                'Wang',    200,  'PIBG',   'Kes kecemasan / bencana'),
+  ('Skim Baucar Tuisyen (SBT)',        'Baucar',  480,  'KPM',    'Baucar tuisyen 3 mata pelajaran');
+
+create table public.bantuan_permohonan (
+  id            uuid primary key default gen_random_uuid(),
+  id_murid      uuid references public.bantuan_murid(id) on delete set null,
+  no_daftar     text,
+  nama_murid    text not null,
+  kelas         text,
+  jenis_id      uuid references public.bantuan_jenis(id) on delete set null,
+  nama_bantuan  text,
+  tahun         text,
+  tarikh_mohon  text,
+  tarikh_lulus  text,
+  jumlah        numeric(10,2) default 0,
+  status        text default 'Mohon',
+  catatan       text,
+  created_at    timestamptz default now()
+);
+alter table public.bantuan_permohonan enable row level security;
+create policy "anon full access" on public.bantuan_permohonan for all to anon using (true) with check (true);
+
+create table public.bantuan_rmt (
+  id          uuid primary key default gen_random_uuid(),
+  tahun       text,
+  id_murid    uuid references public.bantuan_murid(id) on delete set null,
+  no_daftar   text,
+  nama_murid  text not null,
+  kelas       text,
+  status      text default 'Aktif',
+  catatan     text,
+  created_at  timestamptz default now()
+);
+alter table public.bantuan_rmt enable row level security;
+create policy "anon full access" on public.bantuan_rmt for all to anon using (true) with check (true);
+
 -- ─── 16. NOTIS & KEMASKINI ──────────────────────────────
 drop table if exists public.notis cascade;
 create table public.notis (
