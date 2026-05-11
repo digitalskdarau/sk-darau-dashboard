@@ -3115,101 +3115,476 @@ function RPHRekod() {
 
 // ─── 5. PROGRAM AKADEMIK ──────────────────────────────────────────────────────
 function ProgramAkademik() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const [editItem, setEditItem] = useState(null);
-  const [form, setForm] = useState({ nama:"", tarikh:"", deskripsi:"", color:"#2563eb", status:"Akan Datang" });
+  const TABS_PROG = ["📋 Senarai","📅 Takwim","👥 Peserta","📊 Laporan"];
+  const JENIS_PROG = ["Intervensi","Pemulihan","Pengayaan","Kem Motivasi","Bengkel","Kelas Tambahan","Hari Terbuka","Program Bacaan","Lain-lain"];
+  const STATUS_PROG = ["Akan Datang","Sedang Berjalan","Selesai"];
   const badgeMap = { "Sedang Berjalan":"b-green","Akan Datang":"b-yellow","Selesai":"b-gray" };
+  const BULAN = ["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ogo","Sep","Okt","Nov","Dis"];
 
-  const load = async () => {
+  const [subtab, setSubtab] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // Tab 0
+  const [progList, setProgList] = useState([]);
+  const [showAddProg, setShowAddProg] = useState(false);
+  const [editProg, setEditProg] = useState(null);
+  const blankProg = { nama:"", jenis:"Intervensi", tarikh_mula:"", tarikh_tamat:"", sasaran_kelas:"Semua", pegawai:"", tempat:"", deskripsi:"", color:"#2563eb", status:"Akan Datang" };
+  const [formProg, setFormProg] = useState({...blankProg});
+
+  // Tab 2
+  const [selProgId, setSelProgId] = useState("");
+  const [pesertaList, setPesertaList] = useState([]);
+  const [pesertaMurid, setPesertaMurid] = useState([]);
+  const [selKelasPes, setSelKelasPes] = useState("");
+  const [showAddPes, setShowAddPes] = useState(false);
+  const blankPes = { program_id:"", nama_murid:"", kelas:"", hadir:true };
+  const [formPes, setFormPes] = useState({...blankPes});
+
+  // Tab 3
+  const [selProgLap, setSelProgLap] = useState("");
+  const [laporanList, setLaporanList] = useState([]);
+  const [showAddLap, setShowAddLap] = useState(false);
+  const blankLap = { program_id:"", pencapaian:"", impak:"", cadangan:"", tarikh_laporan:"" };
+  const [formLap, setFormLap] = useState({...blankLap});
+  const [editLap, setEditLap] = useState(null);
+
+  const loadAll = async () => {
     setLoading(true);
-
-    const { data: rows } = await supabase.from('program_akademik').select('*').order('created_at');
-    setData(rows||[]); setLoading(false);
+    const [r1,r2,r3] = await Promise.all([
+      supabase.from('program_akademik').select('*').order('created_at',{ascending:false}),
+      supabase.from('program_peserta').select('*').order('created_at'),
+      supabase.from('program_laporan').select('*').order('created_at',{ascending:false}),
+    ]);
+    setProgList(r1.data||[]); setPesertaList(r2.data||[]); setLaporanList(r3.data||[]);
+    setLoading(false);
   };
-  useEffect(()=>{ load(); },[]);
 
-  const handleAdd = async (e) => {
+  const loadPesertaMurid = async (kelas) => {
+    if (!kelas) return;
+    const { data } = await supabase.from('hem_murid').select('id,nama,no_kelas').eq('kelas',kelas).order('nama');
+    setPesertaMurid(data||[]);
+  };
+
+  useEffect(()=>{ loadAll(); },[]);
+  useEffect(()=>{ if(selKelasPes) loadPesertaMurid(selKelasPes); },[selKelasPes]);
+
+  // Tab 0 handlers
+  const handleAddProg = async (e) => {
     e.preventDefault();
-    const ok = await dbRun(() => supabase.from('program_akademik').insert([form]));
+    const ok = await dbRun(()=>supabase.from('program_akademik').insert([formProg]));
     if (!ok) return;
-    toast("Program ditambah!", "success");
-    setShowAdd(false); setForm({ nama:"", tarikh:"", deskripsi:"", color:"#2563eb", status:"Akan Datang" }); load();
+    toast("Program ditambah!","success"); setShowAddProg(false); setFormProg({...blankProg}); loadAll();
   };
-  const handleEdit = async (e) => {
+  const handleEditProg = async (e) => {
     e.preventDefault();
-    const ok = await dbRun(() => supabase.from('program_akademik').update({ nama:editItem.nama, tarikh:editItem.tarikh, deskripsi:editItem.deskripsi, color:editItem.color, status:editItem.status }).eq('id', editItem.id));
+    const { id, created_at, ...upd } = editProg;
+    const ok = await dbRun(()=>supabase.from('program_akademik').update(upd).eq('id',id));
     if (!ok) return;
-    toast("Dikemaskini!", "success");
-    setEditItem(null); load();
+    toast("Dikemaskini!","success"); setEditProg(null); loadAll();
   };
-  const handleDel = async (id) => {
-    const ok = await dbRun(() => supabase.from('program_akademik').delete().eq('id',id));
-    if (ok) setData(d=>d.filter(r=>r.id!==id));
+  const handleDelProg = async (id) => {
+    const ok = await dbRun(()=>supabase.from('program_akademik').delete().eq('id',id));
+    if (ok) setProgList(d=>d.filter(r=>r.id!==id));
   };
 
-  const aktif = data.filter(p=>p.status==="Sedang Berjalan").length;
+  // Tab 2 handlers
+  const handleAddPes = async (e) => {
+    e.preventDefault();
+    const upserts = pesertaMurid.map(m=>({ program_id:selProgId, nama_murid:m.nama, kelas:selKelasPes, hadir:true }));
+    if (upserts.length===0) return toast("Tiada murid dalam kelas ini.","error");
+    await supabase.from('program_peserta').delete().eq('program_id',selProgId).eq('kelas',selKelasPes);
+    const ok = await dbRun(()=>supabase.from('program_peserta').insert(upserts));
+    if (!ok) return;
+    toast(`${upserts.length} peserta didaftarkan!`,"success"); loadAll();
+  };
+  const toggleHadir = async (p) => {
+    const ok = await dbRun(()=>supabase.from('program_peserta').update({hadir:!p.hadir}).eq('id',p.id));
+    if (ok) setPesertaList(d=>d.map(r=>r.id===p.id?{...r,hadir:!r.hadir}:r));
+  };
+  const handleDelPes = async (id) => {
+    const ok = await dbRun(()=>supabase.from('program_peserta').delete().eq('id',id));
+    if (ok) setPesertaList(d=>d.filter(r=>r.id!==id));
+  };
+
+  // Tab 3 handlers
+  const handleAddLap = async (e) => {
+    e.preventDefault();
+    const ok = await dbRun(()=>supabase.from('program_laporan').insert([{...formLap,program_id:selProgLap}]));
+    if (!ok) return;
+    toast("Laporan disimpan!","success"); setShowAddLap(false); setFormLap({...blankLap}); loadAll();
+  };
+  const handleEditLap = async (e) => {
+    e.preventDefault();
+    const { id, created_at, ...upd } = editLap;
+    const ok = await dbRun(()=>supabase.from('program_laporan').update(upd).eq('id',id));
+    if (!ok) return;
+    toast("Dikemaskini!","success"); setEditLap(null); loadAll();
+  };
+  const handleDelLap = async (id) => {
+    const ok = await dbRun(()=>supabase.from('program_laporan').delete().eq('id',id));
+    if (ok) setLaporanList(d=>d.filter(r=>r.id!==id));
+  };
+
+  // Stats
+  const aktif = progList.filter(p=>p.status==="Sedang Berjalan").length;
+  const selesai = progList.filter(p=>p.status==="Selesai").length;
+
+  // Takwim: group by month of tarikh_mula
+  const byBulan = {};
+  progList.forEach(p=>{
+    const d = p.tarikh_mula ? new Date(p.tarikh_mula) : null;
+    const key = d ? `${d.getFullYear()}-${String(d.getMonth()).padStart(2,'0')}` : "tiada-tarikh";
+    const label = d ? `${BULAN[d.getMonth()]} ${d.getFullYear()}` : "Tiada Tarikh";
+    if (!byBulan[key]) byBulan[key] = { label, items:[] };
+    byBulan[key].items.push(p);
+  });
+  const takwimGroups = Object.entries(byBulan).sort(([a],[b])=>a.localeCompare(b));
+
+  const filteredPeserta = pesertaList.filter(p=>!selProgId||p.program_id===selProgId);
+  const filteredLaporan = laporanList.filter(l=>!selProgLap||l.program_id===selProgLap);
+  const selProgObj = progList.find(p=>p.id===selProgId);
+  const selProgLapObj = progList.find(p=>p.id===selProgLap);
+
   return (
     <KurPage title="Program Akademik" sub="Kurikulum · SK Darau, Kota Kinabalu"
       stats={[
-        {ico:"🎯",val:data.length,lbl:"Jumlah Program"},
+        {ico:"🎯",val:progList.length,lbl:"Jumlah Program"},
         {ico:"🟢",val:aktif,lbl:"Sedang Berjalan"},
-        {ico:"📅",val:data.length-aktif,lbl:"Lain-lain"},
-        {ico:"📆",val:"2025",lbl:"Tahun Semasa"},
+        {ico:"✅",val:selesai,lbl:"Selesai"},
+        {ico:"⏳",val:progList.length-aktif-selesai,lbl:"Akan Datang"},
       ]}>
-      <div className="kur-header">
-        <button className="btn-add" onClick={()=>setShowAdd(true)}>+ Tambah Program</button>
+      <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
+        {TABS_PROG.map((t,i)=>(
+          <button key={i} onClick={()=>setSubtab(i)}
+            style={{padding:"7px 14px",borderRadius:8,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,
+              background:subtab===i?"var(--primary)":"var(--surface2)",color:subtab===i?"#fff":"var(--text2)",transition:"all .15s"}}>
+            {t}
+          </button>
+        ))}
       </div>
-      {loading ? <div className="loading">⏳ Memuatkan…</div> : (
-        <div className="prog-grid">
-          {data.map(p=>(
-            <div className="prog-card" key={p.id}>
-              <div className="prog-card-accent" style={{background:p.color||"#2563eb"}}/>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                <div className="prog-title">{p.nama}</div>
-                <div style={{display:"flex",gap:4,alignItems:"center"}}>
-                  <span className={`badge ${badgeMap[p.status]||"b-gray"}`}>{p.status}</span>
-                  <button className="btn-add" style={{padding:"3px 8px",fontSize:11}} onClick={()=>setEditItem({...p})}>✏️</button>
-                  <button className="btn-del" onClick={()=>handleDel(p.id)}>🗑</button>
+
+      {loading ? <div className="loading">⏳ Memuatkan…</div> : (<>
+
+        {/* ── TAB 0: SENARAI PROGRAM ── */}
+        {subtab===0 && (<>
+          <div className="kur-header">
+            <span style={{fontWeight:800,fontSize:14,color:"var(--text2)"}}>Program Akademik {new Date().getFullYear()}</span>
+            <button className="btn-add" onClick={()=>setShowAddProg(true)}>+ Tambah Program</button>
+          </div>
+          {progList.length===0 ? (
+            <div style={{textAlign:"center",padding:60,color:"var(--text3)"}}>
+              <div style={{fontSize:32,marginBottom:8}}>🎯</div>
+              <div style={{fontWeight:700}}>Tiada program. Tambah program akademik.</div>
+            </div>
+          ) : (
+            <div className="prog-grid">
+              {progList.map(p=>(
+                <div className="prog-card" key={p.id}>
+                  <div className="prog-card-accent" style={{background:p.color||"#2563eb"}}/>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                    <div className="prog-title">{p.nama}</div>
+                    <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                      <span className={`badge ${badgeMap[p.status]||"b-gray"}`}>{p.status}</span>
+                      <button className="btn-add" style={{padding:"3px 8px",fontSize:11}} onClick={()=>setEditProg({...p})}>✏️</button>
+                      <button className="btn-del" onClick={()=>handleDelProg(p.id)}>🗑</button>
+                    </div>
+                  </div>
+                  {p.jenis && <div style={{fontSize:11,padding:"2px 8px",borderRadius:6,background:"var(--surface2)",display:"inline-block",fontWeight:700,marginBottom:6,color:"var(--text2)"}}>{p.jenis}</div>}
+                  <div className="prog-date">📅 {p.tarikh_mula||p.tarikh||"—"}{p.tarikh_tamat?` → ${p.tarikh_tamat}`:""}</div>
+                  {p.sasaran_kelas && <div style={{fontSize:11,color:"var(--text3)",marginTop:3}}>🏫 {p.sasaran_kelas}</div>}
+                  {p.pegawai && <div style={{fontSize:11,color:"var(--text3)"}}>👤 {p.pegawai}</div>}
+                  {p.tempat && <div style={{fontSize:11,color:"var(--text3)"}}>📍 {p.tempat}</div>}
+                  {p.deskripsi && <div className="prog-desc" style={{marginTop:6}}>{p.deskripsi}</div>}
                 </div>
+              ))}
+            </div>
+          )}
+          {showAddProg && (
+            <Modal title="Tambah Program Akademik" onClose={()=>{setShowAddProg(false);setFormProg({...blankProg});}}>
+              <form onSubmit={handleAddProg}>
+                <div className="form-field"><label className="form-label">Nama Program</label>
+                  <input className="form-input" required value={formProg.nama} onChange={e=>setFormProg(f=>({...f,nama:e.target.value}))}/>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Jenis</label>
+                    <select className="form-input" value={formProg.jenis} onChange={e=>setFormProg(f=>({...f,jenis:e.target.value}))}>
+                      {JENIS_PROG.map(j=><option key={j}>{j}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field"><label className="form-label">Kelas Sasaran</label>
+                    <select className="form-input" value={formProg.sasaran_kelas} onChange={e=>setFormProg(f=>({...f,sasaran_kelas:e.target.value}))}>
+                      <option>Semua</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Tarikh Mula</label>
+                    <input className="form-input" type="date" value={formProg.tarikh_mula} onChange={e=>setFormProg(f=>({...f,tarikh_mula:e.target.value}))}/>
+                  </div>
+                  <div className="form-field"><label className="form-label">Tarikh Tamat</label>
+                    <input className="form-input" type="date" value={formProg.tarikh_tamat} onChange={e=>setFormProg(f=>({...f,tarikh_tamat:e.target.value}))}/>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Pegawai Bertanggungjawab</label>
+                    <input className="form-input" value={formProg.pegawai} onChange={e=>setFormProg(f=>({...f,pegawai:e.target.value}))} placeholder="Nama guru/PK"/>
+                  </div>
+                  <div className="form-field"><label className="form-label">Tempat</label>
+                    <input className="form-input" value={formProg.tempat} onChange={e=>setFormProg(f=>({...f,tempat:e.target.value}))} placeholder="cth: Dewan, Bilik..."/>
+                  </div>
+                </div>
+                <div className="form-field"><label className="form-label">Deskripsi</label>
+                  <textarea className="form-input" rows={2} value={formProg.deskripsi} onChange={e=>setFormProg(f=>({...f,deskripsi:e.target.value}))}/>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Status</label>
+                    <select className="form-input" value={formProg.status} onChange={e=>setFormProg(f=>({...f,status:e.target.value}))}>
+                      {STATUS_PROG.map(s=><option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field"><label className="form-label">Warna Kad</label>
+                    <input className="form-input" type="color" value={formProg.color} onChange={e=>setFormProg(f=>({...f,color:e.target.value}))} style={{height:38,padding:4}}/>
+                  </div>
+                </div>
+                <button className="btn-primary" type="submit">+ Tambah</button>
+              </form>
+            </Modal>
+          )}
+          {editProg && (
+            <Modal title={`Edit — ${editProg.nama}`} onClose={()=>setEditProg(null)}>
+              <form onSubmit={handleEditProg}>
+                <div className="form-field"><label className="form-label">Nama Program</label>
+                  <input className="form-input" required value={editProg.nama} onChange={e=>setEditProg(f=>({...f,nama:e.target.value}))}/>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Jenis</label>
+                    <select className="form-input" value={editProg.jenis||""} onChange={e=>setEditProg(f=>({...f,jenis:e.target.value}))}>
+                      {JENIS_PROG.map(j=><option key={j}>{j}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field"><label className="form-label">Kelas Sasaran</label>
+                    <select className="form-input" value={editProg.sasaran_kelas||"Semua"} onChange={e=>setEditProg(f=>({...f,sasaran_kelas:e.target.value}))}>
+                      <option>Semua</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Tarikh Mula</label>
+                    <input className="form-input" type="date" value={editProg.tarikh_mula||""} onChange={e=>setEditProg(f=>({...f,tarikh_mula:e.target.value}))}/>
+                  </div>
+                  <div className="form-field"><label className="form-label">Tarikh Tamat</label>
+                    <input className="form-input" type="date" value={editProg.tarikh_tamat||""} onChange={e=>setEditProg(f=>({...f,tarikh_tamat:e.target.value}))}/>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Pegawai</label>
+                    <input className="form-input" value={editProg.pegawai||""} onChange={e=>setEditProg(f=>({...f,pegawai:e.target.value}))}/>
+                  </div>
+                  <div className="form-field"><label className="form-label">Tempat</label>
+                    <input className="form-input" value={editProg.tempat||""} onChange={e=>setEditProg(f=>({...f,tempat:e.target.value}))}/>
+                  </div>
+                </div>
+                <div className="form-field"><label className="form-label">Deskripsi</label>
+                  <textarea className="form-input" rows={2} value={editProg.deskripsi||""} onChange={e=>setEditProg(f=>({...f,deskripsi:e.target.value}))}/>
+                </div>
+                <div className="form-row">
+                  <div className="form-field"><label className="form-label">Status</label>
+                    <select className="form-input" value={editProg.status} onChange={e=>setEditProg(f=>({...f,status:e.target.value}))}>
+                      {STATUS_PROG.map(s=><option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field"><label className="form-label">Warna Kad</label>
+                    <input className="form-input" type="color" value={editProg.color||"#2563eb"} onChange={e=>setEditProg(f=>({...f,color:e.target.value}))} style={{height:38,padding:4}}/>
+                  </div>
+                </div>
+                <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+              </form>
+            </Modal>
+          )}
+        </>)}
+
+        {/* ── TAB 1: TAKWIM ── */}
+        {subtab===1 && (<>
+          {takwimGroups.length===0 ? (
+            <div style={{textAlign:"center",padding:60,color:"var(--text3)"}}>
+              <div style={{fontSize:32,marginBottom:8}}>📅</div>
+              <div style={{fontWeight:700}}>Tiada program dengan tarikh. Tambah tarikh mula pada program.</div>
+            </div>
+          ) : (
+            <div style={{display:"flex",flexDirection:"column",gap:24}}>
+              {takwimGroups.map(([key,grp])=>(
+                <div key={key}>
+                  <div style={{fontWeight:900,fontSize:15,color:"var(--primary)",marginBottom:10,paddingBottom:6,borderBottom:"2px solid var(--primary)"}}>
+                    📅 {grp.label}
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {grp.items.map(p=>(
+                      <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,background:"var(--surface)",border:"1.5px solid var(--border)"}}>
+                        <div style={{width:4,height:40,borderRadius:2,background:p.color||"#2563eb",flexShrink:0}}/>
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:800,fontSize:13}}>{p.nama}</div>
+                          <div style={{fontSize:11,color:"var(--text3)"}}>{p.jenis} · {p.sasaran_kelas||"Semua"} {p.pegawai?`· ${p.pegawai}`:""}</div>
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          <span className={`badge ${badgeMap[p.status]||"b-gray"}`}>{p.status}</span>
+                          {p.tarikh_tamat && <div style={{fontSize:10,color:"var(--text3)",marginTop:2}}>Tamat: {p.tarikh_tamat}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>)}
+
+        {/* ── TAB 2: PESERTA ── */}
+        {subtab===2 && (<>
+          <div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div className="form-field" style={{marginBottom:0,minWidth:220}}>
+              <label className="form-label">Program</label>
+              <select className="form-input" value={selProgId} onChange={e=>setSelProgId(e.target.value)}>
+                <option value="">— Pilih Program —</option>
+                {progList.map(p=><option key={p.id} value={p.id}>{p.nama}</option>)}
+              </select>
+            </div>
+            <div className="form-field" style={{marginBottom:0,minWidth:160}}>
+              <label className="form-label">Kelas (untuk daftar murid)</label>
+              <select className="form-input" value={selKelasPes} onChange={e=>setSelKelasPes(e.target.value)}>
+                <option value="">— Pilih Kelas —</option>
+                {KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+              </select>
+            </div>
+            {selProgId && selKelasPes && pesertaMurid.length>0 && (
+              <button className="btn-add" onClick={handleAddPes}>+ Daftar {pesertaMurid.length} Murid</button>
+            )}
+          </div>
+
+          {!selProgId ? (
+            <div style={{textAlign:"center",padding:60,color:"var(--text3)"}}>
+              <div style={{fontSize:32,marginBottom:8}}>👥</div>
+              <div style={{fontWeight:700}}>Pilih program untuk lihat atau daftar peserta</div>
+            </div>
+          ) : (<>
+            <div style={{marginBottom:10,fontWeight:800,fontSize:14}}>
+              {selProgObj?.nama} — {filteredPeserta.length} peserta
+              {filteredPeserta.length>0 && <span style={{marginLeft:8,fontSize:12,color:"#16a34a",fontWeight:700}}>✅ {filteredPeserta.filter(p=>p.hadir).length} hadir</span>}
+            </div>
+            {filteredPeserta.length===0 ? (
+              <div style={{textAlign:"center",padding:40,color:"var(--text3)"}}>Tiada peserta. Pilih kelas dan klik "Daftar Murid".</div>
+            ) : (
+              <div className="kur-table-wrap">
+                <table className="kur-table">
+                  <thead><tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>Kehadiran</th><th></th></tr></thead>
+                  <tbody>
+                    {filteredPeserta.map((p,i)=>(
+                      <tr key={p.id}>
+                        <td style={{color:"var(--text3)",fontWeight:800}}>{i+1}</td>
+                        <td style={{fontWeight:700}}>{p.nama_murid}</td>
+                        <td style={{color:"var(--text2)"}}>{p.kelas}</td>
+                        <td>
+                          <span style={{cursor:"pointer",fontSize:13,fontWeight:700,padding:"3px 10px",borderRadius:6,
+                            background:p.hadir?"#dcfce7":"#fee2e2",color:p.hadir?"#166534":"#991b1b"}}
+                            onClick={()=>toggleHadir(p)}>
+                            {p.hadir?"✅ Hadir":"❌ Tidak Hadir"}
+                          </span>
+                        </td>
+                        <td><button className="btn-del" onClick={()=>handleDelPes(p.id)}>🗑</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="prog-date">📅 {p.tarikh}</div>
-              <div className="prog-desc">{p.deskripsi}</div>
-            </div>
-          ))}
-        </div>
-      )}
-      {showAdd && (
-        <Modal title="Tambah Program Akademik" onClose={()=>setShowAdd(false)}>
-          <form onSubmit={handleAdd}>
-            <div className="form-field"><label className="form-label">Nama Program</label><input className="form-input" required value={form.nama} onChange={e=>setForm(f=>({...f,nama:e.target.value}))}/></div>
-            <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" placeholder="cth: Jun 2025" value={form.tarikh} onChange={e=>setForm(f=>({...f,tarikh:e.target.value}))}/></div>
-            <div className="form-field"><label className="form-label">Deskripsi</label><textarea className="form-input" rows={3} value={form.deskripsi} onChange={e=>setForm(f=>({...f,deskripsi:e.target.value}))}/></div>
-            <div className="form-field"><label className="form-label">Status</label>
-              <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
-                <option>Akan Datang</option><option>Sedang Berjalan</option><option>Selesai</option>
+            )}
+          </>)}
+        </>)}
+
+        {/* ── TAB 3: LAPORAN ── */}
+        {subtab===3 && (<>
+          <div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div className="form-field" style={{marginBottom:0,minWidth:220}}>
+              <label className="form-label">Program</label>
+              <select className="form-input" value={selProgLap} onChange={e=>setSelProgLap(e.target.value)}>
+                <option value="">— Pilih Program —</option>
+                {progList.map(p=><option key={p.id} value={p.id}>{p.nama}</option>)}
               </select>
             </div>
-            <button className="btn-primary" type="submit">+ Tambah</button>
-          </form>
-        </Modal>
-      )}
-      {editItem && (
-        <Modal title={`Edit — ${editItem.nama}`} onClose={()=>setEditItem(null)}>
-          <form onSubmit={handleEdit}>
-            <div className="form-field"><label className="form-label">Nama Program</label><input className="form-input" required value={editItem.nama} onChange={e=>setEditItem(f=>({...f,nama:e.target.value}))}/></div>
-            <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={editItem.tarikh} onChange={e=>setEditItem(f=>({...f,tarikh:e.target.value}))}/></div>
-            <div className="form-field"><label className="form-label">Deskripsi</label><textarea className="form-input" rows={3} value={editItem.deskripsi} onChange={e=>setEditItem(f=>({...f,deskripsi:e.target.value}))}/></div>
-            <div className="form-field"><label className="form-label">Status</label>
-              <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
-                <option>Akan Datang</option><option>Sedang Berjalan</option><option>Selesai</option>
-              </select>
+            {selProgLap && <button className="btn-add" onClick={()=>{setFormLap({...blankLap,program_id:selProgLap});setShowAddLap(true);}}>+ Tambah Laporan</button>}
+          </div>
+
+          {!selProgLap ? (
+            <div style={{textAlign:"center",padding:60,color:"var(--text3)"}}>
+              <div style={{fontSize:32,marginBottom:8}}>📊</div>
+              <div style={{fontWeight:700}}>Pilih program untuk lihat atau tambah laporan penilaian</div>
             </div>
-            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
-          </form>
-        </Modal>
-      )}
+          ) : (<>
+            {filteredLaporan.length===0 ? (
+              <div style={{textAlign:"center",padding:40,color:"var(--text3)"}}>Tiada laporan lagi. Tambah laporan penilaian program.</div>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                {filteredLaporan.map(l=>{
+                  const prog = progList.find(p=>p.id===l.program_id);
+                  return (
+                    <div key={l.id} style={{padding:"14px 16px",borderRadius:12,background:"var(--surface)",border:"1.5px solid var(--border)"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                        <div style={{fontWeight:800,fontSize:13}}>{prog?.nama||"—"}</div>
+                        <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                          <span style={{fontSize:11,color:"var(--text3)"}}>{l.tarikh_laporan||""}</span>
+                          <button className="btn-add" style={{padding:"3px 8px",fontSize:11}} onClick={()=>setEditLap({...l})}>✏️</button>
+                          <button className="btn-del" onClick={()=>handleDelLap(l.id)}>🗑</button>
+                        </div>
+                      </div>
+                      {l.pencapaian && <div style={{marginBottom:6}}><span style={{fontWeight:700,fontSize:11,color:"var(--text3)"}}>PENCAPAIAN</span><div style={{fontSize:13,marginTop:2}}>{l.pencapaian}</div></div>}
+                      {l.impak && <div style={{marginBottom:6}}><span style={{fontWeight:700,fontSize:11,color:"var(--text3)"}}>IMPAK</span><div style={{fontSize:13,marginTop:2}}>{l.impak}</div></div>}
+                      {l.cadangan && <div><span style={{fontWeight:700,fontSize:11,color:"var(--text3)"}}>CADANGAN</span><div style={{fontSize:13,marginTop:2}}>{l.cadangan}</div></div>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>)}
+
+          {showAddLap && (
+            <Modal title="Tambah Laporan Program" onClose={()=>{setShowAddLap(false);setFormLap({...blankLap});}}>
+              <form onSubmit={handleAddLap}>
+                <div className="form-field"><label className="form-label">Tarikh Laporan</label>
+                  <input className="form-input" type="date" value={formLap.tarikh_laporan} onChange={e=>setFormLap(f=>({...f,tarikh_laporan:e.target.value}))}/>
+                </div>
+                <div className="form-field"><label className="form-label">Pencapaian Program</label>
+                  <textarea className="form-input" rows={3} value={formLap.pencapaian} onChange={e=>setFormLap(f=>({...f,pencapaian:e.target.value}))} placeholder="Nyatakan pencapaian dan outcome..."/>
+                </div>
+                <div className="form-field"><label className="form-label">Impak kepada Murid</label>
+                  <textarea className="form-input" rows={2} value={formLap.impak} onChange={e=>setFormLap(f=>({...f,impak:e.target.value}))} placeholder="Impak yang diperhatikan..."/>
+                </div>
+                <div className="form-field"><label className="form-label">Cadangan Penambahbaikan</label>
+                  <textarea className="form-input" rows={2} value={formLap.cadangan} onChange={e=>setFormLap(f=>({...f,cadangan:e.target.value}))} placeholder="Cadangan untuk program akan datang..."/>
+                </div>
+                <button className="btn-primary" type="submit">💾 Simpan Laporan</button>
+              </form>
+            </Modal>
+          )}
+          {editLap && (
+            <Modal title="Edit Laporan" onClose={()=>setEditLap(null)}>
+              <form onSubmit={handleEditLap}>
+                <div className="form-field"><label className="form-label">Tarikh Laporan</label>
+                  <input className="form-input" type="date" value={editLap.tarikh_laporan||""} onChange={e=>setEditLap(f=>({...f,tarikh_laporan:e.target.value}))}/>
+                </div>
+                <div className="form-field"><label className="form-label">Pencapaian</label>
+                  <textarea className="form-input" rows={3} value={editLap.pencapaian||""} onChange={e=>setEditLap(f=>({...f,pencapaian:e.target.value}))}/>
+                </div>
+                <div className="form-field"><label className="form-label">Impak</label>
+                  <textarea className="form-input" rows={2} value={editLap.impak||""} onChange={e=>setEditLap(f=>({...f,impak:e.target.value}))}/>
+                </div>
+                <div className="form-field"><label className="form-label">Cadangan</label>
+                  <textarea className="form-input" rows={2} value={editLap.cadangan||""} onChange={e=>setEditLap(f=>({...f,cadangan:e.target.value}))}/>
+                </div>
+                <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+              </form>
+            </Modal>
+          )}
+        </>)}
+
+      </>)}
     </KurPage>
   );
 }
