@@ -9869,14 +9869,34 @@ function Page({ modId, subId }) {
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [user, setUser] = useState(() => {
-    try { const s = localStorage.getItem("edu-user"); return s ? JSON.parse(s) : null; } catch { return null; }
-  });
+  const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [sbOpen, setSbOpen] = useState(false);
   const [exp, setExp] = useState("");
   const [actMod, setActMod] = useState(null);
   const [actSub, setActSub] = useState(null);
   const [theme, setTheme] = useState(() => localStorage.getItem("edu-theme") || "light");
+
+  useEffect(() => {
+    localStorage.removeItem("edu-user");
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        const u = session.user;
+        const name = u.user_metadata?.name || u.user_metadata?.full_name || u.email.split("@")[0];
+        const role = u.user_metadata?.role || "Guru";
+        setUser({ name, role, email: u.email });
+      }
+      setAuthChecked(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) { setUser(null); return; }
+      const u = session.user;
+      const name = u.user_metadata?.name || u.user_metadata?.full_name || u.email.split("@")[0];
+      const role = u.user_metadata?.role || "Guru";
+      setUser({ name, role, email: u.email });
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -9889,7 +9909,14 @@ export default function App() {
   const sName = idx>=0 ? m.subs[idx] : "";
   const initials = user ? user.name.split(" ").map(w=>w[0]).join("").slice(0,2) : "";
 
-  if (!user) return <Login onLogin={u=>{ localStorage.setItem("edu-user", JSON.stringify(u)); setUser(u); }}/>;
+  if (!authChecked) return (
+    <><style>{CSS}</style>
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(160deg,#dbeafe,#eff6ff,#e0f2fe)"}}>
+      <div style={{fontFamily:"'Fredoka One',cursive",fontSize:22,color:"#2563eb",animation:"float 2s ease-in-out infinite"}}>🏫 &nbsp;Memuatkan...</div>
+    </div></>
+  );
+
+  if (!user) return <Login onLogin={u=>setUser(u)}/>;
 
   return (
     <>
@@ -9897,7 +9924,7 @@ export default function App() {
       <div className="app">
         <Sidebar open={sbOpen} onClose={()=>setSbOpen(false)}
           exp={exp} setExp={setExp} actMod={actMod} actSub={actSub}
-          onNav={onNav} user={user} onLogout={async ()=>{ await supabase.auth.signOut(); localStorage.removeItem("edu-user"); setUser(null); }}/>
+          onNav={onNav} user={user} onLogout={async ()=>{ await supabase.auth.signOut(); }}/>
 
         <div className="main">
           <div className="topbar">
