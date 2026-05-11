@@ -1500,28 +1500,44 @@ function KurPage({ title, sub, stats, children }) {
 // ─── 1. JADUAL WAKTU ─────────────────────────────────────────────────────────
 function JadualWaktu() {
   const HARI = ["Isnin","Selasa","Rabu","Khamis","Jumaat"];
+  const [subtab, setSubtab] = useState(0);
   const [rows, setRows] = useState([]);
+  const [allRows, setAllRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [kelas, setKelas] = useState("Tahun 1 Unik");
   const [q, setQ] = useState("");
   const [editCell, setEditCell] = useState(null);
+  const [selGuru, setSelGuru] = useState("");
 
+  const [guruList, setGuruList] = useState([]);
+  const [showAddGuru, setShowAddGuru] = useState(false);
+  const [editGuru, setEditGuru] = useState(null);
+  const blankGuru = { nama:"", gred_jawatan:"", mata_pelajaran:"", kelas_mengajar:"", status:"Aktif" };
+  const [formGuru, setFormGuru] = useState(blankGuru);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { data } = await supabase.from('jadual_waktu').select('*').eq('kelas', kelas);
-      setRows(data || []);
-      setLoading(false);
-    };
-    load();
-  }, [kelas]);
+  const loadKelas = async (k) => {
+    const { data } = await supabase.from('jadual_waktu').select('*').eq('kelas', k||kelas);
+    setRows(data||[]);
+  };
+  const loadAll = async () => {
+    setLoading(true);
+    const [r1, r2, r3] = await Promise.all([
+      supabase.from('jadual_waktu').select('*').eq('kelas', kelas),
+      supabase.from('jadual_waktu').select('*'),
+      supabase.from('jadual_guru').select('*').order('nama'),
+    ]);
+    setRows(r1.data||[]); setAllRows(r2.data||[]); setGuruList(r3.data||[]);
+    setLoading(false);
+  };
 
-  const buildGrid = () => WAKTU_SLOTS.map((_,ri) => {
+  useEffect(() => { loadAll(); }, []);
+  useEffect(() => { loadKelas(); }, [kelas]);
+
+  const buildGrid = (source, byKelas) => WAKTU_SLOTS.map((_,ri) => {
     if (ri === 5) return null;
     return HARI.map(h => {
-      const c = rows.find(r => r.waktu_slot===ri && r.hari===h);
-      return c ? { s:c.subjek, g:c.guru, id:c.id } : null;
+      const c = source.find(r => r.waktu_slot===ri && r.hari===h);
+      return c ? (byKelas ? { s:c.subjek, g:c.guru, id:c.id } : { s:c.subjek, k:c.kelas, id:c.id }) : null;
     });
   });
 
@@ -1536,8 +1552,11 @@ function JadualWaktu() {
     if (!ok) return;
     toast("Tersimpan!", "success");
     setEditCell(null);
-    const { data } = await supabase.from('jadual_waktu').select('*').eq('kelas', kelas);
-    setRows(data || []);
+    const [r1, r2] = await Promise.all([
+      supabase.from('jadual_waktu').select('*').eq('kelas', kelas),
+      supabase.from('jadual_waktu').select('*'),
+    ]);
+    setRows(r1.data||[]); setAllRows(r2.data||[]);
   };
 
   const handleDelCell = async () => {
@@ -1545,72 +1564,260 @@ function JadualWaktu() {
     const ok = await dbRun(() => supabase.from('jadual_waktu').delete().eq('id', editCell.id));
     if (!ok) return;
     setEditCell(null);
-    const { data } = await supabase.from('jadual_waktu').select('*').eq('kelas', kelas);
-    setRows(data || []);
+    const [r1, r2] = await Promise.all([
+      supabase.from('jadual_waktu').select('*').eq('kelas', kelas),
+      supabase.from('jadual_waktu').select('*'),
+    ]);
+    setRows(r1.data||[]); setAllRows(r2.data||[]);
   };
 
-  const grid = buildGrid();
+  const addGuru = async e => { e.preventDefault(); const ok=await dbRun(()=>supabase.from('jadual_guru').insert([formGuru])); if(!ok)return; toast("Guru ditambah!","success"); setShowAddGuru(false); const {data}=await supabase.from('jadual_guru').select('*').order('nama'); setGuruList(data||[]); };
+  const updGuru = async e => { e.preventDefault(); const {nama,gred_jawatan,mata_pelajaran,kelas_mengajar,status}=editGuru; const ok=await dbRun(()=>supabase.from('jadual_guru').update({nama,gred_jawatan,mata_pelajaran,kelas_mengajar,status}).eq('id',editGuru.id)); if(!ok)return; toast("Dikemaskini!","success"); setEditGuru(null); const {data}=await supabase.from('jadual_guru').select('*').order('nama'); setGuruList(data||[]); };
+  const delGuru = async id => { const ok=await dbRun(()=>supabase.from('jadual_guru').delete().eq('id',id)); if(ok)setGuruList(d=>d.filter(r=>r.id!==id)); };
+
+  const uniqueGurus = [...new Set(allRows.map(r=>r.guru).filter(Boolean))].sort();
+  const guruRows = selGuru ? allRows.filter(r=>r.guru===selGuru) : [];
+
+  const bebanData = uniqueGurus.map(g => {
+    const gRows = allRows.filter(r=>r.guru===g);
+    return { guru:g, periods:gRows.length, subjects:[...new Set(gRows.map(r=>r.subjek))], kelasList:[...new Set(gRows.map(r=>r.kelas))] };
+  }).sort((a,b)=>b.periods-a.periods);
+  const maxPeriods = bebanData[0]?.periods || 1;
+
+  const konflik = [];
+  const groupKey = {};
+  allRows.forEach(r => {
+    if(!r.guru) return;
+    const key = `${r.guru}|${r.hari}|${r.waktu_slot}`;
+    if(!groupKey[key]) groupKey[key]=[];
+    groupKey[key].push(r);
+  });
+  Object.values(groupKey).forEach(grp => { if(grp.length>1) konflik.push(grp); });
+
+  const tabSty = i => ({
+    padding:"7px 14px", borderRadius:12,
+    border:`1.5px solid ${subtab===i?'#2563eb':'var(--border)'}`,
+    background:subtab===i?'#2563eb':'var(--surface)',
+    color:subtab===i?'white':'var(--text2)',
+    fontSize:12, fontWeight:800, fontFamily:"'Nunito',sans-serif",
+    cursor:'pointer', transition:'all 0.15s'
+  });
+
+  const grid = buildGrid(rows, true);
+  const guruGrid = buildGrid(guruRows, false);
   const search = q.toLowerCase().trim();
-  const matchCell = (cell) => !search||!cell ? null : cell.s.toLowerCase().includes(search)||cell.g.toLowerCase().includes(search);
-  const uniqueSubj = [...new Set(rows.map(r=>r.subjek))].length;
-  const uniqueGuru = [...new Set(rows.map(r=>r.guru))].length;
+  const matchCell = (cell) => !search||!cell ? null : cell.s?.toLowerCase().includes(search)||cell.g?.toLowerCase().includes(search);
+
+  const statsCards = [
+    {ico:"🏫",val:KELAS_LIST.length,lbl:"Jumlah Kelas"},
+    {ico:"📚",val:[...new Set(allRows.map(r=>r.subjek))].length,lbl:"Mata Pelajaran"},
+    {ico:"👩‍🏫",val:uniqueGurus.length,lbl:"Guru Mengajar"},
+    {ico:"⚠️",val:konflik.length,lbl:konflik.length?"Konflik!":"Tiada Konflik"},
+  ];
 
   return (
-    <KurPage title="Jadual Waktu" sub="Kurikulum · SK Darau, Kota Kinabalu"
-      stats={[
-        {ico:"🏫",val:KELAS_LIST.length,lbl:"Jumlah Kelas"},
-        {ico:"📚",val:uniqueSubj,lbl:"Mata Pelajaran"},
-        {ico:"👩‍🏫",val:uniqueGuru,lbl:"Guru Mengajar"},
-        {ico:"⏰",val:10,lbl:"Waktu / Hari"},
-      ]}>
-      <div className="kur-header">
-        <select className="kur-select" value={kelas} onChange={e=>setKelas(e.target.value)}>
-          {KELAS_LIST.map(k=><option key={k}>{k}</option>)}
-        </select>
-        <div className="kur-search-wrap">
-          <span className="kur-search-ico">🔍</span>
-          <input className="kur-search" placeholder="Cari subjek atau guru…" value={q} onChange={e=>setQ(e.target.value)}/>
-        </div>
-        {q&&<button className="btn-del" onClick={()=>setQ("")}>✕ Bersih</button>}
-        <div style={{fontSize:11,color:"var(--text3)",fontWeight:700}}>Klik sel untuk edit</div>
+    <KurPage title="Jadual Waktu" sub="Kurikulum · SK Darau, Kota Kinabalu" stats={statsCards}>
+      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:16}}>
+        {['📅 Jadual Kelas','👩‍🏫 Jadual Guru','📊 Beban Tugas','👥 Senarai Guru','⚠️ Semakan Konflik'].map((t,i)=>(
+          <button key={i} style={tabSty(i)} onClick={()=>setSubtab(i)}>{t}</button>
+        ))}
       </div>
 
-      {loading ? <div className="loading">⏳ Memuatkan jadual…</div> : (
-        <div className="jadual-wrap">
-          <table className="jadual-table">
-            <thead><tr><th>Waktu</th>{HARI.map(h=><th key={h}>{h}</th>)}</tr></thead>
-            <tbody>
-              {WAKTU_SLOTS.map((waktu,ri) => {
-                const row = grid[ri];
-                if (!row) return <tr key={ri} className="jadual-rehat"><td colSpan={6} style={{textAlign:"center"}}>— Rehat —</td></tr>;
-                return (
-                  <tr key={ri}>
-                    <td>{waktu}</td>
-                    {row.map((cell,ci) => {
-                      const cfg = SC[cell?.s] || {c:"#94a3b8",bg:"var(--accent-lt)",i:"+"};
-                      const m = matchCell(cell);
+      {loading?<div className="loading">⏳ Memuatkan jadual…</div>:(<>
+
+        {/* ── TAB 0: JADUAL KELAS ── */}
+        {subtab===0&&(
+          <div>
+            <div className="kur-header">
+              <select className="kur-select" value={kelas} onChange={e=>setKelas(e.target.value)}>
+                {KELAS_LIST.map(k=><option key={k}>{k}</option>)}
+              </select>
+              <div className="kur-search-wrap">
+                <span className="kur-search-ico">🔍</span>
+                <input className="kur-search" placeholder="Cari subjek atau guru…" value={q} onChange={e=>setQ(e.target.value)}/>
+              </div>
+              {q&&<button className="btn-del" onClick={()=>setQ("")}>✕ Bersih</button>}
+              <div style={{fontSize:11,color:"var(--text3)",fontWeight:700}}>Klik sel untuk edit</div>
+            </div>
+            <div className="jadual-wrap">
+              <table className="jadual-table">
+                <thead><tr><th>Waktu</th>{HARI.map(h=><th key={h}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {WAKTU_SLOTS.map((waktu,ri) => {
+                    const row = grid[ri];
+                    if (!row) return <tr key={ri} className="jadual-rehat"><td colSpan={6} style={{textAlign:"center"}}>— Rehat —</td></tr>;
+                    return (
+                      <tr key={ri}>
+                        <td>{waktu}</td>
+                        {row.map((cell,ci) => {
+                          const cfg = SC[cell?.s] || {c:"#94a3b8",bg:"var(--accent-lt)",i:"+"};
+                          const m = matchCell(cell);
+                          return (
+                            <td key={ci} className={search?(m?"j-match":"j-dim"):""}>
+                              <div className="jadual-cell" style={{background:cfg.bg,cursor:"pointer",opacity:cell?1:0.5}}
+                                onClick={()=>setEditCell({id:cell?.id||null,ri,hari:HARI[ci],subjek:cell?.s||"",guru:cell?.g||""})}>
+                                {cell
+                                  ? <><span className="jadual-cell-sub" style={{color:cfg.c}}>{cfg.i} {cell.s}</span><span className="jadual-cell-guru">{cell.g}</span></>
+                                  : <span style={{fontSize:18,color:"var(--text3)"}}>+</span>
+                                }
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 1: JADUAL GURU ── */}
+        {subtab===1&&(
+          <div>
+            <div className="kur-header" style={{marginBottom:14}}>
+              <select className="kur-select" value={selGuru} onChange={e=>setSelGuru(e.target.value)}>
+                <option value="">— Pilih Guru —</option>
+                {uniqueGurus.map(g=><option key={g}>{g}</option>)}
+              </select>
+              {selGuru&&<span style={{fontSize:12,color:'var(--text3)',fontWeight:800,padding:'6px 0'}}>{guruRows.length} waktu / minggu</span>}
+            </div>
+            {!selGuru?(
+              <div style={{textAlign:'center',color:'var(--text3)',padding:40,fontSize:14,fontWeight:800}}>☝️ Pilih guru untuk lihat jadual mingguan</div>
+            ):(
+              <div className="jadual-wrap">
+                <table className="jadual-table">
+                  <thead><tr><th>Waktu</th>{HARI.map(h=><th key={h}>{h}</th>)}</tr></thead>
+                  <tbody>
+                    {WAKTU_SLOTS.map((waktu,ri) => {
+                      const row = guruGrid[ri];
+                      if (!row) return <tr key={ri} className="jadual-rehat"><td colSpan={6} style={{textAlign:"center"}}>— Rehat —</td></tr>;
                       return (
-                        <td key={ci} className={search?(m?"j-match":"j-dim"):""}>
-                          <div className="jadual-cell" style={{background:cfg.bg,cursor:"pointer",opacity:cell?1:0.5}}
-                            onClick={()=>setEditCell({id:cell?.id||null,ri,hari:HARI[ci],subjek:cell?.s||"",guru:cell?.g||""})}>
-                            {cell
-                              ? <><span className="jadual-cell-sub" style={{color:cfg.c}}>{cfg.i} {cell.s}</span><span className="jadual-cell-guru">{cell.g}</span></>
-                              : <span style={{fontSize:18,color:"var(--text3)"}}>+</span>
-                            }
-                          </div>
-                        </td>
+                        <tr key={ri}>
+                          <td>{waktu}</td>
+                          {row.map((cell,ci) => {
+                            const cfg = SC[cell?.s] || {c:"#94a3b8",bg:"var(--accent-lt)",i:"📚"};
+                            return (
+                              <td key={ci}>
+                                <div className="jadual-cell" style={{background:cell?cfg.bg:'transparent',opacity:cell?1:0.25,cursor:'default'}}>
+                                  {cell&&<><span className="jadual-cell-sub" style={{color:cfg.c}}>{cfg.i} {cell.s}</span><span className="jadual-cell-guru">{cell.k}</span></>}
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
                       );
                     })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
-      {editCell && (
-        <Modal title={`Edit — ${editCell.hari}, Slot ${editCell.ri+1}`} onClose={()=>setEditCell(null)}>
+        {/* ── TAB 2: BEBAN TUGAS ── */}
+        {subtab===2&&(
+          <div>
+            <div style={{fontSize:12,color:'var(--text3)',fontWeight:800,marginBottom:12}}>Jumlah waktu mengajar setiap guru — semua kelas digabung</div>
+            {bebanData.length===0&&<div style={{textAlign:'center',color:'var(--text3)',padding:40,fontWeight:800}}>Tiada data. Isi jadual kelas dahulu.</div>}
+            <div className="kur-table-wrap">
+              <table className="kur-table">
+                <thead><tr><th>#</th><th>Nama Guru</th><th>Waktu / Minggu</th><th>Mata Pelajaran</th><th>Kelas</th></tr></thead>
+                <tbody>
+                  {bebanData.map((b,i)=>(
+                    <tr key={b.guru}>
+                      <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
+                      <td style={{fontWeight:800}}>{b.guru}</td>
+                      <td>
+                        <div style={{display:'flex',alignItems:'center',gap:8}}>
+                          <div style={{flex:1,height:10,borderRadius:6,background:'var(--accent-lt)',overflow:'hidden'}}>
+                            <div style={{height:'100%',borderRadius:6,background:'#2563eb',width:`${(b.periods/maxPeriods)*100}%`,transition:'width 0.3s'}}/>
+                          </div>
+                          <span style={{fontWeight:900,color:'#2563eb',minWidth:24}}>{b.periods}</span>
+                        </div>
+                      </td>
+                      <td style={{fontSize:11}}>{b.subjects.join(' · ')||'—'}</td>
+                      <td><span style={{fontSize:11,fontWeight:800,color:'var(--text3)'}}>{b.kelasList.length} kelas</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 3: SENARAI GURU ── */}
+        {subtab===3&&(
+          <div>
+            <div className="kur-header" style={{marginBottom:10}}>
+              <button className="btn-add" onClick={()=>{setFormGuru(blankGuru);setShowAddGuru(true);}}>+ Tambah Guru</button>
+              <span style={{fontSize:12,color:'var(--text3)',fontWeight:800,padding:'6px 0'}}>{guruList.length} guru berdaftar</span>
+            </div>
+            <div className="kur-table-wrap">
+              <table className="kur-table">
+                <thead><tr><th>#</th><th>Nama Guru</th><th>Gred Jawatan</th><th>Mata Pelajaran</th><th>Kelas Mengajar</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  {guruList.length===0&&<tr><td colSpan={7} style={{textAlign:'center',color:'var(--text3)',padding:28}}>Tiada guru. Tambah guru — nama akan tersedia dalam dropdown jadual.</td></tr>}
+                  {guruList.map((g,i)=>(
+                    <tr key={g.id}>
+                      <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
+                      <td style={{fontWeight:800}}>{g.nama}</td>
+                      <td style={{fontSize:12}}>{g.gred_jawatan||'—'}</td>
+                      <td style={{fontSize:12}}>{g.mata_pelajaran||'—'}</td>
+                      <td style={{fontSize:12,color:'var(--text3)'}}>{g.kelas_mengajar||'—'}</td>
+                      <td><span className={`badge ${g.status==='Aktif'?'b-green':'b-gray'}`}>{g.status}</span></td>
+                      <td style={{display:'flex',gap:4}}>
+                        <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditGuru({...g})}>✏️</button>
+                        <button className="btn-del" onClick={()=>delGuru(g.id)}>🗑</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 4: SEMAKAN KONFLIK ── */}
+        {subtab===4&&(
+          <div>
+            {konflik.length===0?(
+              <div style={{textAlign:'center',padding:48}}>
+                <div style={{fontSize:40,marginBottom:10}}>✅</div>
+                <div style={{fontWeight:900,fontSize:16,color:'#16a34a',marginBottom:4}}>Tiada Konflik Jadual</div>
+                <div style={{fontSize:12,color:'var(--text3)'}}>Semua guru ditetapkan di satu kelas sahaja bagi setiap slot waktu.</div>
+              </div>
+            ):(
+              <>
+                <div style={{background:'#fef2f2',border:'2px solid #fca5a5',borderRadius:12,padding:'10px 16px',marginBottom:14,fontWeight:800,fontSize:13,color:'#dc2626'}}>
+                  ⚠️ {konflik.length} konflik ditemui — guru ditetapkan di 2 kelas pada masa yang sama
+                </div>
+                <div className="kur-table-wrap">
+                  <table className="kur-table">
+                    <thead><tr><th>#</th><th>Guru</th><th>Hari</th><th>Waktu</th><th>Kelas Bercanggah</th></tr></thead>
+                    <tbody>
+                      {konflik.map((grp,i)=>(
+                        <tr key={i} style={{background:'#fef2f2'}}>
+                          <td style={{color:'#dc2626',fontWeight:800}}>{i+1}</td>
+                          <td style={{fontWeight:800}}>{grp[0].guru}</td>
+                          <td>{grp[0].hari}</td>
+                          <td style={{fontSize:12}}>{WAKTU_SLOTS[grp[0].waktu_slot]}</td>
+                          <td>{grp.map(r=>`${r.kelas} (${r.subjek})`).join(' ⚡ ')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </>)}
+
+      {/* ── MODAL: Edit Cell ── */}
+      {editCell&&(
+        <Modal title={`Edit — ${editCell.hari}, ${WAKTU_SLOTS[editCell.ri]}`} onClose={()=>setEditCell(null)}>
           <form onSubmit={handleSave}>
             <div className="form-field">
               <label className="form-label">Subjek</label>
@@ -1621,15 +1828,46 @@ function JadualWaktu() {
             </div>
             <div className="form-field">
               <label className="form-label">Nama Guru</label>
-              <input className="form-input" placeholder="cth: Pn.Ramlah" value={editCell.guru} onChange={e=>setEditCell(c=>({...c,guru:e.target.value}))}/>
+              <select className="form-input" value={editCell.guru} onChange={e=>setEditCell(c=>({...c,guru:e.target.value}))}>
+                <option value="">-- Pilih Guru --</option>
+                {guruList.map(g=><option key={g.id}>{g.nama}</option>)}
+                {editCell.guru&&!guruList.find(g=>g.nama===editCell.guru)&&<option value={editCell.guru}>{editCell.guru} (tidak dalam senarai)</option>}
+              </select>
             </div>
             <div style={{display:"flex",gap:8,marginTop:4}}>
               <button className="btn-primary" type="submit" style={{flex:1}}>💾 Simpan</button>
-              {editCell.id && <button type="button" className="btn-del" style={{padding:"8px 16px"}} onClick={handleDelCell}>🗑 Padam Sel</button>}
+              {editCell.id&&<button type="button" className="btn-del" style={{padding:"8px 16px"}} onClick={handleDelCell}>🗑 Padam</button>}
             </div>
           </form>
         </Modal>
       )}
+
+      {/* ── MODAL: Tambah Guru ── */}
+      {showAddGuru&&<Modal title="Tambah Guru" onClose={()=>setShowAddGuru(false)}><form onSubmit={addGuru}>
+        <div className="form-field"><label className="form-label">Nama Penuh</label><input className="form-input" required value={formGuru.nama} onChange={e=>setFormGuru(f=>({...f,nama:e.target.value}))}/></div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Gred Jawatan</label><input className="form-input" placeholder="cth: DG41, DG44" value={formGuru.gred_jawatan} onChange={e=>setFormGuru(f=>({...f,gred_jawatan:e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">Mata Pelajaran</label><input className="form-input" placeholder="cth: BM, Math, BI" value={formGuru.mata_pelajaran} onChange={e=>setFormGuru(f=>({...f,mata_pelajaran:e.target.value}))}/></div>
+        </div>
+        <div className="form-field"><label className="form-label">Kelas Mengajar</label><input className="form-input" placeholder="cth: 4 Unik, 5 Aspirasi, 6 Dedikasi" value={formGuru.kelas_mengajar} onChange={e=>setFormGuru(f=>({...f,kelas_mengajar:e.target.value}))}/></div>
+        <button className="btn-primary" type="submit">+ Tambah</button>
+      </form></Modal>}
+
+      {/* ── MODAL: Edit Guru ── */}
+      {editGuru&&<Modal title={`Edit — ${editGuru.nama}`} onClose={()=>setEditGuru(null)}><form onSubmit={updGuru}>
+        <div className="form-field"><label className="form-label">Nama Penuh</label><input className="form-input" required value={editGuru.nama} onChange={e=>setEditGuru(f=>({...f,nama:e.target.value}))}/></div>
+        <div className="form-row">
+          <div className="form-field"><label className="form-label">Gred Jawatan</label><input className="form-input" value={editGuru.gred_jawatan} onChange={e=>setEditGuru(f=>({...f,gred_jawatan:e.target.value}))}/></div>
+          <div className="form-field"><label className="form-label">Mata Pelajaran</label><input className="form-input" value={editGuru.mata_pelajaran} onChange={e=>setEditGuru(f=>({...f,mata_pelajaran:e.target.value}))}/></div>
+        </div>
+        <div className="form-field"><label className="form-label">Kelas Mengajar</label><input className="form-input" value={editGuru.kelas_mengajar} onChange={e=>setEditGuru(f=>({...f,kelas_mengajar:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Status</label>
+          <select className="form-input" value={editGuru.status} onChange={e=>setEditGuru(f=>({...f,status:e.target.value}))}>
+            <option>Aktif</option><option>Tidak Aktif</option>
+          </select>
+        </div>
+        <button className="btn-primary" type="submit">💾 Simpan</button>
+      </form></Modal>}
     </KurPage>
   );
 }
