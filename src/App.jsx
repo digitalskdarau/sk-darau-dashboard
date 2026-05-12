@@ -4,14 +4,14 @@ import { supabase } from './lib/supabase.js';
 // ─── DATA ────────────────────────────────────────────────────────────────────
 const MODULES = [
   { id:"kurikulum", label:"Kurikulum", icon:"📚", color:"#2563eb", light:"#eff6ff", tag:"GPK 1",
-    subs:["Jadual Waktu","Panitia Mata Pelajaran","Peperiksaan & Penilaian","eRPH / Rekod Mengajar","Program Akademik","Pusat Sumber / NILAM","Perkembangan Staf"],
-    ids:["jadual","panitia","peperiksaan","rph","program","pss","staf"] },
+    subs:["Jadual Waktu","Panitia Mata Pelajaran","Peperiksaan & Penilaian","eRPH / Rekod Mengajar","Program Akademik","Pusat Sumber / NILAM","Perkembangan Staf","Fail Drive"],
+    ids:["jadual","panitia","peperiksaan","rph","program","pss","staf","drive"] },
   { id:"hem", label:"Hal Ehwal Murid", icon:"👫", color:"#0ea5e9", light:"#f0f9ff", tag:"GPK HEM",
-    subs:["Pendaftaran & Data Murid","Disiplin","Bimbingan & Kaunseling","Kesihatan Murid","Bantuan Pelajaran","Keselamatan & 3K","Pengawas Sekolah","Koperasi"],
-    ids:["apdm","disiplin","kaunseling","kesihatan","bantuan","3k","pengawas","koperasi"] },
+    subs:["Pendaftaran & Data Murid","Disiplin","Bimbingan & Kaunseling","Kesihatan Murid","Bantuan Pelajaran","Keselamatan & 3K","Pengawas Sekolah","Koperasi","Fail Drive"],
+    ids:["apdm","disiplin","kaunseling","kesihatan","bantuan","3k","pengawas","koperasi","drive"] },
   { id:"kokurikulum", label:"Kokurikulum", icon:"🏅", color:"#6366f1", light:"#eef2ff", tag:"GPK Koku",
-    subs:["Kelab & Persatuan","Badan Beruniform","Sukan & Permainan","PAJSK","Profil Murid Koku","Pencapaian","Takwim Kokurikulum"],
-    ids:["kelab","uniform","sukan","pajsk","profil","pencapaian","takwim"] },
+    subs:["Kelab & Persatuan","Badan Beruniform","Sukan & Permainan","PAJSK","Profil Murid Koku","Pencapaian","Takwim Kokurikulum","Fail Drive"],
+    ids:["kelab","uniform","sukan","pajsk","profil","pencapaian","takwim","drive"] },
   { id:"pentadbiran", label:"Pentadbiran Am", icon:"🏛️", color:"#0284c7", light:"#e0f2fe", tag:"Pentadbir",
     subs:["Kewangan (PCG)","Aset (JKPAK)","Staf & Guru","Surat & Pekeliling","Mesyuarat & Minit"],
     ids:["kewangan","aset","staf","surat","mesyuarat"] },
@@ -22,8 +22,8 @@ const MODULES = [
     subs:["Data Murid Prasekolah","Jadual & Aktiviti","Penilaian Murid","Laporan"],
     ids:["murid-pra","aktiviti-pra","penilaian-pra","laporan-pra"] },
   { id:"opr", label:"OPR", icon:"📋", color:"#0891b2", light:"#ecfeff", tag:"GPK Koku",
-    subs:["Rekod & Analisis OPR"],
-    ids:["opr-rekod"] },
+    subs:["Rekod & Analisis OPR","Fail Drive (ePBD)"],
+    ids:["opr-rekod","drive"] },
 ];
 
 const TAG_OPTS = [
@@ -7617,6 +7617,18 @@ function HemKoperasi() {
 }
 
 // ─── HEM ROUTER ───────────────────────────────────────────────────────────────
+function DriveFolderView({folderId,title,driveUrl}) {
+  return(
+    <div style={{borderRadius:12,overflow:'hidden',border:'1.5px solid var(--border)'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',background:'var(--card2)',borderBottom:'1px solid var(--border)'}}>
+        <span style={{fontWeight:800,fontSize:14}}>📁 {title} — Google Drive</span>
+        <a href={driveUrl} target="_blank" rel="noreferrer" style={{fontSize:12,color:'var(--accent)',fontWeight:700,textDecoration:'none'}}>Buka dalam Drive ↗</a>
+      </div>
+      <iframe src={`https://drive.google.com/embeddedfolderview?id=${folderId}&usp=sharing#list`} style={{width:'100%',height:'580px',border:'none',display:'block'}} title={title}/>
+    </div>
+  );
+}
+
 function HEMPage({ subId, onNav }) {
   const m = MODULES.find(x => x.id === "hem");
   const idx = m?.ids.indexOf(subId) ?? -1;
@@ -7631,6 +7643,7 @@ function HEMPage({ subId, onNav }) {
     "3k":      <Hem3K />,
     pengawas:  <HemPengawas />,
     koperasi:  <HemKoperasi />,
+    drive:     <DriveFolderView folderId="1f6LkG3TTJPgWwAOw52KR_4tiJl7UfW2J" title="eHEM" driveUrl="https://drive.google.com/drive/folders/1f6LkG3TTJPgWwAOw52KR_4tiJl7UfW2J?usp=drive_link"/>,
   };
 
   return (
@@ -7681,6 +7694,7 @@ function KurikulumPage({ subId, onNav }) {
     program:     <ProgramAkademik />,
     pss:         <PusatSumber />,
     staf:        <PerkembanganStaf />,
+    drive:       <DriveFolderView folderId="1KHz86mCyZEpISrkoZIlgZ9D2S6_PClUv" title="eKurikulum" driveUrl="https://drive.google.com/drive/folders/1KHz86mCyZEpISrkoZIlgZ9D2S6_PClUv?usp=drive_link"/>,
   };
 
   return (
@@ -10335,6 +10349,7 @@ function KokurikulumPage({ subId, onNav }) {
     profil:     <ProfilMuridKoku />,
     pencapaian: <PencapaianKoku />,
     takwim:     <TakwimKokurikulum />,
+    drive:      <DriveFolderView folderId="1ZB8Efb6JMklpAFNuzhts_OlGGwBk5_c6" title="eKokurikulum" driveUrl="https://drive.google.com/drive/folders/1ZB8Efb6JMklpAFNuzhts_OlGGwBk5_c6?usp=sharing"/>,
   };
   return (
     <div>
@@ -11221,7 +11236,9 @@ export default function App() {
                         : actMod==="prasekolah"
                           ? <PrasekolahPage subId={actSub} onNav={onNav}/>
                           : actMod==="opr"
-                            ? <OPRPage />
+                            ? actSub==="drive"
+                              ? <DriveFolderView folderId="1uzANo3j3XIorOcABBpSkgrQ9jp9TZr-N" title="ePBD SK Darau" driveUrl="https://drive.google.com/drive/folders/1uzANo3j3XIorOcABBpSkgrQ9jp9TZr-N?usp=drive_link"/>
+                              : <OPRPage />
                             : <Page modId={actMod} subId={actSub}/>}
           </div>
         </div>
