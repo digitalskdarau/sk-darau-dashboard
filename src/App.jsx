@@ -9844,6 +9844,7 @@ function OPRFormFields({val,set}) {
     const id=parseDriveId(driveInput.trim());
     if(!id){toast('Link tidak sah. Paste link Share dari Google Drive.','error');return;}
     const links=val.gambar_links||[];
+    if(links.length>=4){toast('Maksimum 4 gambar sahaja.','error');return;}
     if(links.includes(id)){toast('Link sudah ditambah.','error');return;}
     set(f=>({...f,gambar_links:[...links,id]}));setDriveInput('');
   };
