@@ -7709,13 +7709,13 @@ function KurikulumPage({ subId, onNav }) {
   const sName = idx>=0 ? m.subs[idx] : "";
 
   const KURI_DRIVE={
-    jadual:      {id:null, title:'Jadual Waktu'},
-    panitia:     {id:null, title:'Panitia Mata Pelajaran'},
-    peperiksaan: {id:null, title:'Peperiksaan & Penilaian'},
-    rph:         {id:null, title:'eRPH / Rekod Mengajar'},
-    program:     {id:null, title:'Program Akademik'},
-    pss:         {id:null, title:'Pusat Sumber / NILAM'},
-    staf:        {id:null, title:'Perkembangan Staf'},
+    jadual:      {id:'1lG9qzqqsrSiWyNDTl8W4BOfDIlfM512G', title:'Jadual Waktu'},
+    panitia:     {id:'1W0Pp7ltSrZBJAPalmCelqpfAkQCP3eq2', title:'Panitia Mata Pelajaran'},
+    peperiksaan: {id:'1pX2fNNQVRZEU-QlxrPFxCxSPxma9vU_x', title:'Peperiksaan & Penilaian'},
+    rph:         {id:'1KjyvY-C14uWHR3LQwOZYcgNGZ7a9hsSx', title:'eRPH / Rekod Mengajar'},
+    program:     {id:'1yShIibPJ_s2Jk7pgC3kBfLMl3_C_obFW', title:'Program Akademik'},
+    pss:         {id:'1nZmMOMkPnGwgW6tajq5jJJ5RgIaGPypy', title:'Pusat Sumber / NILAM'},
+    staf:        {id:'1ZgM5TAkFNoQMVybLOaEBU-lUl5Z13Y05', title:'Perkembangan Staf'},
   };
   const views = {
     jadual:      <JadualWaktu />,
