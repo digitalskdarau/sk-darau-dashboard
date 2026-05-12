@@ -1333,13 +1333,12 @@ function Login({ onLogin }) {
 }
 
 // ─── RESET PASSWORD ───────────────────────────────────────────────────────────
-function ResetPassword({ onDone }) {
+function WelcomeSetPassword({ onDone }) {
   const [pass, setPass] = useState("");
   const [pass2, setPass2] = useState("");
   const [show, setShow] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
 
   const submit = async () => {
     setErr("");
@@ -1349,10 +1348,17 @@ function ResetPassword({ onDone }) {
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password: pass });
     if (error) {
-      setErr("Gagal kemaskini kata laluan: " + error.message);
-    } else {
-      setDone(true);
-      setTimeout(() => { supabase.auth.signOut(); onDone(); }, 2500);
+      setErr("Gagal tetapkan kata laluan: " + error.message);
+      setLoading(false);
+      return;
+    }
+    // Session masih aktif — ambil user dan terus masuk dashboard
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const u = session.user;
+      const name = u.user_metadata?.name || u.user_metadata?.full_name || u.email.split("@")[0];
+      const role = u.user_metadata?.role || "Guru";
+      onDone({ name, role, email: u.email });
     }
     setLoading(false);
   };
@@ -1360,40 +1366,44 @@ function ResetPassword({ onDone }) {
   return (
     <div className="login-page">
       <style>{CSS}</style>
+      {[
+        { w:200, h:200, bg:"rgba(255,255,255,0.05)", top:"4%",  left:"4%",  delay:"0s" },
+        { w:150, h:150, bg:"rgba(99,102,241,0.15)", bottom:"6%",right:"4%", delay:"1.5s" },
+        { w:90,  h:90,  bg:"rgba(14,165,233,0.12)", top:"50%",  left:"20%", delay:"1s" },
+      ].map((b,i)=>(
+        <div key={i} className="blob" style={{width:b.w,height:b.h,background:b.bg,top:b.top,left:b.left,bottom:b.bottom,right:b.right,animationDelay:b.delay}}/>
+      ))}
       <div className="login-card">
         <div className="lc-logo">
-          <div className="lc-mark">🔐</div>
+          <div className="lc-mark">🏫</div>
           <div>
             <div className="lc-name">EduDashboard</div>
             <div className="lc-school">SK Darau, Kota Kinabalu</div>
           </div>
         </div>
         <div className="lc-greet">
-          <h1>{done ? "Berjaya! ✅" : "Tetapkan Kata Laluan Baru"}</h1>
-          <p>{done ? "Kata laluan dikemaskini. Sila log masuk semula." : "Masukkan kata laluan baru anda."}</p>
+          <h1>Tetapkan Kata Laluan 🔐</h1>
+          <p>Sila tetapkan kata laluan baharu anda untuk meneruskan ke dashboard.</p>
         </div>
         {err && <div className="lc-err">⚠️ {err}</div>}
-        {!done && (
-          <>
-            <div className="lc-field">
-              <label className="lc-label">Kata Laluan Baru</label>
-              <div className="lc-pw">
-                <input className="lc-input" type={show?"text":"password"} placeholder="Min. 6 aksara"
-                  value={pass} onChange={e=>setPass(e.target.value)} />
-                <button className="lc-pw-btn" onClick={()=>setShow(s=>!s)}>{show?"🙈":"👁️"}</button>
-              </div>
-            </div>
-            <div className="lc-field">
-              <label className="lc-label">Ulang Kata Laluan</label>
-              <input className="lc-input" type="password" placeholder="Sama seperti atas"
-                value={pass2} onChange={e=>setPass2(e.target.value)}
-                onKeyDown={e=>e.key==="Enter"&&submit()} />
-            </div>
-            <button className="lc-btn" onClick={submit} disabled={loading}>
-              {loading ? "⏳ Menyimpan..." : "Simpan Kata Laluan →"}
-            </button>
-          </>
-        )}
+        <div className="lc-field">
+          <label className="lc-label">Kata Laluan Baru</label>
+          <div className="lc-pw">
+            <input className="lc-input" type={show?"text":"password"} placeholder="Min. 6 aksara"
+              value={pass} onChange={e=>setPass(e.target.value)} />
+            <button className="lc-pw-btn" onClick={()=>setShow(s=>!s)}>{show?"🙈":"👁️"}</button>
+          </div>
+        </div>
+        <div className="lc-field">
+          <label className="lc-label">Ulang Kata Laluan</label>
+          <input className="lc-input" type="password" placeholder="Sama seperti atas"
+            value={pass2} onChange={e=>setPass2(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&submit()} />
+        </div>
+        <button className="lc-btn" onClick={submit} disabled={loading}>
+          {loading ? "⏳ Menyimpan..." : "Simpan & Masuk Dashboard →"}
+        </button>
+        <div className="lc-foot">SK Darau · Sistem Pengurusan Sekolah 2025</div>
       </div>
     </div>
   );
@@ -1782,6 +1792,7 @@ function AdminPanel() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
   const [inviting, setInviting] = useState(false);
   const [msg, setMsg] = useState(null);
   const [delConfirm, setDelConfirm] = useState(null);
@@ -1819,12 +1830,13 @@ function AdminPanel() {
     if (!inviteEmail) return;
     setInviting(true);
     setMsg(null);
-    const data = await callFn({ action: "invite", email: inviteEmail });
+    const data = await callFn({ action: "invite", email: inviteEmail, nama: inviteName.trim() });
     if (data.error) {
       setMsg({ type: "err", text: "Gagal: " + data.error });
     } else {
       setMsg({ type: "ok", text: `Jemputan dihantar ke ${inviteEmail}` });
       setInviteEmail("");
+      setInviteName("");
       loadUsers();
     }
     setInviting(false);
@@ -1871,18 +1883,27 @@ function AdminPanel() {
       {/* Invite form */}
       <div style={{background:"var(--card)",borderRadius:16,padding:"20px 22px",marginBottom:20,border:"1.5px solid var(--border)"}}>
         <div style={{fontSize:14,fontWeight:800,color:"var(--text1)",marginBottom:12}}>✉️ Jemput Guru Baru</div>
-        <form onSubmit={invite} style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-          <input
-            type="email" required placeholder="email@guru.com"
-            value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}
-            style={{flex:1,minWidth:220,padding:"9px 14px",borderRadius:10,border:"1.5px solid var(--border)",
-              background:"var(--bg)",color:"var(--text1)",fontSize:14,outline:"none"}}
-          />
-          <button type="submit" disabled={inviting}
-            style={{padding:"9px 20px",borderRadius:10,background:"#2563eb",color:"#fff",
-              border:"none",fontWeight:800,fontSize:14,cursor:"pointer",whiteSpace:"nowrap"}}>
-            {inviting ? "⏳ Menghantar..." : "Hantar Jemputan →"}
-          </button>
+        <form onSubmit={invite}>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:10}}>
+            <input
+              required placeholder="Nama Penuh Guru"
+              value={inviteName} onChange={e=>setInviteName(e.target.value)}
+              style={{flex:"0 0 220px",padding:"9px 14px",borderRadius:10,border:"1.5px solid var(--border)",
+                background:"var(--bg)",color:"var(--text1)",fontSize:14,outline:"none"}}
+            />
+            <input
+              type="email" required placeholder="email@guru.com"
+              value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}
+              style={{flex:1,minWidth:220,padding:"9px 14px",borderRadius:10,border:"1.5px solid var(--border)",
+                background:"var(--bg)",color:"var(--text1)",fontSize:14,outline:"none"}}
+            />
+            <button type="submit" disabled={inviting}
+              style={{padding:"9px 20px",borderRadius:10,background:"#2563eb",color:"#fff",
+                border:"none",fontWeight:800,fontSize:14,cursor:"pointer",whiteSpace:"nowrap"}}>
+              {inviting ? "⏳ Menghantar..." : "Hantar Jemputan →"}
+            </button>
+          </div>
+          <div style={{fontSize:11,color:"var(--text3)"}}>Guru akan terima email jemputan. Klik link → set kata laluan → terus masuk dashboard.</div>
         </form>
         {msg && (
           <div style={{marginTop:10,padding:"8px 12px",borderRadius:8,fontSize:13,fontWeight:700,
@@ -11944,7 +11965,7 @@ export default function App() {
     </div></>
   );
 
-  if (showReset) return <ResetPassword onDone={()=>{ setShowReset(false); setUser(null); }}/>;
+  if (showReset) return <WelcomeSetPassword onDone={(u)=>{ setShowReset(false); setUser(u); }}/>;
 
   if (!user) return <Login onLogin={u=>setUser(u)}/>;
 

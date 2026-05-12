@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    const { action, email, userId } = await req.json()
+    const { action, email, userId, nama } = await req.json()
 
     if (action === 'list') {
       const { data, error } = await admin.auth.admin.listUsers({ perPage: 200 })
@@ -56,8 +56,10 @@ Deno.serve(async (req) => {
 
     if (action === 'invite') {
       if (!email) throw new Error('Email diperlukan')
+      const guruName = nama?.trim() || email.split('@')[0]
       const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
         redirectTo: `${req.headers.get('origin') ?? Deno.env.get('SITE_URL')}/`,
+        data: { name: guruName, full_name: guruName },
       })
       if (error) throw error
       return new Response(JSON.stringify({ user: data.user }), {
