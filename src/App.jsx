@@ -5378,21 +5378,25 @@ function HemDisiplin() {
 
 // ─── HEM 3. BIMBINGAN & KAUNSELING ───────────────────────────────────────────
 const JENIS_KES_KAUNSELING = [
-  "Masalah Akademik",
-  "Masalah Disiplin",
-  "Masalah Keluarga",
-  "Masalah Emosi / Mental",
-  "Masalah Sosial / Rakan Sebaya",
-  "Buli / Mangsa Buli",
-  "Masalah Tingkah Laku",
-  "Masalah Keyakinan Diri",
-  "Masalah Kerjaya / Masa Depan",
-  "Penyalahgunaan Dadah / Vape",
-  "Masalah Agama / Moral",
-  "Keganasan / Penderaan",
-  "Masalah Perkahwinan / Percintaan",
+  "Masalah Akademik & Pembelajaran",
+  "Masalah Tingkah Laku & Disiplin",
+  "Masalah Keluarga & Ibu Bapa",
+  "Masalah Emosi & Perasaan",
+  "Masalah Hubungan Sosial & Rakan Sebaya",
+  "Buli — Pelaku",
+  "Buli — Mangsa",
+  "Masalah Kehadiran & Ponteng",
+  "Masalah Keyakinan & Harga Diri",
+  "Masalah Penyesuaian Diri",
+  "Masalah Kecurian / Penyelewengan Harta",
+  "Masalah Kebersihan & Kesihatan Diri",
+  "Bantuan Psikologikal & Trauma",
+  "Krisis / Kecemasan",
+  "Program Bimbingan (Kerjaya Awal)",
   "Lain-lain",
 ];
+const KS_ACCENT = "#0ea5e9";
+const BULAN_LABEL = ["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ogos","Sep","Okt","Nov","Dis"];
 
 function HemKaunseling() {
   const TABS_KS = ['💬 Rekod Sesi','📊 Analisis','🔔 Tindak Lanjut'];
@@ -5416,6 +5420,12 @@ function HemKaunseling() {
 
   const badgeMap = { "Selesai":"b-green","Dalam Proses":"b-blue","Dirujuk":"b-red" };
 
+  const fmtTarikh = (t) => {
+    if (!t) return '—';
+    const d = new Date(t);
+    return isNaN(d) ? t : d.toLocaleDateString('ms-MY',{day:'numeric',month:'short',year:'numeric'});
+  };
+
   const load = async () => {
     setLoading(true);
     const { data: rows } = await supabase.from('hem_kaunseling').select('*').order('tarikh', { ascending: false });
@@ -5437,10 +5447,14 @@ function HemKaunseling() {
     if (!ok) return;
     toast("Rekod dikemaskini!", "success"); setEditItem(null); load();
   };
-  const handleDel = async (id) => {
-    if (!window.confirm("Padam rekod sesi kaunseling ini?")) return;
+  const handleDel = async (id, nama) => {
+    if (!window.confirm(`Padam sesi kaunseling ${nama}?`)) return;
     const ok = await dbRun(() => supabase.from('hem_kaunseling').delete().eq('id', id));
-    if (ok) { toast("Rekod dipadam.", "success"); setData(d => d.filter(r => r.id !== id)); }
+    if (ok) { toast("Rekod dipadam.", "info"); setData(d => d.filter(r => r.id !== id)); }
+  };
+  const quickStatus = async (id, status) => {
+    const ok = await dbRun(() => supabase.from('hem_kaunseling').update({ status }).eq('id', id));
+    if (ok) { setData(d => d.map(r => r.id===id ? {...r, status} : r)); toast(`Status: ${status}`, "success"); }
   };
 
   const filtered = data.filter(r => {
@@ -5452,11 +5466,17 @@ function HemKaunseling() {
     return matchQ && matchK && matchT && matchS && matchJ;
   });
 
-  const pending = data.filter(r => r.status === "Dalam Proses" || r.status === "Dirujuk");
+  const pending = data.filter(r => r.status === "Dalam Proses" || r.status === "Dirujuk")
+    .sort((a,b) => { if(a.status==="Dirujuk"&&b.status!=="Dirujuk") return -1; if(b.status==="Dirujuk"&&a.status!=="Dirujuk") return 1; return new Date(a.tarikh)-new Date(b.tarikh); });
+
   const selesai = data.filter(r => r.status === "Selesai").length;
   const dalamProses = data.filter(r => r.status === "Dalam Proses").length;
   const dirujuk = data.filter(r => r.status === "Dirujuk").length;
   const kaunselorList = [...new Set(data.map(r=>r.kaunselor).filter(Boolean))].sort();
+
+  // murid berulang (>1 sesi)
+  const muridCount = data.reduce((a,r)=>{ if(r.nama_murid) a[r.nama_murid]=(a[r.nama_murid]||0)+1; return a; },{});
+  const muridBerulang = Object.entries(muridCount).filter(([,c])=>c>1).sort((a,b)=>b[1]-a[1]).slice(0,10);
 
   const byJenis = Object.entries(
     data.reduce((a,r)=>{ a[r.jenis_kes||'Lain-lain']=(a[r.jenis_kes||'Lain-lain']||0)+1; return a; },{})
@@ -5469,21 +5489,23 @@ function HemKaunseling() {
   const byKelas = KELAS_LIST.map(k=>({ kelas:k, count:data.filter(r=>r.kelas===k).length }))
     .filter(x=>x.count>0).sort((a,b)=>b.count-a.count).slice(0,10);
 
+  // monthly trend — current year
+  const curYear = new Date().getFullYear();
+  const byBulan = BULAN_LABEL.map((b,i)=>({
+    bulan:b,
+    count: data.filter(r=>{ const d=new Date(r.tarikh); return !isNaN(d)&&d.getFullYear()===curYear&&d.getMonth()===i; }).length
+  }));
+  const maxBulan = Math.max(...byBulan.map(b=>b.count), 1);
+
   const maxJ = byJenis[0]?.[1]||1;
   const maxK = byKaunselor[0]?.[1]||1;
   const hasFilter = q||filterKelas||filterTahun||filterStatus||filterJenis;
 
-  const fmtTarikh = (t) => {
-    if (!t) return '—';
-    const d = new Date(t);
-    return isNaN(d) ? t : d.toLocaleDateString('ms-MY',{day:'numeric',month:'short',year:'numeric'});
-  };
-
   const TS = (i) => ({
     padding:'7px 18px', borderRadius:20,
-    border:`2px solid ${subtab===i?'#0ea5e9':'var(--divider)'}`,
+    border:`2px solid ${subtab===i?KS_ACCENT:'var(--divider)'}`,
     cursor:'pointer', fontWeight:800,
-    background: subtab===i?'#0ea5e9':'transparent',
+    background: subtab===i?KS_ACCENT:'transparent',
     color: subtab===i?'#fff':'var(--text2)', fontSize:13, transition:'all 0.15s',
   });
 
@@ -5491,16 +5513,16 @@ function HemKaunseling() {
     <form onSubmit={onSubmit}>
       <div className="form-row">
         <div className="form-field">
-          <label className="form-label">Nama Murid</label>
+          <label className="form-label">Nama Murid *</label>
           <input className="form-input" required value={val.nama_murid}
             onChange={e=>set(f=>({...f,nama_murid:e.target.value}))} placeholder="Nama penuh murid"/>
         </div>
         <div className="form-field">
-          <label className="form-label">Kelas</label>
+          <label className="form-label">Kelas *</label>
           <select className="form-input" required value={val.kelas} onChange={e=>set(f=>({...f,kelas:e.target.value}))}>
             <option value="">— Pilih Kelas —</option>
             {[1,2,3,4,5,6].map(t=>(
-              <optgroup key={t} label={`── Tahun ${t} ──`}>
+              <optgroup key={t} label={`Tahun ${t}`}>
                 {KELAS_NAMA_LIST.map(n=><option key={n} value={`Tahun ${t} ${n}`}>Tahun {t} {n}</option>)}
               </optgroup>
             ))}
@@ -5509,7 +5531,7 @@ function HemKaunseling() {
       </div>
       <div className="form-row">
         <div className="form-field">
-          <label className="form-label">Tarikh Sesi</label>
+          <label className="form-label">Tarikh Sesi *</label>
           <input className="form-input" type="date" required value={val.tarikh}
             onChange={e=>set(f=>({...f,tarikh:e.target.value}))}/>
         </div>
@@ -5525,7 +5547,7 @@ function HemKaunseling() {
         </div>
       </div>
       <div className="form-field">
-        <label className="form-label">Jenis Kes</label>
+        <label className="form-label">Jenis Kes *</label>
         <select className="form-input" required value={val.jenis_kes} onChange={e=>set(f=>({...f,jenis_kes:e.target.value}))}>
           <option value="">— Pilih Jenis Kes —</option>
           {JENIS_KES_KAUNSELING.map(k=><option key={k}>{k}</option>)}
@@ -5539,43 +5561,44 @@ function HemKaunseling() {
           <option>Dirujuk</option>
         </select>
       </div>
-      <button className="btn-primary" type="submit">{btnLabel}</button>
+      <button className="btn-primary" type="submit" style={{background:KS_ACCENT}}>{btnLabel}</button>
     </form>
   );
 
-  const MuridRow = ({ r, showActions=true }) => {
+  const SesiRow = ({ r, i, showActions=true }) => {
     const tc = TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1];
     return (
-      <tr key={r.id}>
+      <tr style={r.status==='Dirujuk'?{background:'#fef2f2'}:r.status==='Dalam Proses'?{background:'#f0f9ff'}:{}}>
+        {i !== undefined && <td style={{fontWeight:900,color:KS_ACCENT,fontSize:12}}>{i+1}</td>}
         <td style={{fontWeight:800}}>{r.nama_murid}</td>
-        <td>
-          <span style={{padding:'2px 8px',borderRadius:8,fontSize:11,fontWeight:700,background:tc+'18',color:tc}}>
-            {r.kelas}
-          </span>
-        </td>
+        <td><span style={{padding:'2px 8px',borderRadius:8,fontSize:11,fontWeight:700,background:tc+'18',color:tc}}>{r.kelas||'—'}</span></td>
         <td style={{color:'var(--text3)',whiteSpace:'nowrap',fontSize:12}}>{fmtTarikh(r.tarikh)}</td>
-        <td>
-          <span style={{padding:'2px 9px',borderRadius:8,fontSize:11,fontWeight:700,background:'#eff6ff',color:'#2563eb'}}>
-            {r.jenis_kes}
-          </span>
-        </td>
-        <td>
-          {r.kaunselor
-            ? <span style={{padding:'2px 9px',borderRadius:8,fontSize:11,fontWeight:700,background:'var(--accent-lt)',color:'var(--accent)'}}>{r.kaunselor}</span>
-            : <span style={{color:'var(--text3)'}}>—</span>}
-        </td>
+        <td><span style={{padding:'2px 9px',borderRadius:8,fontSize:11,fontWeight:700,background:'#eff6ff',color:'#2563eb',display:'block',maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.jenis_kes||'—'}</span></td>
+        <td style={{fontSize:12,color:'var(--text2)'}}>{r.kaunselor||'—'}</td>
         <td><span className={`badge ${badgeMap[r.status]||'b-gray'}`}>{r.status}</span></td>
         {showActions && (
           <td>
             <div style={{display:'flex',gap:4}}>
               <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditItem({...r})}>✏️</button>
-              <button className="btn-del" onClick={()=>handleDel(r.id)}>🗑</button>
+              <button className="btn-del" onClick={()=>handleDel(r.id, r.nama_murid)}>🗑</button>
+            </div>
+          </td>
+        )}
+        {!showActions && (
+          <td>
+            <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+              {r.status!=="Selesai" && <button onClick={()=>quickStatus(r.id,"Selesai")} style={{padding:'3px 7px',fontSize:10,background:'#f0fdf4',border:'1px solid #86efac',borderRadius:6,cursor:'pointer',fontWeight:700,color:'#16a34a'}}>✓ Selesai</button>}
+              {r.status!=="Dirujuk" && <button onClick={()=>quickStatus(r.id,"Dirujuk")} style={{padding:'3px 7px',fontSize:10,background:'#fef2f2',border:'1px solid #fca5a5',borderRadius:6,cursor:'pointer',fontWeight:700,color:'#dc2626'}}>↗ Rujuk</button>}
+              <button className="btn-add" style={{padding:'3px 7px',fontSize:10}} onClick={()=>setEditItem({...r})}>✏️</button>
             </div>
           </td>
         )}
       </tr>
     );
   };
+
+  const thead8 = (<thead><tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Jenis Kes</th><th>Kaunselor</th><th>Status</th><th></th></tr></thead>);
+  const thead7 = (<thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Jenis Kes</th><th>Kaunselor</th><th>Status</th><th></th></tr></thead>);
 
   return (
     <KurPage title="Bimbingan & Kaunseling" sub="HEM · SK Darau, Kota Kinabalu"
@@ -5586,17 +5609,15 @@ function HemKaunseling() {
         { ico:"🔔", val:dirujuk, lbl:"Dirujuk" },
       ]}>
 
-      {/* Tab bar */}
-      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:18}}>
+      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:18,alignItems:'center'}}>
         {TABS_KS.map((t,i)=><button key={i} style={TS(i)} onClick={()=>setSubtab(i)}>{t}</button>)}
-        <button className="btn-add" style={{marginLeft:'auto'}} onClick={()=>setShowAdd(true)}>+ Tambah Sesi</button>
+        <button className="btn-add" style={{marginLeft:'auto',background:KS_ACCENT}} onClick={()=>setShowAdd(true)}>+ Tambah Sesi</button>
       </div>
 
       {loading ? <div className="loading">⏳ Memuatkan…</div> : (<>
 
         {/* ── TAB 0: REKOD SESI ── */}
         {subtab===0&&(<>
-          {/* Search & filter */}
           <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10,alignItems:'center'}}>
             <div className="kur-search-wrap" style={{flex:1,minWidth:180,position:'relative'}}>
               <span className="kur-search-ico">🔍</span>
@@ -5631,32 +5652,23 @@ function HemKaunseling() {
               </button>
             )}
           </div>
-
-          {/* Result info */}
-          <div style={{fontSize:12,color:'var(--text3)',fontWeight:700,marginBottom:8}}>
-            {filtered.length} rekod
-            {filterKelas&&<span style={{marginLeft:8,padding:'2px 10px',borderRadius:20,background:'#eff6ff',color:'#0ea5e9',fontSize:11}}>📌 {filterKelas}</span>}
-            {filterTahun&&<span style={{marginLeft:8,padding:'2px 10px',borderRadius:20,background:'#eff6ff',color:'#0ea5e9',fontSize:11}}>📌 Tahun {filterTahun}</span>}
-            {filterJenis&&<span style={{marginLeft:8,padding:'2px 10px',borderRadius:20,background:'#eff6ff',color:'#2563eb',fontSize:11}}>📌 {filterJenis}</span>}
+          <div style={{fontSize:12,color:'var(--text3)',fontWeight:700,marginBottom:8,display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+            <span>{filtered.length} rekod</span>
+            {filterKelas&&<span style={{padding:'2px 10px',borderRadius:20,background:'#eff6ff',color:KS_ACCENT,fontSize:11}}>📌 {filterKelas}</span>}
+            {filterTahun&&<span style={{padding:'2px 10px',borderRadius:20,background:'#eff6ff',color:KS_ACCENT,fontSize:11}}>📌 Tahun {filterTahun}</span>}
+            {filterJenis&&<span style={{padding:'2px 10px',borderRadius:20,background:'#eff6ff',color:'#2563eb',fontSize:11}}>📌 {filterJenis}</span>}
+            {filterStatus&&<span style={{padding:'2px 10px',borderRadius:20,background:'#eff6ff',color:'#16a34a',fontSize:11}}>📌 {filterStatus}</span>}
           </div>
-
           <div className="kur-table-wrap">
             <table className="kur-table">
-              <thead>
-                <tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Jenis Kes</th><th>Kaunselor</th><th>Status</th><th style={{width:80}}></th></tr>
-              </thead>
+              {thead8}
               <tbody>
                 {filtered.length===0&&(
                   <tr><td colSpan={8} style={{textAlign:'center',color:'var(--text3)',padding:32}}>
                     {hasFilter ? '🔍 Tiada rekod sepadan.' : '📭 Tiada sesi. Klik "+ Tambah Sesi" untuk mula.'}
                   </td></tr>
                 )}
-                {filtered.map((r,i)=>(
-                  <tr key={r.id}>
-                    <td style={{fontWeight:900,color:'#0ea5e9',fontSize:12}}>{i+1}</td>
-                    <MuridRow r={r}/>
-                  </tr>
-                ))}
+                {filtered.map((r,i)=><SesiRow key={r.id} r={r} i={i}/>)}
               </tbody>
             </table>
           </div>
@@ -5664,64 +5676,73 @@ function HemKaunseling() {
 
         {/* ── TAB 1: ANALISIS ── */}
         {subtab===1&&(<>
-          {/* Status summary */}
           <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:18}}>
-            {[['✅','Selesai',selesai,'#16a34a'],['⏳','Dalam Proses',dalamProses,'#0ea5e9'],['🔔','Dirujuk',dirujuk,'#dc2626']].map(([ico,lbl,val,clr])=>(
+            {[['✅','Selesai',selesai,'#16a34a'],['⏳','Dalam Proses',dalamProses,KS_ACCENT],['🔔','Dirujuk',dirujuk,'#dc2626']].map(([ico,lbl,val,clr])=>(
               <div key={lbl} style={{background:`${clr}10`,border:`1.5px solid ${clr}30`,borderRadius:16,padding:'16px 14px',textAlign:'center'}}>
                 <div style={{fontSize:26,marginBottom:4}}>{ico}</div>
                 <div style={{fontFamily:"'Fredoka One',cursive",fontSize:32,color:clr,lineHeight:1}}>{val}</div>
                 <div style={{fontSize:12,color:'var(--text3)',fontWeight:700,marginTop:4}}>{lbl}</div>
+                <div style={{fontSize:10,color:'var(--text3)'}}>{data.length?Math.round(val/data.length*100):0}%</div>
               </div>
             ))}
           </div>
 
+          {/* Monthly trend */}
+          <div className="kur-card" style={{padding:16,marginBottom:16}}>
+            <div style={{fontWeight:700,fontSize:13,marginBottom:14}}>📈 Trend Sesi Bulanan {curYear}</div>
+            <div style={{display:'flex',gap:4,alignItems:'flex-end',height:80}}>
+              {byBulan.map(({bulan,count})=>(
+                <div key={bulan} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
+                  <div style={{fontSize:9,color:'var(--text3)',fontWeight:700}}>{count||''}</div>
+                  <div style={{width:'100%',background:KS_ACCENT,borderRadius:'4px 4px 0 0',height:`${count?(count/maxBulan)*60+6:2}px`,opacity:count?0.85:0.15,transition:'height 0.4s'}}></div>
+                  <div style={{fontSize:8,color:'var(--text3)',fontWeight:700}}>{bulan}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
-            {/* Jenis kes */}
             <div style={{background:'var(--surface)',border:'1.5px solid var(--divider)',borderRadius:16,padding:18}}>
-              <p style={{fontWeight:800,fontSize:14,marginBottom:14}}>💬 Jenis Kes Tertinggi</p>
-              {byJenis.length===0&&<p style={{color:'var(--text3)',fontSize:13}}>Tiada data.</p>}
+              <div style={{fontWeight:800,fontSize:13,marginBottom:14}}>💬 Jenis Kes Tertinggi</div>
+              {byJenis.length===0&&<div style={{color:'var(--text3)',fontSize:13}}>Tiada data.</div>}
               {byJenis.map(([k,c])=>(
                 <div key={k} style={{marginBottom:10}}>
                   <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4,fontWeight:700}}>
                     <span style={{flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',paddingRight:8}}>{k}</span>
-                    <span style={{color:'#0ea5e9',fontWeight:900,flexShrink:0}}>{c} sesi</span>
+                    <span style={{color:KS_ACCENT,fontWeight:900,flexShrink:0}}>{c}</span>
                   </div>
-                  <div style={{background:'var(--divider)',borderRadius:99,height:10,overflow:'hidden'}}>
-                    <div style={{height:'100%',background:'#0ea5e9',width:`${(c/maxJ)*100}%`,borderRadius:99,opacity:0.75,transition:'width 0.6s'}}/>
+                  <div style={{background:'var(--divider)',borderRadius:99,height:8,overflow:'hidden'}}>
+                    <div style={{height:'100%',background:KS_ACCENT,width:`${(c/maxJ)*100}%`,borderRadius:99,transition:'width 0.6s'}}/>
                   </div>
                 </div>
               ))}
             </div>
-
-            {/* Kaunselor */}
             <div style={{background:'var(--surface)',border:'1.5px solid var(--divider)',borderRadius:16,padding:18}}>
-              <p style={{fontWeight:800,fontSize:14,marginBottom:14}}>👩‍💼 Sesi Mengikut Kaunselor</p>
-              {byKaunselor.length===0&&<p style={{color:'var(--text3)',fontSize:13}}>Tiada data.</p>}
+              <div style={{fontWeight:800,fontSize:13,marginBottom:14}}>👩‍💼 Sesi Mengikut Kaunselor</div>
+              {byKaunselor.length===0&&<div style={{color:'var(--text3)',fontSize:13}}>Tiada data.</div>}
               {byKaunselor.map(([k,c])=>(
                 <div key={k} style={{marginBottom:10}}>
                   <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4,fontWeight:700}}>
-                    <span>{k}</span>
-                    <span style={{color:'var(--accent)',fontWeight:900}}>{c}</span>
+                    <span>{k}</span><span style={{color:'var(--accent)',fontWeight:900}}>{c}</span>
                   </div>
-                  <div style={{background:'var(--divider)',borderRadius:99,height:10,overflow:'hidden'}}>
-                    <div style={{height:'100%',background:'var(--accent)',width:`${(c/maxK)*100}%`,borderRadius:99,opacity:0.65,transition:'width 0.6s'}}/>
+                  <div style={{background:'var(--divider)',borderRadius:99,height:8,overflow:'hidden'}}>
+                    <div style={{height:'100%',background:'var(--accent)',width:`${(c/maxK)*100}%`,borderRadius:99,transition:'width 0.6s'}}/>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Sesi mengikut kelas */}
           {byKelas.length>0&&(
-            <div style={{background:'var(--surface)',border:'1.5px solid var(--divider)',borderRadius:16,padding:18}}>
-              <p style={{fontWeight:800,fontSize:14,marginBottom:14}}>🏫 Sesi Mengikut Kelas</p>
+            <div style={{background:'var(--surface)',border:'1.5px solid var(--divider)',borderRadius:16,padding:18,marginBottom:16}}>
+              <div style={{fontWeight:800,fontSize:13,marginBottom:14}}>🏫 Sesi Mengikut Kelas</div>
               {byKelas.map(({kelas,count})=>{
                 const tc = TAHUN_COLORS[(parseInt(kelas?.split(' ')[1])||1)-1];
                 return(
                   <div key={kelas} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
                     <span style={{fontSize:12,fontWeight:700,minWidth:130,color:tc}}>{kelas}</span>
-                    <div style={{flex:1,background:'var(--divider)',borderRadius:99,height:10,overflow:'hidden'}}>
-                      <div style={{height:'100%',background:tc,width:`${(count/byKelas[0].count)*100}%`,borderRadius:99,opacity:0.7,transition:'width 0.6s'}}/>
+                    <div style={{flex:1,background:'var(--divider)',borderRadius:99,height:8,overflow:'hidden'}}>
+                      <div style={{height:'100%',background:tc,width:`${(count/byKelas[0].count)*100}%`,borderRadius:99,transition:'width 0.6s'}}/>
                     </div>
                     <span style={{fontSize:12,fontWeight:800,minWidth:24,textAlign:'right',color:tc}}>{count}</span>
                   </div>
@@ -5729,12 +5750,27 @@ function HemKaunseling() {
               })}
             </div>
           )}
+
+          {muridBerulang.length>0&&(
+            <div style={{background:'#fffbeb',border:'1.5px solid #fde68a',borderRadius:16,padding:18}}>
+              <div style={{fontWeight:800,fontSize:13,marginBottom:12,color:'#d97706'}}>⚠️ Murid Berulang (lebih 1 sesi)</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                {muridBerulang.map(([nama,count])=>(
+                  <div key={nama} style={{background:'#fff',border:'1.5px solid #fde68a',borderRadius:10,padding:'6px 12px',display:'flex',gap:8,alignItems:'center'}}>
+                    <span style={{fontWeight:700,fontSize:12}}>{nama}</span>
+                    <span style={{background:'#d97706',color:'#fff',borderRadius:99,padding:'1px 8px',fontSize:11,fontWeight:900}}>{count} sesi</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>)}
 
         {/* ── TAB 2: TINDAK LANJUT ── */}
         {subtab===2&&(<>
-          <div style={{marginBottom:14,padding:'10px 14px',background:'#eff6ff',border:'1.5px solid #bfdbfe',borderRadius:12,fontSize:13,color:'#1d4ed8',fontWeight:700}}>
-            🔔 Sesi berstatus <strong>Dalam Proses</strong> atau <strong>Dirujuk</strong> yang memerlukan tindakan selanjutnya. ({pending.length} sesi)
+          <div style={{marginBottom:14,padding:'10px 14px',background:'#eff6ff',border:'1.5px solid #bfdbfe',borderRadius:12,fontSize:13,color:'#1d4ed8',fontWeight:700,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span>🔔 Sesi berstatus <strong>Dalam Proses</strong> atau <strong>Dirujuk</strong> yang perlu tindakan. ({pending.length} sesi)</span>
+            <span style={{fontSize:11,fontWeight:700,color:KS_ACCENT}}>{dirujuk} Dirujuk · {dalamProses} Dalam Proses</span>
           </div>
           {pending.length===0 ? (
             <div style={{textAlign:'center',padding:48,color:'var(--text3)'}}>
@@ -5745,27 +5781,9 @@ function HemKaunseling() {
           ) : (
             <div className="kur-table-wrap">
               <table className="kur-table">
-                <thead>
-                  <tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Jenis Kes</th><th>Kaunselor</th><th>Status</th><th style={{width:60}}></th></tr>
-                </thead>
+                {thead7}
                 <tbody>
-                  {pending.map(r=>(
-                    <tr key={r.id} style={{background: r.status==='Dirujuk'?'#fef2f2':''}}>
-                      <td style={{fontWeight:800}}>{r.nama_murid}</td>
-                      <td>
-                        <span style={{padding:'2px 8px',borderRadius:8,fontSize:11,fontWeight:700,
-                          background:TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1]+'18',
-                          color:TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1]}}>
-                          {r.kelas}
-                        </span>
-                      </td>
-                      <td style={{color:'var(--text3)',whiteSpace:'nowrap',fontSize:12}}>{fmtTarikh(r.tarikh)}</td>
-                      <td><span style={{padding:'2px 9px',borderRadius:8,fontSize:11,fontWeight:700,background:'#eff6ff',color:'#2563eb'}}>{r.jenis_kes}</span></td>
-                      <td style={{fontSize:12,color:'var(--text2)'}}>{r.kaunselor||'—'}</td>
-                      <td><span className={`badge ${badgeMap[r.status]||'b-gray'}`}>{r.status}</span></td>
-                      <td><button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditItem({...r})}>✏️</button></td>
-                    </tr>
-                  ))}
+                  {pending.map(r=><SesiRow key={r.id} r={r} showActions={false}/>)}
                 </tbody>
               </table>
             </div>
@@ -5775,12 +5793,12 @@ function HemKaunseling() {
       </>)}
 
       {showAdd&&(
-        <Modal title="➕ Tambah Sesi Kaunseling" onClose={()=>{setShowAdd(false);setForm(blank);}}>
+        <Modal title="Tambah Sesi Kaunseling" onClose={()=>{setShowAdd(false);setForm(blank);}}>
           <KaunselingForm val={form} set={setForm} onSubmit={handleAdd} btnLabel="✅ Simpan Sesi"/>
         </Modal>
       )}
       {editItem&&(
-        <Modal title={`✏️ Edit — ${editItem.nama_murid}`} onClose={()=>setEditItem(null)}>
+        <Modal title={`Edit — ${editItem.nama_murid}`} onClose={()=>setEditItem(null)}>
           <KaunselingForm val={editItem} set={setEditItem} onSubmit={handleEdit} btnLabel="💾 Simpan Perubahan"/>
         </Modal>
       )}
