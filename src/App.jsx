@@ -6084,14 +6084,7 @@ function HemKesihatan() {
 
 // ─── HEM 5. BANTUAN PELAJARAN ─────────────────────────────────────────────────
 const BANTUAN_TABS = ['📊 Statistik','👦 Murid','📋 Permohonan','🍱 RMT','⚙️ Jenis Bantuan'];
-const BANTUAN_KELAS = [
-  'Tahun 1 Unik','Tahun 1 Aplikasi','Tahun 1 Revolusi','Tahun 1 Aspirasi','Tahun 1 Dedikasi',
-  'Tahun 2 Unik','Tahun 2 Aplikasi','Tahun 2 Revolusi','Tahun 2 Aspirasi','Tahun 2 Dedikasi',
-  'Tahun 3 Unik','Tahun 3 Aplikasi','Tahun 3 Revolusi','Tahun 3 Aspirasi','Tahun 3 Dedikasi',
-  'Tahun 4 Unik','Tahun 4 Aplikasi','Tahun 4 Revolusi','Tahun 4 Aspirasi','Tahun 4 Dedikasi',
-  'Tahun 5 Unik','Tahun 5 Aplikasi','Tahun 5 Revolusi','Tahun 5 Aspirasi','Tahun 5 Dedikasi',
-  'Tahun 6 Unik','Tahun 6 Aplikasi','Tahun 6 Revolusi','Tahun 6 Aspirasi','Tahun 6 Dedikasi',
-];
+const BP_ACCENT = '#7c3aed';
 
 function autoKategori(pendapatan) {
   const p = parseFloat(pendapatan) || 0;
@@ -6111,6 +6104,7 @@ function HemBantuan() {
   const [filterTahun, setFilterTahun]   = useState(new Date().getFullYear().toString());
   const [filterStatus, setFilterStatus] = useState('');
   const [q, setQ]                   = useState('');
+  const [qRmt, setQRmt]             = useState('');
 
   const [showAddMurid, setShowAddMurid] = useState(false);
   const [editMurid, setEditMurid]       = useState(null);
@@ -6154,9 +6148,10 @@ function HemBantuan() {
     if (!ok) return;
     toast('Dikemaskini!', 'success'); setEditMurid(null); load();
   };
-  const handleDelMurid = async (id) => {
+  const handleDelMurid = async (id, nama) => {
+    if (!window.confirm(`Padam murid "${nama}" daripada senarai?`)) return;
     const ok = await dbRun(() => supabase.from('bantuan_murid').update({ status:'PADAM' }).eq('id', id));
-    if (ok) { setMurid(d => d.filter(r => r.id !== id)); toast('Dipadam.', 'success'); }
+    if (ok) { setMurid(d => d.filter(r => r.id !== id)); toast('Dipadam.', 'info'); }
   };
 
   // ── PERMOHONAN
@@ -6176,8 +6171,9 @@ function HemBantuan() {
     if (ok) { load(); toast('Status dikemaskini!', 'success'); }
   };
   const handleDelPerm = async (id) => {
+    if (!window.confirm('Padam permohonan ini?')) return;
     const ok = await dbRun(() => supabase.from('bantuan_permohonan').update({ status:'PADAM' }).eq('id', id));
-    if (ok) { setPermohonan(d => d.filter(r => r.id !== id)); toast('Dipadam.', 'success'); }
+    if (ok) { setPermohonan(d => d.filter(r => r.id !== id)); toast('Dipadam.', 'info'); }
   };
 
   // ── RMT
@@ -6190,8 +6186,9 @@ function HemBantuan() {
     if (ok) { load(); toast('Didaftarkan RMT!', 'success'); }
   };
   const handleDelRMT = async (id) => {
+    if (!window.confirm('Padam rekod RMT ini?')) return;
     const ok = await dbRun(() => supabase.from('bantuan_rmt').update({ status:'PADAM' }).eq('id', id));
-    if (ok) { setRmt(d => d.filter(r => r.id !== id)); toast('Dipadam.', 'success'); }
+    if (ok) { setRmt(d => d.filter(r => r.id !== id)); toast('Dipadam.', 'info'); }
   };
 
   // ── JENIS
@@ -6208,9 +6205,10 @@ function HemBantuan() {
     if (!ok) return;
     toast('Dikemaskini!', 'success'); setEditJenis(null); load();
   };
-  const handleDelJenis = async (id) => {
+  const handleDelJenis = async (id, nama) => {
+    if (!window.confirm(`Padam jenis bantuan "${nama}"?`)) return;
     const ok = await dbRun(() => supabase.from('bantuan_jenis').update({ status:'PADAM' }).eq('id', id));
-    if (ok) { setJenisList(d => d.filter(r => r.id !== id)); toast('Dipadam.', 'success'); }
+    if (ok) { setJenisList(d => d.filter(r => r.id !== id)); toast('Dipadam.', 'info'); }
   };
 
   // ── COMPUTED
@@ -6220,6 +6218,8 @@ function HemBantuan() {
   const rmtTahun = rmt.filter(r => r.tahun === filterTahun);
   const lulusCount = permohonan.filter(r => r.status === 'Lulus' || r.status === 'Dibayar').length;
   const mohonCount = permohonan.filter(r => r.status === 'Mohon').length;
+  const dibayarCount = permohonan.filter(r => r.status === 'Dibayar').length;
+  const totalDibayar = permohonan.filter(r => r.status === 'Dibayar').reduce((s,r) => s + (parseFloat(r.jumlah)||0), 0);
 
   const filtMurid = murid.filter(r =>
     (!filterKelas || r.kelas === filterKelas) &&
@@ -6230,18 +6230,35 @@ function HemBantuan() {
     (!filterKelas  || r.kelas === filterKelas) &&
     (!filterStatus || r.status === filterStatus)
   );
+  const filtRmt = rmtTahun.filter(r =>
+    (!filterKelas || r.kelas === filterKelas) &&
+    (!qRmt || r.nama_murid?.toLowerCase().includes(qRmt.toLowerCase()) || (r.no_daftar||'').toLowerCase().includes(qRmt.toLowerCase()))
+  );
+  const totalJumlahFilt = filtPerm.reduce((s,r) => s+(parseFloat(r.jumlah)||0), 0);
 
   const katBadge    = k => k === 'B40' ? 'b-red' : k === 'M40' ? 'b-yellow' : 'b-gray';
   const statusBadge = s => s === 'Lulus' ? 'b-green' : s === 'Dibayar' ? 'b-blue' : s === 'Ditolak' ? 'b-red' : 'b-yellow';
   const fmtRM       = v => 'RM ' + parseFloat(v||0).toLocaleString('ms-MY', { minimumFractionDigits:2 });
+  const fmtTarikh   = t => { if (!t) return '—'; const d = new Date(t); return isNaN(d)?t:d.toLocaleDateString('ms-MY',{day:'numeric',month:'short',year:'numeric'}); };
 
   const tabStyle = (i) => ({
     padding:'8px 14px', borderRadius:10, fontWeight:900, fontSize:12, cursor:'pointer',
     border:'2.5px solid', fontFamily:"'Nunito',sans-serif",
-    background: tab===i ? 'var(--accent)' : 'var(--surface)',
-    borderColor: tab===i ? 'var(--accent)' : 'var(--border)',
+    background: tab===i ? BP_ACCENT : 'var(--surface)',
+    borderColor: tab===i ? BP_ACCENT : 'var(--border)',
     color: tab===i ? '#fff' : 'var(--text)', transition:'all 0.15s',
   });
+
+  const KelasSelect = ({ val, set, field='kelas', required=false }) => (
+    <select className="form-input" required={required} value={val[field]||''} onChange={e=>set(f=>({...f,[field]:e.target.value}))}>
+      <option value="">— Pilih Kelas —</option>
+      {[1,2,3,4,5,6].map(t=>(
+        <optgroup key={t} label={`Tahun ${t}`}>
+          {KELAS_NAMA_LIST.map(n=><option key={n} value={`Tahun ${t} ${n}`}>Tahun {t} {n}</option>)}
+        </optgroup>
+      ))}
+    </select>
+  );
 
   const stats = [
     { ico:'👦', val:murid.length,  lbl:'Murid Berdaftar' },
@@ -6249,7 +6266,7 @@ function HemBantuan() {
     { ico:'🟡', val:m40,           lbl:'M40' },
     { ico:'🍱', val:rmtTahun.length, lbl:'RMT '+filterTahun },
     { ico:'📋', val:mohonCount,    lbl:'Menunggu Lulus' },
-    { ico:'✅', val:lulusCount,    lbl:'Diluluskan' },
+    { ico:'💰', val:dibayarCount,  lbl:'Telah Dibayar' },
   ];
 
   return (
@@ -6265,36 +6282,60 @@ function HemBantuan() {
           <div>
             <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:16}}>
               {[
-                { lbl:'B40  (≤ RM4,850)',   val:b40, color:'#dc2626', bg:'#fef2f2' },
-                { lbl:'M40  (≤ RM10,960)', val:m40, color:'#d97706', bg:'#fffbeb' },
-                { lbl:'T20  (> RM10,960)', val:t20, color:'#475569', bg:'#f8fafc' },
-              ].map((c,i) => {
-                const pct = murid.length ? Math.round(c.val/murid.length*100) : 0;
-                return (
-                  <div key={i} style={{background:c.bg, border:`2px solid ${c.color}30`, borderRadius:14, padding:'16px 12px', textAlign:'center'}}>
-                    <div style={{fontSize:26, fontFamily:"'Fredoka One',cursive", color:c.color}}>{c.val}</div>
-                    <div style={{fontSize:11, fontWeight:900, color:c.color, marginTop:2}}>{c.lbl}</div>
-                    <div style={{fontSize:10, color:'#94a3b8', marginTop:4}}>{pct}% daripada murid</div>
-                    <div style={{marginTop:8, height:5, borderRadius:99, background:`${c.color}20`}}>
-                      <div style={{height:'100%', borderRadius:99, background:c.color, width:`${pct}%`, transition:'width 0.5s'}}/>
-                    </div>
+                { lbl:'B40  (≤ RM4,850)',   val:b40, color:'#dc2626', bg:'#fef2f2', pct: murid.length?Math.round(b40/murid.length*100):0 },
+                { lbl:'M40  (≤ RM10,960)', val:m40, color:'#d97706', bg:'#fffbeb', pct: murid.length?Math.round(m40/murid.length*100):0 },
+                { lbl:'T20  (> RM10,960)', val:t20, color:'#475569', bg:'#f8fafc', pct: murid.length?Math.round(t20/murid.length*100):0 },
+              ].map((c,i) => (
+                <div key={i} style={{background:c.bg, border:`2px solid ${c.color}30`, borderRadius:14, padding:'16px 12px', textAlign:'center'}}>
+                  <div style={{fontSize:26, fontFamily:"'Fredoka One',cursive", color:c.color}}>{c.val}</div>
+                  <div style={{fontSize:11, fontWeight:900, color:c.color, marginTop:2}}>{c.lbl}</div>
+                  <div style={{fontSize:10, color:'#94a3b8', marginTop:4}}>{c.pct}% daripada murid</div>
+                  <div style={{marginTop:8, height:5, borderRadius:99, background:`${c.color}20`}}>
+                    <div style={{height:'100%', borderRadius:99, background:c.color, width:`${c.pct}%`, transition:'width 0.5s'}}/>
                   </div>
-                );
-              })}
+                </div>
+              ))}
+            </div>
+            <div style={{background:'var(--card2)',borderRadius:12,padding:'12px 16px',marginBottom:16,display:'flex',gap:24,flexWrap:'wrap'}}>
+              <div style={{textAlign:'center'}}>
+                <div style={{fontWeight:900,fontSize:20,color:BP_ACCENT}}>{fmtRM(totalDibayar)}</div>
+                <div style={{fontSize:11,color:'var(--text3)'}}>Jumlah Dibayar (semua tahun)</div>
+              </div>
+              <div style={{textAlign:'center'}}>
+                <div style={{fontWeight:900,fontSize:20,color:'#10b981'}}>{lulusCount}</div>
+                <div style={{fontSize:11,color:'var(--text3)'}}>Permohonan Diluluskan</div>
+              </div>
+              <div style={{textAlign:'center'}}>
+                <div style={{fontWeight:900,fontSize:20,color:'#f59e0b'}}>{mohonCount}</div>
+                <div style={{fontSize:11,color:'var(--text3)'}}>Menunggu Kelulusan</div>
+              </div>
+              <div style={{textAlign:'center'}}>
+                <div style={{fontWeight:900,fontSize:20,color:'#6366f1'}}>{rmtTahun.length}</div>
+                <div style={{fontSize:11,color:'var(--text3)'}}>Pelajar RMT {filterTahun}</div>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:8,marginBottom:8,alignItems:'center'}}>
+              <div style={{fontWeight:900, fontSize:13}}>📊 Permohonan Bantuan</div>
+              <select className="form-input" style={{maxWidth:100,marginBottom:0,fontSize:12}} value={filterTahun} onChange={e=>setFilterTahun(e.target.value)}>
+                {['2023','2024','2025','2026'].map(y=><option key={y}>{y}</option>)}
+              </select>
             </div>
             <div style={{background:'var(--surface)', border:'2px solid var(--border)', borderRadius:14, padding:16}}>
-              <div style={{fontWeight:900, fontSize:13, marginBottom:12}}>📊 Permohonan Bantuan {filterTahun}</div>
               {jenisList.length === 0 && <div style={{fontSize:12, color:'var(--text3)'}}>Tiada jenis bantuan. Tambah di tab ⚙️.</div>}
               {jenisList.map(j => {
                 const total = permohonan.filter(p => p.jenis_id===j.id && p.tahun===filterTahun).length;
                 const lu    = permohonan.filter(p => p.jenis_id===j.id && p.tahun===filterTahun && (p.status==='Lulus'||p.status==='Dibayar')).length;
+                const amt   = permohonan.filter(p => p.jenis_id===j.id && p.tahun===filterTahun && p.status==='Dibayar').reduce((s,p)=>s+(parseFloat(p.jumlah)||0),0);
                 return (
-                  <div key={j.id} style={{display:'flex', alignItems:'center', gap:8, marginBottom:10}}>
-                    <div style={{width:130, fontSize:12, fontWeight:800, flexShrink:0}}>{j.nama}</div>
+                  <div key={j.id} style={{display:'flex', alignItems:'center', gap:8, marginBottom:12}}>
+                    <div style={{width:140, fontSize:12, fontWeight:800, flexShrink:0}}>{j.nama}</div>
                     <div style={{flex:1, height:8, background:'var(--border)', borderRadius:99, overflow:'hidden'}}>
-                      <div style={{height:'100%', background:'var(--accent)', borderRadius:99, width:`${total?lu/total*100:0}%`}}/>
+                      <div style={{height:'100%', background:BP_ACCENT, borderRadius:99, width:`${total?lu/total*100:0}%`}}/>
                     </div>
-                    <div style={{fontSize:11, color:'var(--text3)', flexShrink:0, minWidth:40, textAlign:'right'}}>{lu}/{total}</div>
+                    <div style={{fontSize:11, color:'var(--text3)', flexShrink:0, textAlign:'right'}}>
+                      <span style={{fontWeight:800}}>{lu}/{total}</span>
+                      {amt>0 && <span style={{marginLeft:6,color:BP_ACCENT}}>{fmtRM(amt)}</span>}
+                    </div>
                   </div>
                 );
               })}
@@ -6306,34 +6347,38 @@ function HemBantuan() {
         {tab === 1 && (
           <div>
             <div className="kur-header" style={{flexWrap:'wrap', gap:8}}>
-              <button className="btn-add" onClick={() => { setFormMurid(blankMurid); setShowAddMurid(true); }}>+ Tambah Murid</button>
+              <button className="btn-add" style={{background:BP_ACCENT}} onClick={() => { setFormMurid(blankMurid); setShowAddMurid(true); }}>+ Tambah Murid</button>
               <div className="kur-search-wrap" style={{flex:1, minWidth:160}}>
                 <span className="kur-search-ico">🔍</span>
                 <input className="kur-search" placeholder="Cari nama / no. daftar…" value={q} onChange={e=>setQ(e.target.value)}/>
               </div>
               <select className="kur-select" value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}>
                 <option value="">Semua Kelas</option>
-                {BANTUAN_KELAS.map(k => <option key={k}>{k}</option>)}
+                {[1,2,3,4,5,6].flatMap(t=>KELAS_NAMA_LIST.map(n=><option key={`${t}${n}`} value={`Tahun ${t} ${n}`}>Tahun {t} {n}</option>))}
               </select>
+            </div>
+            <div style={{fontSize:11,color:'var(--text3)',marginBottom:8,fontWeight:700}}>
+              {filtMurid.length} murid · {filtMurid.filter(r=>r.kategori==='B40').length} B40 · {filtMurid.filter(r=>r.kategori==='M40').length} M40
             </div>
             <div className="kur-table-wrap">
               <table className="kur-table">
-                <thead><tr><th>No. Daftar</th><th>Nama</th><th>Kelas</th><th>Kategori</th><th>Pendapatan</th><th>Waris</th><th>Status</th><th></th></tr></thead>
+                <thead><tr><th>#</th><th>No. Daftar</th><th>Nama</th><th>Kelas</th><th>Kat.</th><th>Pendapatan</th><th>Waris / Tel</th><th>Status</th><th></th></tr></thead>
                 <tbody>
-                  {filtMurid.length === 0 && <tr><td colSpan={8} style={{textAlign:'center', color:'var(--text3)', padding:28}}>Tiada rekod.</td></tr>}
-                  {filtMurid.map(r => (
+                  {filtMurid.length === 0 && <tr><td colSpan={9} style={{textAlign:'center', color:'var(--text3)', padding:28}}>Tiada rekod.</td></tr>}
+                  {filtMurid.map((r,i) => (
                     <tr key={r.id}>
-                      <td style={{fontFamily:'monospace', fontSize:12}}>{r.no_daftar}</td>
+                      <td style={{color:'var(--text3)',fontSize:12}}>{i+1}</td>
+                      <td style={{fontFamily:'monospace', fontSize:12}}>{r.no_daftar||'—'}</td>
                       <td style={{fontWeight:800}}>{r.nama}</td>
-                      <td style={{color:'var(--text3)', fontSize:12}}>{r.kelas}</td>
+                      <td><span style={{background:TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1]+'18',color:TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1],borderRadius:8,padding:'2px 8px',fontSize:11,fontWeight:700}}>{r.kelas||'—'}</span></td>
                       <td><span className={`badge ${katBadge(r.kategori)}`}>{r.kategori||'—'}</span></td>
                       <td style={{fontSize:12}}>{fmtRM(r.pendapatan)}</td>
-                      <td style={{fontSize:12, color:'var(--text3)'}}>{r.nama_waris||'—'}</td>
+                      <td style={{fontSize:11, color:'var(--text3)'}}>{r.nama_waris||'—'}{r.no_tel?` · ${r.no_tel}`:''}</td>
                       <td><span className={`badge ${r.status==='Aktif'?'b-green':'b-gray'}`}>{r.status}</span></td>
                       <td style={{display:'flex', gap:4}}>
                         <button className="btn-add" style={{padding:'4px 8px', fontSize:11}} onClick={() => setEditMurid({...r})}>✏️</button>
                         <button className="btn-add" style={{padding:'4px 8px', fontSize:11, background:'#eff6ff', borderColor:'#bfdbfe'}} title="Daftar RMT" onClick={() => handleAddRMT(r.id)}>🍱</button>
-                        <button className="btn-del" onClick={() => handleDelMurid(r.id)}>🗑</button>
+                        <button className="btn-del" onClick={() => handleDelMurid(r.id, r.nama)}>🗑</button>
                       </td>
                     </tr>
                   ))}
@@ -6347,33 +6392,40 @@ function HemBantuan() {
         {tab === 2 && (
           <div>
             <div className="kur-header" style={{flexWrap:'wrap', gap:8}}>
-              <button className="btn-add" onClick={() => { setFormPerm(blankPerm); setShowAddPerm(true); }}>+ Tambah Permohonan</button>
-              <select className="kur-select" value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}>
-                <option value="">Semua Kelas</option>
-                {BANTUAN_KELAS.map(k => <option key={k}>{k}</option>)}
-              </select>
+              <button className="btn-add" style={{background:BP_ACCENT}} onClick={() => { setFormPerm(blankPerm); setShowAddPerm(true); }}>+ Tambah Permohonan</button>
               <select className="kur-select" value={filterTahun} onChange={e=>setFilterTahun(e.target.value)}>
                 {['2023','2024','2025','2026'].map(y => <option key={y}>{y}</option>)}
+              </select>
+              <select className="kur-select" value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}>
+                <option value="">Semua Kelas</option>
+                {[1,2,3,4,5,6].flatMap(t=>KELAS_NAMA_LIST.map(n=><option key={`${t}${n}`} value={`Tahun ${t} ${n}`}>Tahun {t} {n}</option>))}
               </select>
               <select className="kur-select" value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
                 <option value="">Semua Status</option>
                 {['Mohon','Lulus','Dibayar','Ditolak'].map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
+            {filtPerm.length>0 && (
+              <div style={{fontSize:11,color:'var(--text3)',marginBottom:8,fontWeight:700,display:'flex',gap:16}}>
+                <span>{filtPerm.length} rekod</span>
+                <span style={{color:BP_ACCENT}}>Jumlah: {fmtRM(totalJumlahFilt)}</span>
+              </div>
+            )}
             <div className="kur-table-wrap">
               <table className="kur-table">
-                <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Bantuan</th><th>Tahun</th><th>Jumlah</th><th>Status</th><th>Tarikh</th><th></th></tr></thead>
+                <thead><tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>Bantuan</th><th>Tahun</th><th>Jumlah</th><th>Status</th><th>Tarikh Mohon</th><th></th></tr></thead>
                 <tbody>
-                  {filtPerm.length === 0 && <tr><td colSpan={8} style={{textAlign:'center', color:'var(--text3)', padding:28}}>Tiada rekod.</td></tr>}
-                  {filtPerm.map(r => (
-                    <tr key={r.id}>
+                  {filtPerm.length === 0 && <tr><td colSpan={9} style={{textAlign:'center', color:'var(--text3)', padding:28}}>Tiada rekod.</td></tr>}
+                  {filtPerm.map((r,i) => (
+                    <tr key={r.id} style={r.status==='Ditolak'?{background:'#fef2f2'}:r.status==='Dibayar'?{background:'#f0fdf4'}:r.status==='Lulus'?{background:'#f0f9ff'}:{}}>
+                      <td style={{color:'var(--text3)',fontSize:12}}>{i+1}</td>
                       <td style={{fontWeight:800}}>{r.nama_murid}</td>
                       <td style={{fontSize:12, color:'var(--text3)'}}>{r.kelas}</td>
                       <td><span className="badge b-blue">{r.nama_bantuan}</span></td>
                       <td style={{fontSize:12}}>{r.tahun}</td>
-                      <td style={{fontSize:12, fontWeight:800}}>{fmtRM(r.jumlah)}</td>
+                      <td style={{fontSize:12, fontWeight:800,color:BP_ACCENT}}>{fmtRM(r.jumlah)}</td>
                       <td><span className={`badge ${statusBadge(r.status)}`}>{r.status}</span></td>
-                      <td style={{fontSize:11, color:'var(--text3)'}}>{r.tarikh_mohon||'—'}</td>
+                      <td style={{fontSize:11, color:'var(--text3)',whiteSpace:'nowrap'}}>{fmtTarikh(r.tarikh_mohon)}</td>
                       <td style={{display:'flex', gap:4, flexWrap:'wrap'}}>
                         {r.status === 'Mohon' && <>
                           <button className="btn-add" style={{padding:'3px 7px', fontSize:10, background:'#f0fdf4', borderColor:'#86efac'}} onClick={() => handleStatusPerm(r.id,'Lulus')}>✅ Lulus</button>
@@ -6401,10 +6453,14 @@ function HemBantuan() {
               </select>
               <select className="kur-select" value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}>
                 <option value="">Semua Kelas</option>
-                {BANTUAN_KELAS.map(k => <option key={k}>{k}</option>)}
+                {[1,2,3,4,5,6].flatMap(t=>KELAS_NAMA_LIST.map(n=><option key={`${t}${n}`} value={`Tahun ${t} ${n}`}>Tahun {t} {n}</option>))}
               </select>
+              <div className="kur-search-wrap" style={{flex:1, minWidth:140}}>
+                <span className="kur-search-ico">🔍</span>
+                <input className="kur-search" placeholder="Cari nama / no. daftar…" value={qRmt} onChange={e=>setQRmt(e.target.value)}/>
+              </div>
               <span style={{fontSize:12, color:'var(--text3)', fontWeight:800, padding:'8px 0'}}>
-                {rmtTahun.length} pelajar RMT {filterTahun}
+                {filtRmt.length} / {rmtTahun.length} pelajar RMT {filterTahun}
               </span>
             </div>
             <div style={{fontSize:11, color:'var(--text3)', marginBottom:10, fontWeight:700}}>
@@ -6412,16 +6468,17 @@ function HemBantuan() {
             </div>
             <div className="kur-table-wrap">
               <table className="kur-table">
-                <thead><tr><th>No. Daftar</th><th>Nama Murid</th><th>Kelas</th><th>Tahun</th><th>Status</th><th></th></tr></thead>
+                <thead><tr><th>#</th><th>No. Daftar</th><th>Nama Murid</th><th>Kelas</th><th>Tahun</th><th>Status</th><th></th></tr></thead>
                 <tbody>
-                  {rmtTahun.filter(r => !filterKelas || r.kelas===filterKelas).length === 0 && (
-                    <tr><td colSpan={6} style={{textAlign:'center', color:'var(--text3)', padding:28}}>Tiada rekod RMT {filterTahun}.</td></tr>
+                  {filtRmt.length === 0 && (
+                    <tr><td colSpan={7} style={{textAlign:'center', color:'var(--text3)', padding:28}}>Tiada rekod RMT {filterTahun}.</td></tr>
                   )}
-                  {rmtTahun.filter(r => !filterKelas || r.kelas===filterKelas).map(r => (
+                  {filtRmt.map((r,i) => (
                     <tr key={r.id}>
-                      <td style={{fontFamily:'monospace', fontSize:12}}>{r.no_daftar}</td>
+                      <td style={{color:'var(--text3)',fontSize:12}}>{i+1}</td>
+                      <td style={{fontFamily:'monospace', fontSize:12}}>{r.no_daftar||'—'}</td>
                       <td style={{fontWeight:800}}>{r.nama_murid}</td>
-                      <td style={{fontSize:12, color:'var(--text3)'}}>{r.kelas}</td>
+                      <td><span style={{background:TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1]+'18',color:TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1],borderRadius:8,padding:'2px 8px',fontSize:11,fontWeight:700}}>{r.kelas||'—'}</span></td>
                       <td style={{fontSize:12}}>{r.tahun}</td>
                       <td><span className={`badge ${r.status==='Aktif'?'b-green':'b-gray'}`}>{r.status}</span></td>
                       <td><button className="btn-del" onClick={() => handleDelRMT(r.id)}>🗑</button></td>
@@ -6437,27 +6494,31 @@ function HemBantuan() {
         {tab === 4 && (
           <div>
             <div className="kur-header">
-              <button className="btn-add" onClick={() => { setFormJenis(blankJenis); setShowAddJenis(true); }}>+ Tambah Jenis</button>
+              <button className="btn-add" style={{background:BP_ACCENT}} onClick={() => { setFormJenis(blankJenis); setShowAddJenis(true); }}>+ Tambah Jenis</button>
             </div>
             <div className="kur-table-wrap">
               <table className="kur-table">
-                <thead><tr><th>Nama Bantuan</th><th>Jenis</th><th>Sumber</th><th>Jumlah Max</th><th>Status</th><th>Catatan</th><th></th></tr></thead>
+                <thead><tr><th>Nama Bantuan</th><th>Jenis</th><th>Sumber</th><th>Jumlah Max</th><th>Disalurkan</th><th>Status</th><th>Catatan</th><th></th></tr></thead>
                 <tbody>
-                  {jenisList.length === 0 && <tr><td colSpan={7} style={{textAlign:'center', color:'var(--text3)', padding:28}}>Tiada jenis bantuan. Tambah untuk mula.</td></tr>}
-                  {jenisList.map(r => (
-                    <tr key={r.id}>
-                      <td style={{fontWeight:800}}>{r.nama}</td>
-                      <td><span className="badge b-blue">{r.jenis}</span></td>
-                      <td style={{fontSize:12}}>{r.sumber}</td>
-                      <td style={{fontSize:12, fontWeight:800}}>{r.jumlah_max>0 ? fmtRM(r.jumlah_max) : '—'}</td>
-                      <td><span className={`badge ${r.status==='Aktif'?'b-green':'b-gray'}`}>{r.status}</span></td>
-                      <td style={{fontSize:11, color:'var(--text3)'}}>{r.catatan||'—'}</td>
-                      <td style={{display:'flex', gap:4}}>
-                        <button className="btn-add" style={{padding:'4px 8px', fontSize:11}} onClick={() => setEditJenis({...r})}>✏️</button>
-                        <button className="btn-del" onClick={() => handleDelJenis(r.id)}>🗑</button>
-                      </td>
-                    </tr>
-                  ))}
+                  {jenisList.length === 0 && <tr><td colSpan={8} style={{textAlign:'center', color:'var(--text3)', padding:28}}>Tiada jenis bantuan. Tambah untuk mula.</td></tr>}
+                  {jenisList.map(r => {
+                    const disalurkan = permohonan.filter(p=>p.jenis_id===r.id&&p.status==='Dibayar').reduce((s,p)=>s+(parseFloat(p.jumlah)||0),0);
+                    return (
+                      <tr key={r.id}>
+                        <td style={{fontWeight:800}}>{r.nama}</td>
+                        <td><span className="badge b-blue">{r.jenis}</span></td>
+                        <td style={{fontSize:12}}>{r.sumber}</td>
+                        <td style={{fontSize:12, fontWeight:800}}>{r.jumlah_max>0 ? fmtRM(r.jumlah_max) : '—'}</td>
+                        <td style={{fontSize:12, fontWeight:800, color:BP_ACCENT}}>{disalurkan>0?fmtRM(disalurkan):'—'}</td>
+                        <td><span className={`badge ${r.status==='Aktif'?'b-green':'b-gray'}`}>{r.status}</span></td>
+                        <td style={{fontSize:11, color:'var(--text3)'}}>{r.catatan||'—'}</td>
+                        <td style={{display:'flex', gap:4}}>
+                          <button className="btn-add" style={{padding:'4px 8px', fontSize:11}} onClick={() => setEditJenis({...r})}>✏️</button>
+                          <button className="btn-del" onClick={() => handleDelJenis(r.id, r.nama)}>🗑</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -6474,11 +6535,7 @@ function HemBantuan() {
               <div className="form-field"><label className="form-label">Nama Murid *</label><input className="form-input" required value={formMurid.nama} onChange={e=>setFormMurid(f=>({...f,nama:e.target.value}))}/></div>
             </div>
             <div className="form-row">
-              <div className="form-field"><label className="form-label">Kelas</label>
-                <select className="form-input" value={formMurid.kelas} onChange={e=>setFormMurid(f=>({...f,kelas:e.target.value}))}>
-                  <option value="">—</option>{BANTUAN_KELAS.map(k=><option key={k}>{k}</option>)}
-                </select>
-              </div>
+              <div className="form-field"><label className="form-label">Kelas</label><KelasSelect val={formMurid} set={setFormMurid}/></div>
               <div className="form-field"><label className="form-label">Jantina</label>
                 <select className="form-input" value={formMurid.jantina} onChange={e=>setFormMurid(f=>({...f,jantina:e.target.value}))}>
                   <option value="L">Lelaki</option><option value="P">Perempuan</option>
@@ -6498,11 +6555,11 @@ function HemBantuan() {
               <div className="form-field">
                 <label className="form-label">Pendapatan Isi Rumah (RM)</label>
                 <input className="form-input" type="number" min="0" value={formMurid.pendapatan} onChange={e=>setFormMurid(f=>({...f,pendapatan:e.target.value}))}/>
-                <div style={{fontSize:10, color:'var(--text3)', marginTop:4}}>Auto-kategori: <strong>{autoKategori(formMurid.pendapatan)}</strong></div>
+                <div style={{fontSize:10, color:'var(--text3)', marginTop:4}}>Auto-kategori: <strong style={{color:BP_ACCENT}}>{autoKategori(formMurid.pendapatan)}</strong></div>
               </div>
             </div>
             <div className="form-field"><label className="form-label">Sumber Verifikasi</label><input className="form-input" placeholder="cth: APDM, Borang e-Kasih" value={formMurid.sumber} onChange={e=>setFormMurid(f=>({...f,sumber:e.target.value}))}/></div>
-            <button className="btn-primary" type="submit">+ Tambah Murid</button>
+            <button className="btn-primary" type="submit" style={{background:BP_ACCENT}}>+ Tambah Murid</button>
           </form>
         </Modal>
       )}
@@ -6515,11 +6572,7 @@ function HemBantuan() {
               <div className="form-field"><label className="form-label">Nama</label><input className="form-input" value={editMurid.nama||''} onChange={e=>setEditMurid(f=>({...f,nama:e.target.value}))}/></div>
             </div>
             <div className="form-row">
-              <div className="form-field"><label className="form-label">Kelas</label>
-                <select className="form-input" value={editMurid.kelas||''} onChange={e=>setEditMurid(f=>({...f,kelas:e.target.value}))}>
-                  <option value="">—</option>{BANTUAN_KELAS.map(k=><option key={k}>{k}</option>)}
-                </select>
-              </div>
+              <div className="form-field"><label className="form-label">Kelas</label><KelasSelect val={editMurid} set={setEditMurid}/></div>
               <div className="form-field"><label className="form-label">Jantina</label>
                 <select className="form-input" value={editMurid.jantina||'L'} onChange={e=>setEditMurid(f=>({...f,jantina:e.target.value}))}>
                   <option value="L">Lelaki</option><option value="P">Perempuan</option>
@@ -6531,7 +6584,7 @@ function HemBantuan() {
               <div className="form-field">
                 <label className="form-label">Pendapatan (RM)</label>
                 <input className="form-input" type="number" min="0" value={editMurid.pendapatan||0} onChange={e=>setEditMurid(f=>({...f,pendapatan:e.target.value}))}/>
-                <div style={{fontSize:10, color:'var(--text3)', marginTop:4}}>Auto-kategori: <strong>{autoKategori(editMurid.pendapatan)}</strong></div>
+                <div style={{fontSize:10, color:'var(--text3)', marginTop:4}}>Auto-kategori: <strong style={{color:BP_ACCENT}}>{autoKategori(editMurid.pendapatan)}</strong></div>
               </div>
             </div>
             <div className="form-field"><label className="form-label">Status</label>
@@ -6539,7 +6592,7 @@ function HemBantuan() {
                 <option>Aktif</option><option>Tidak Aktif</option>
               </select>
             </div>
-            <button className="btn-primary" type="submit">💾 Simpan</button>
+            <button className="btn-primary" type="submit" style={{background:BP_ACCENT}}>💾 Simpan</button>
           </form>
         </Modal>
       )}
@@ -6573,7 +6626,7 @@ function HemBantuan() {
               </div>
             </div>
             <div className="form-field"><label className="form-label">Catatan</label><input className="form-input" value={formPerm.catatan} onChange={e=>setFormPerm(f=>({...f,catatan:e.target.value}))}/></div>
-            <button className="btn-primary" type="submit">+ Tambah Permohonan</button>
+            <button className="btn-primary" type="submit" style={{background:BP_ACCENT}}>+ Tambah Permohonan</button>
           </form>
         </Modal>
       )}
@@ -6594,7 +6647,7 @@ function HemBantuan() {
               <div className="form-field"><label className="form-label">Jumlah Max (RM)</label><input className="form-input" type="number" min="0" value={formJenis.jumlah_max} onChange={e=>setFormJenis(f=>({...f,jumlah_max:e.target.value}))}/></div>
             </div>
             <div className="form-field"><label className="form-label">Catatan</label><input className="form-input" value={formJenis.catatan} onChange={e=>setFormJenis(f=>({...f,catatan:e.target.value}))}/></div>
-            <button className="btn-primary" type="submit">+ Tambah</button>
+            <button className="btn-primary" type="submit" style={{background:BP_ACCENT}}>+ Tambah</button>
           </form>
         </Modal>
       )}
@@ -6622,7 +6675,7 @@ function HemBantuan() {
               </div>
               <div className="form-field"><label className="form-label">Catatan</label><input className="form-input" value={editJenis.catatan||''} onChange={e=>setEditJenis(f=>({...f,catatan:e.target.value}))}/></div>
             </div>
-            <button className="btn-primary" type="submit">💾 Simpan</button>
+            <button className="btn-primary" type="submit" style={{background:BP_ACCENT}}>💾 Simpan</button>
           </form>
         </Modal>
       )}
