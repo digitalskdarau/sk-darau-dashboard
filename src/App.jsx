@@ -9835,6 +9835,19 @@ function PencapaianKoku() {
 }
 
 function OPRFormFields({val,set}) {
+  const [driveInput,setDriveInput]=useState('');
+  const parseDriveId=url=>{
+    const m=url.match(/\/d\/([a-zA-Z0-9_-]+)/)||url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    return m?m[1]:(url.match(/^[a-zA-Z0-9_-]{25,}$/)?url:null);
+  };
+  const addLink=()=>{
+    const id=parseDriveId(driveInput.trim());
+    if(!id){toast('Link tidak sah. Paste link Share dari Google Drive.','error');return;}
+    const links=val.gambar_links||[];
+    if(links.includes(id)){toast('Link sudah ditambah.','error');return;}
+    set(f=>({...f,gambar_links:[...links,id]}));setDriveInput('');
+  };
+  const removeLink=id=>set(f=>({...f,gambar_links:(f.gambar_links||[]).filter(x=>x!==id)}));
   return(
     <>
       <div className="form-row">
@@ -9848,6 +9861,28 @@ function OPRFormFields({val,set}) {
       </div>
       <div className="form-field"><label className="form-label">Impak / Outcome</label><textarea className="form-input" rows={3} placeholder="Huraikan impak atau hasil program ini..." value={val.impak||''} onChange={e=>set(f=>({...f,impak:e.target.value}))}/></div>
       <div className="form-field"><label className="form-label">Catatan</label><input className="form-input" value={val.catatan||''} onChange={e=>set(f=>({...f,catatan:e.target.value}))}/></div>
+      <div className="form-field">
+        <label className="form-label">📸 Gambar Program (Google Drive)</label>
+        <div style={{display:'flex',gap:6,marginBottom:6}}>
+          <input className="form-input" placeholder="Paste link Share Google Drive di sini..." value={driveInput} onChange={e=>setDriveInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&(e.preventDefault(),addLink())} style={{flex:1,fontSize:12}}/>
+          <button type="button" className="btn-add" onClick={addLink} style={{whiteSpace:'nowrap',padding:'6px 14px'}}>+ Tambah</button>
+        </div>
+        <div style={{fontSize:10,color:'var(--text3)',marginBottom:8,lineHeight:1.6}}>
+          💡 Drive → klik kanan fail → <b>Share</b> → "Anyone with the link" → Copy link → Paste di atas
+        </div>
+        {(val.gambar_links||[]).length>0&&(
+          <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:4}}>
+            {(val.gambar_links||[]).map((id,i)=>(
+              <div key={id} style={{position:'relative',width:90,height:68,borderRadius:8,overflow:'visible',border:'1.5px solid var(--border)',borderRadius:8,background:'var(--card2)'}}>
+                <img src={`https://drive.google.com/thumbnail?id=${id}&sz=w200`} style={{width:90,height:68,objectFit:'cover',borderRadius:7,display:'block'}} onError={e=>e.target.style.display='none'}/>
+                <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,borderRadius:7,zIndex:-1}}>📷</div>
+                <div style={{position:'absolute',bottom:2,left:2,background:'rgba(0,0,0,0.55)',color:'#fff',fontSize:9,borderRadius:3,padding:'1px 4px'}}>{i+1}</div>
+                <button type="button" onClick={()=>removeLink(id)} style={{position:'absolute',top:-7,right:-7,width:18,height:18,borderRadius:'50%',background:'#ef4444',color:'white',border:'2px solid white',cursor:'pointer',fontSize:11,lineHeight:'14px',textAlign:'center',padding:0,zIndex:10}}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </>
   );
 }
@@ -9870,7 +9905,7 @@ function OPRPage() {
   const [editItem,setEditItem]=useState(null);
   const [q,setQ]=useState('');
   const [filterTahun,setFilterTahun]=useState(tahunNow);
-  const blank={domain:'kurikulum',tarikh:'',masa:'',nama_program:'',penganjur:'',sasaran:'',impak:'',catatan:'',tahun:tahunNow};
+  const blank={domain:'kurikulum',tarikh:'',masa:'',nama_program:'',penganjur:'',sasaran:'',impak:'',catatan:'',tahun:tahunNow,gambar_links:[]};
   const [form,setForm]=useState(blank);
 
   const load=async()=>{
@@ -9907,6 +9942,90 @@ function OPRPage() {
     const w=window.open('','_blank');
     const tbl=rows.map((r,i)=>`<tr><td>${i+1}</td><td style="white-space:nowrap">${fmtT(r.tarikh)}</td><td>${r.masa||'—'}</td><td style="font-weight:700">${r.nama_program}</td><td>${r.penganjur||'—'}</td><td>${r.sasaran||'—'}</td><td>${r.impak||'—'}</td><td>${r.catatan||'—'}</td></tr>`).join('');
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan OPR</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:24px}h2{text-align:center;font-size:16px;margin:0 0 3px}h3{text-align:center;font-size:11px;font-weight:400;margin:0 0 16px;color:#555}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:5px 7px;vertical-align:top}th{background:#0891b2;color:#fff;font-size:10px;text-align:left}tr:nth-child(even){background:#f5f5f5}.meta{text-align:right;font-size:10px;color:#888;margin-bottom:6px}@media print{.no-print{display:none}}</style></head><body><h2>Laporan OPR — ${domLabel}</h2><h3>SK Darau, Kota Kinabalu, Sabah &nbsp;|&nbsp; Tahun Pelajaran ${filterTahun}</h3><div class="meta">Dijana: ${new Date().toLocaleDateString('ms-MY')} &nbsp;|&nbsp; Jumlah Program: ${rows.length}</div><table><thead><tr><th>#</th><th>Tarikh</th><th>Masa</th><th>Nama Program</th><th>Penganjur/Guru</th><th>Sasaran/Peserta</th><th>Impak / Outcome</th><th>Catatan</th></tr></thead><tbody>${tbl}</tbody></table><br><button class="no-print" onclick="window.print()" style="padding:8px 20px;background:#0891b2;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px">🖨️ Cetak PDF</button></body></html>`);
+    w.document.close();
+  };
+
+  const printSingleProgram=(r,domLabel,domIcon)=>{
+    const w=window.open('','_blank');
+    const photos=(r.gambar_links||[]);
+    const photoHtml=photos.length>0?`
+      <div class="section">
+        <div class="sec-title">📸 GAMBAR PROGRAM</div>
+        <div class="photo-grid">${photos.map(id=>`<div class="photo-wrap"><img src="https://drive.google.com/thumbnail?id=${id}&sz=w600" alt="Gambar" onerror="this.parentElement.style.display='none'"/></div>`).join('')}</div>
+        <p style="font-size:9px;color:#999;margin-top:6px">* Gambar dari Google Drive. Pastikan fail dikongsi secara "Anyone with the link" untuk dipaparkan.</p>
+      </div>`:'';
+    const catatanHtml=r.catatan?`<div class="section"><div class="sec-title">📝 CATATAN TAMBAHAN</div><div class="sec-body">${r.catatan}</div></div>`:'';
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>OPR — ${r.nama_program}</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1a1a1a;background:#fff}
+.hdr{background:linear-gradient(135deg,#0c4a6e 0%,#0891b2 100%);color:#fff;padding:22px 30px;display:flex;align-items:center;gap:18px}
+.logo{width:72px;height:72px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:38px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+.hdr-txt h1{font-size:20px;font-weight:800;letter-spacing:0.5px;text-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.hdr-txt h2{font-size:11.5px;font-weight:400;opacity:0.88;margin-top:3px}
+.hdr-txt .badge{display:inline-block;margin-top:8px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);padding:3px 14px;border-radius:14px;font-size:11px;font-weight:700;letter-spacing:1px}
+.title-band{background:#f0f9ff;border-left:5px solid #0891b2;padding:13px 30px;font-size:15px;font-weight:800;color:#0c4a6e;letter-spacing:0.3px}
+.domain-tag{display:inline-block;background:#0891b220;color:#0891b2;border:1px solid #0891b240;border-radius:20px;padding:2px 12px;font-size:11px;font-weight:700;margin-left:10px}
+.content{padding:20px 30px}
+.meta{text-align:right;font-size:10px;color:#94a3b8;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #f1f5f9}
+.info-table{width:100%;border-collapse:collapse;margin-bottom:20px}
+.info-table td{padding:8px 12px;font-size:12px;border:1px solid #e2e8f0}
+.info-table td:first-child{width:38%;font-weight:700;color:#475569;background:#f8fafc}
+.section{margin-bottom:18px}
+.sec-title{font-size:10px;font-weight:800;letter-spacing:1.2px;color:#0891b2;text-transform:uppercase;border-bottom:2px solid #0891b2;padding-bottom:5px;margin-bottom:10px}
+.sec-body{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:13px;font-size:12px;line-height:1.8;color:#334155;min-height:48px;white-space:pre-wrap}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.photo-wrap{aspect-ratio:4/3;overflow:hidden;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc}
+.photo-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.footer{margin-top:28px;padding-top:16px;border-top:2px solid #e2e8f0;display:grid;grid-template-columns:1fr 1fr;gap:30px;font-size:11px;color:#555}
+.sig-box{text-align:center}
+.sig-line{margin-top:40px;border-top:1px solid #334155;padding-top:5px;font-size:11px}
+.print-btn{display:block;margin:24px auto 0;padding:12px 36px;background:#0891b2;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700}
+@media print{.print-btn{display:none!important}.photo-grid{page-break-inside:avoid}}
+</style></head><body>
+<div class="hdr">
+  <div class="logo">🏫</div>
+  <div class="hdr-txt">
+    <h1>SEKOLAH KEBANGSAAN DARAU</h1>
+    <h2>Kota Kinabalu, Sabah &nbsp;•&nbsp; Malaysia</h2>
+    <div class="badge">LAPORAN PROGRAM OPR</div>
+  </div>
+</div>
+<div class="title-band">
+  ${r.nama_program}
+  <span class="domain-tag">${domIcon} ${domLabel}</span>
+</div>
+<div class="content">
+  <div class="meta">Dijana pada: ${new Date().toLocaleDateString('ms-MY',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} &nbsp;|&nbsp; Tahun Pelajaran ${r.tahun||filterTahun}</div>
+  <table class="info-table">
+    <tr><td>Nama Program</td><td><strong>${r.nama_program}</strong></td></tr>
+    <tr><td>Domain</td><td>${domIcon} ${domLabel}</td></tr>
+    <tr><td>Tarikh Program</td><td>${fmtT(r.tarikh)}</td></tr>
+    <tr><td>Masa Program</td><td>${r.masa||'—'}</td></tr>
+    <tr><td>Penganjur / Guru Bertanggungjawab</td><td>${r.penganjur||'—'}</td></tr>
+    <tr><td>Sasaran / Peserta</td><td>${r.sasaran||'—'}</td></tr>
+    <tr><td>Tahun Pelajaran</td><td>${r.tahun||filterTahun}</td></tr>
+  </table>
+  <div class="section">
+    <div class="sec-title">🎯 Impak / Outcome Program</div>
+    <div class="sec-body">${r.impak||'—'}</div>
+  </div>
+  ${catatanHtml}
+  ${photoHtml}
+  <div class="footer">
+    <div class="sig-box">
+      <p>Disediakan oleh:</p>
+      <div class="sig-line">${r.penganjur||'................................................'}</div>
+      <p style="margin-top:3px;font-size:10px;color:#777">(Guru Bertanggungjawab)</p>
+    </div>
+    <div class="sig-box">
+      <p>Disahkan oleh:</p>
+      <div class="sig-line">................................................</div>
+      <p style="margin-top:3px;font-size:10px;color:#777">(Pengetua / GPK)</p>
+    </div>
+  </div>
+</div>
+<button class="print-btn" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+</body></html>`);
     w.document.close();
   };
 
@@ -9954,7 +10073,7 @@ function OPRPage() {
           </div>
 
           <div className="kur-table-wrap"><table className="kur-table">
-            <thead><tr><th>#</th><th>Tarikh</th><th>Masa</th><th>Nama Program</th><th>Penganjur/Guru</th><th>Sasaran/Peserta</th><th>Impak / Outcome</th><th>Catatan</th><th></th></tr></thead>
+            <thead><tr><th>#</th><th>Tarikh</th><th>Masa</th><th>Nama Program</th><th>Penganjur/Guru</th><th>Sasaran/Peserta</th><th>Impak / Outcome</th><th>Catatan</th><th>📸</th><th></th></tr></thead>
             <tbody>{filtered.length===0
               ?<tr><td colSpan={9} style={{textAlign:'center',padding:28,color:'var(--text3)',fontSize:13}}>Tiada rekod. Klik "+ Tambah Program" untuk mula.</td></tr>
               :filtered.map((r,i)=>(
@@ -9967,7 +10086,9 @@ function OPRPage() {
                 <td style={{fontSize:12,color:'var(--text2)'}}>{r.sasaran||'—'}</td>
                 <td style={{fontSize:12,maxWidth:220}}>{r.impak||'—'}</td>
                 <td style={{fontSize:11,color:'var(--text3)'}}>{r.catatan||'—'}</td>
+                <td style={{textAlign:'center',fontSize:13}}>{(r.gambar_links||[]).length>0?`📷 ${(r.gambar_links||[]).length}`:'—'}</td>
                 <td style={{display:'flex',gap:4}}>
+                  <button className="btn-add" style={{padding:'4px 8px',fontSize:11,background:'#0891b2',color:'white'}} onClick={()=>printSingleProgram(r,curDomain.label,curDomain.icon)} title="Jana PDF">🖨️</button>
                   <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditItem({...r})}>✏️</button>
                   <button className="btn-del" onClick={()=>handleDel(r.id)}>🗑</button>
                 </td>
