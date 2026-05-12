@@ -7629,6 +7629,28 @@ function DriveFolderView({folderId,title,driveUrl}) {
   );
 }
 
+function DrivePanelInline({folderId, title}) {
+  const [open,setOpen]=useState(false);
+  if(!folderId) return null;
+  return(
+    <div style={{marginTop:28}}>
+      <button onClick={()=>setOpen(o=>!o)}
+        style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 18px',borderRadius:open?'10px 10px 0 0':10,border:'1.5px solid var(--border)',background:'var(--card2)',cursor:'pointer',fontWeight:700,fontSize:13,fontFamily:"'Nunito',sans-serif"}}>
+        <span>📁 Fail Drive — {title}</span>
+        <span style={{fontSize:12,color:'var(--text2)',fontWeight:600}}>{open?'▲ Tutup':'▼ Buka Fail'}</span>
+      </button>
+      {open&&(
+        <div style={{border:'1.5px solid var(--border)',borderTop:'none',borderRadius:'0 0 10px 10px',overflow:'hidden'}}>
+          <iframe src={`https://drive.google.com/embeddedfolderview?id=${folderId}&usp=sharing#list`} style={{width:'100%',height:'450px',border:'none',display:'block'}} title={title}/>
+          <div style={{padding:'8px 16px',background:'var(--card2)',borderTop:'1px solid var(--border)',textAlign:'right'}}>
+            <a href={`https://drive.google.com/drive/folders/${folderId}`} target="_blank" rel="noreferrer" style={{fontSize:12,color:'var(--accent)',fontWeight:700,textDecoration:'none'}}>Buka dalam Drive ↗</a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function HEMPage({ subId, onNav }) {
   const m = MODULES.find(x => x.id === "hem");
   const idx = m?.ids.indexOf(subId) ?? -1;
@@ -7686,6 +7708,15 @@ function KurikulumPage({ subId, onNav }) {
   const idx = m?.ids.indexOf(subId)??-1;
   const sName = idx>=0 ? m.subs[idx] : "";
 
+  const KURI_DRIVE={
+    jadual:      {id:null, title:'Jadual Waktu'},
+    panitia:     {id:null, title:'Panitia Mata Pelajaran'},
+    peperiksaan: {id:null, title:'Peperiksaan & Penilaian'},
+    rph:         {id:null, title:'eRPH / Rekod Mengajar'},
+    program:     {id:null, title:'Program Akademik'},
+    pss:         {id:null, title:'Pusat Sumber / NILAM'},
+    staf:        {id:null, title:'Perkembangan Staf'},
+  };
   const views = {
     jadual:      <JadualWaktu />,
     panitia:     <PanitiaMP />,
@@ -7730,6 +7761,7 @@ function KurikulumPage({ subId, onNav }) {
       </div>
 
       {views[subId] || <div style={{color:"var(--text2)",padding:40,textAlign:"center"}}>Pilih sub-modul</div>}
+      {KURI_DRIVE[subId]&&<DrivePanelInline folderId={KURI_DRIVE[subId].id} title={KURI_DRIVE[subId].title}/>}
     </div>
   );
 }
