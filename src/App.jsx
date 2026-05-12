@@ -1399,16 +1399,398 @@ function ResetPassword({ onDone }) {
   );
 }
 
+// ─── SUPPORT PANEL (GURU) ─────────────────────────────────────────────────────
+const JENIS_OPTS = ["Masalah Teknikal / Log Masuk","Maklum Balas / Cadangan","Laporan Pepijat / Kesilapan Data","Pertanyaan Am"];
+const JENIS_ICO  = { "Masalah Teknikal / Log Masuk":"🔧","Maklum Balas / Cadangan":"💡","Laporan Pepijat / Kesilapan Data":"🐛","Pertanyaan Am":"❓" };
+const STATUS_CLR = { Terbuka:{bg:"#fffbeb",tc:"#92400e",br:"#fde68a"}, "Dalam Semakan":{bg:"#eff6ff",tc:"#1d4ed8",br:"#bfdbfe"}, Selesai:{bg:"#f0fdf4",tc:"#15803d",br:"#bbf7d0"} };
+
+function SupportPanel({ user }) {
+  const blankForm = { jenis: JENIS_OPTS[0], tajuk: "", mesej: "" };
+  const [tab, setTab] = useState("list");
+  const [tickets, setTickets] = useState([]);
+  const [active, setActive] = useState(null);
+  const [form, setForm] = useState(blankForm);
+  const [replyText, setReplyText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from("support_tickets")
+      .select("*, support_replies(*)")
+      .eq("guru_email", user.email)
+      .order("created_at", { ascending: false });
+    setTickets(data || []);
+    if (active) setActive(a => (data||[]).find(t => t.id === a.id) || null);
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const submitTicket = async e => {
+    e.preventDefault();
+    if (!form.tajuk.trim() || !form.mesej.trim()) return;
+    setSubmitting(true);
+    const { error } = await supabase.from("support_tickets").insert([{
+      guru_email: user.email, guru_nama: user.name,
+      jenis: form.jenis, tajuk: form.tajuk.trim(), mesej: form.mesej.trim(),
+    }]);
+    if (!error) { toast("Tiket dihantar! Admin akan membalas.", "success"); setForm(blankForm); setTab("list"); load(); }
+    else toast("Gagal hantar tiket.", "error");
+    setSubmitting(false);
+  };
+
+  const submitReply = async e => {
+    e.preventDefault();
+    if (!replyText.trim() || !active) return;
+    setSubmitting(true);
+    await supabase.from("support_replies").insert([{
+      ticket_id: active.id, pengirim_email: user.email,
+      pengirim_nama: user.name, is_admin: false, mesej: replyText.trim(),
+    }]);
+    setReplyText("");
+    load();
+    setSubmitting(false);
+  };
+
+  const fmt = d => d ? new Date(d).toLocaleString("ms-MY", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" }) : "";
+
+  const S = STATUS_CLR;
+
+  return (
+    <div style={{ padding:"24px 20px", maxWidth:700, margin:"0 auto" }}>
+      <div style={{ marginBottom:20 }}>
+        <div style={{ fontSize:22, fontWeight:900, color:"var(--text1)", marginBottom:4 }}>🆘 Bantuan & Aduan</div>
+        <div style={{ fontSize:13, color:"var(--text2)" }}>Hubungi pentadbir sistem untuk bantuan atau laporan isu.</div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display:"flex", gap:8, marginBottom:20 }}>
+        {[["list","📋 Tiket Saya"],["new","✉️ Hantar Tiket Baru"]].map(([t,lbl])=>(
+          <button key={t} onClick={()=>{setTab(t);setActive(null);}}
+            style={{ padding:"8px 18px", borderRadius:20, border:"none", cursor:"pointer", fontWeight:700, fontSize:13,
+              background: tab===t ? "#2563eb" : "var(--card)", color: tab===t ? "#fff" : "var(--text1)" }}>
+            {lbl}
+          </button>
+        ))}
+      </div>
+
+      {tab==="new" && (
+        <div style={{ background:"var(--card)", borderRadius:16, padding:"22px", border:"1.5px solid var(--border)" }}>
+          <form onSubmit={submitTicket}>
+            <div style={{ marginBottom:14 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:800, color:"var(--text2)", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>Jenis Aduan</label>
+              <select value={form.jenis} onChange={e=>setForm(f=>({...f,jenis:e.target.value}))}
+                style={{ width:"100%", padding:"9px 12px", borderRadius:10, border:"1.5px solid var(--border)", background:"var(--bg)", color:"var(--text1)", fontSize:14 }}>
+                {JENIS_OPTS.map(j=><option key={j}>{j}</option>)}
+              </select>
+            </div>
+            <div style={{ marginBottom:14 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:800, color:"var(--text2)", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>Tajuk</label>
+              <input required value={form.tajuk} onChange={e=>setForm(f=>({...f,tajuk:e.target.value}))}
+                placeholder="Ringkasan masalah anda..."
+                style={{ width:"100%", padding:"9px 12px", borderRadius:10, border:"1.5px solid var(--border)", background:"var(--bg)", color:"var(--text1)", fontSize:14, boxSizing:"border-box" }}/>
+            </div>
+            <div style={{ marginBottom:18 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:800, color:"var(--text2)", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>Penerangan</label>
+              <textarea required rows={5} value={form.mesej} onChange={e=>setForm(f=>({...f,mesej:e.target.value}))}
+                placeholder="Terangkan masalah anda dengan terperinci..."
+                style={{ width:"100%", padding:"9px 12px", borderRadius:10, border:"1.5px solid var(--border)", background:"var(--bg)", color:"var(--text1)", fontSize:14, resize:"vertical", boxSizing:"border-box" }}/>
+            </div>
+            <button type="submit" disabled={submitting}
+              style={{ padding:"10px 24px", borderRadius:10, background:"#2563eb", color:"#fff", border:"none", fontWeight:800, fontSize:14, cursor:"pointer" }}>
+              {submitting ? "⏳ Menghantar..." : "Hantar Tiket →"}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {tab==="list" && (
+        loading ? <div style={{ textAlign:"center", padding:40, color:"var(--text2)" }}>⏳ Memuatkan...</div>
+        : active ? (
+          <div style={{ background:"var(--card)", borderRadius:16, border:"1.5px solid var(--border)", overflow:"hidden" }}>
+            <div style={{ padding:"14px 20px", borderBottom:"1px solid var(--border)", display:"flex", alignItems:"center", gap:10 }}>
+              <button onClick={()=>setActive(null)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:18, color:"var(--text2)" }}>←</button>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:800, color:"var(--text1)", fontSize:15 }}>{active.tajuk}</div>
+                <div style={{ fontSize:11, color:"var(--text2)", marginTop:2 }}>{JENIS_ICO[active.jenis]} {active.jenis} · {fmt(active.created_at)}</div>
+              </div>
+              <span style={{ padding:"3px 10px", borderRadius:20, fontSize:11, fontWeight:800,
+                background:(S[active.status]||S.Terbuka).bg, color:(S[active.status]||S.Terbuka).tc,
+                border:`1px solid ${(S[active.status]||S.Terbuka).br}` }}>
+                {active.status}
+              </span>
+            </div>
+            <div style={{ padding:"16px 20px", maxHeight:420, overflowY:"auto" }}>
+              {/* Original message */}
+              <div style={{ marginBottom:16, display:"flex", gap:10 }}>
+                <div style={{ width:32, height:32, borderRadius:"50%", background:"#2563eb", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, flexShrink:0 }}>
+                  {user.name[0]}
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:"var(--text1)", marginBottom:4 }}>{user.name} <span style={{ color:"var(--text3)", fontWeight:400 }}>· {fmt(active.created_at)}</span></div>
+                  <div style={{ background:"var(--bg)", borderRadius:10, padding:"10px 14px", fontSize:13, lineHeight:1.7, color:"var(--text1)", whiteSpace:"pre-wrap" }}>{active.mesej}</div>
+                </div>
+              </div>
+              {/* Replies */}
+              {(active.support_replies||[]).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).map(r=>(
+                <div key={r.id} style={{ marginBottom:14, display:"flex", gap:10, flexDirection: r.is_admin?"row-reverse":"row" }}>
+                  <div style={{ width:32, height:32, borderRadius:"50%", background: r.is_admin?"#6366f1":"#0ea5e9", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, flexShrink:0 }}>
+                    {r.is_admin?"A":r.pengirim_nama[0]}
+                  </div>
+                  <div style={{ flex:1, textAlign: r.is_admin?"right":"left" }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:"var(--text1)", marginBottom:4 }}>
+                      {r.is_admin?"✦ Admin":r.pengirim_nama} <span style={{ color:"var(--text3)", fontWeight:400 }}>· {fmt(r.created_at)}</span>
+                    </div>
+                    <div style={{ display:"inline-block", background: r.is_admin?"#6366f115":"var(--bg)", borderRadius:10, padding:"10px 14px", fontSize:13, lineHeight:1.7, color:"var(--text1)", border: r.is_admin?"1px solid #6366f130":"1px solid var(--border)", whiteSpace:"pre-wrap" }}>{r.mesej}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {active.status !== "Selesai" && (
+              <div style={{ padding:"14px 20px", borderTop:"1px solid var(--border)" }}>
+                <form onSubmit={submitReply} style={{ display:"flex", gap:10 }}>
+                  <input value={replyText} onChange={e=>setReplyText(e.target.value)}
+                    placeholder="Tulis balasan..." required
+                    style={{ flex:1, padding:"9px 12px", borderRadius:10, border:"1.5px solid var(--border)", background:"var(--bg)", color:"var(--text1)", fontSize:13 }}/>
+                  <button type="submit" disabled={submitting}
+                    style={{ padding:"9px 16px", borderRadius:10, background:"#2563eb", color:"#fff", border:"none", fontWeight:800, cursor:"pointer" }}>
+                    {submitting?"⏳":"Hantar"}
+                  </button>
+                </form>
+              </div>
+            )}
+            {active.status === "Selesai" && (
+              <div style={{ padding:"12px 20px", borderTop:"1px solid var(--border)", textAlign:"center", fontSize:13, color:"#15803d", fontWeight:700 }}>
+                ✅ Tiket ini telah diselesaikan.
+              </div>
+            )}
+          </div>
+        ) : (
+          tickets.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"48px 20px", background:"var(--card)", borderRadius:16, border:"1.5px solid var(--border)" }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>📭</div>
+              <div style={{ fontSize:15, fontWeight:700, color:"var(--text2)" }}>Tiada tiket lagi.</div>
+              <div style={{ fontSize:13, color:"var(--text3)", marginTop:6 }}>Klik "Hantar Tiket Baru" untuk hubungi pentadbir.</div>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {tickets.map(t => (
+                <button key={t.id} onClick={()=>setActive(t)}
+                  style={{ width:"100%", textAlign:"left", padding:"14px 18px", background:"var(--card)", borderRadius:14,
+                    border:`1.5px solid ${(S[t.status]||S.Terbuka).br}`, cursor:"pointer", transition:"box-shadow 0.15s" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontWeight:800, color:"var(--text1)", fontSize:14, marginBottom:4 }}>
+                        {JENIS_ICO[t.jenis]} {t.tajuk}
+                      </div>
+                      <div style={{ fontSize:12, color:"var(--text2)" }}>{t.jenis} · {fmt(t.created_at)}</div>
+                      {(t.support_replies||[]).length > 0 && (
+                        <div style={{ fontSize:11, color:"#6366f1", fontWeight:700, marginTop:4 }}>
+                          💬 {(t.support_replies||[]).length} balasan
+                        </div>
+                      )}
+                    </div>
+                    <span style={{ padding:"3px 10px", borderRadius:20, fontSize:11, fontWeight:800, whiteSpace:"nowrap",
+                      background:(S[t.status]||S.Terbuka).bg, color:(S[t.status]||S.Terbuka).tc,
+                      border:`1px solid ${(S[t.status]||S.Terbuka).br}` }}>
+                      {t.status}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )
+        )
+      )}
+    </div>
+  );
+}
+
 // ─── ADMIN PANEL ──────────────────────────────────────────────────────────────
 const FN_URL = import.meta.env.VITE_SUPABASE_URL + "/functions/v1/user-mgmt";
 
+function AdminTickets() {
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [active, setActive] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("Semua");
+  const [replyText, setReplyText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from("support_tickets")
+      .select("*, support_replies(*)")
+      .order("created_at", { ascending: false });
+    setTickets(data || []);
+    if (active) setActive(a => (data||[]).find(t => t.id === a?.id) || null);
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const openTicket = async (t) => {
+    setActive(t);
+    setReplyText("");
+    if (!t.dibaca_admin) {
+      await supabase.from("support_tickets").update({ dibaca_admin: true }).eq("id", t.id);
+      setTickets(ts => ts.map(x => x.id === t.id ? {...x, dibaca_admin: true} : x));
+    }
+  };
+
+  const sendReply = async e => {
+    e.preventDefault();
+    if (!replyText.trim() || !active) return;
+    setSubmitting(true);
+    await supabase.from("support_replies").insert([{
+      ticket_id: active.id, pengirim_email: import.meta.env.VITE_ADMIN_EMAIL,
+      pengirim_nama: "Admin", is_admin: true, mesej: replyText.trim(),
+    }]);
+    setReplyText("");
+    load();
+    setSubmitting(false);
+  };
+
+  const changeStatus = async (status) => {
+    if (!active) return;
+    await supabase.from("support_tickets").update({ status }).eq("id", active.id);
+    setActive(a => ({...a, status}));
+    setTickets(ts => ts.map(t => t.id === active.id ? {...t, status} : t));
+    toast(`Status ditukar: ${status}`, "success");
+  };
+
+  const fmt = d => d ? new Date(d).toLocaleString("ms-MY", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" }) : "";
+  const S = STATUS_CLR;
+  const filtered = filterStatus === "Semua" ? tickets : tickets.filter(t => t.status === filterStatus);
+  const unread = tickets.filter(t => !t.dibaca_admin).length;
+
+  return (
+    <div>
+      {active ? (
+        <div style={{ background:"var(--card)", borderRadius:16, border:"1.5px solid var(--border)", overflow:"hidden" }}>
+          <div style={{ padding:"14px 20px", borderBottom:"1px solid var(--border)", display:"flex", alignItems:"flex-start", gap:10 }}>
+            <button onClick={()=>setActive(null)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:18, color:"var(--text2)", marginTop:2 }}>←</button>
+            <div style={{ flex:1 }}>
+              <div style={{ fontWeight:800, color:"var(--text1)", fontSize:15 }}>{active.tajuk}</div>
+              <div style={{ fontSize:12, color:"var(--text2)", marginTop:2 }}>
+                {JENIS_ICO[active.jenis]} {active.jenis} · {active.guru_nama} ({active.guru_email}) · {fmt(active.created_at)}
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+              {["Terbuka","Dalam Semakan","Selesai"].map(s => (
+                <button key={s} onClick={()=>changeStatus(s)}
+                  style={{ padding:"4px 10px", borderRadius:16, fontSize:11, fontWeight:800, cursor:"pointer",
+                    background:(S[s]||S.Terbuka).bg, color:(S[s]||S.Terbuka).tc, border:`1.5px solid ${(S[s]||S.Terbuka).br}`,
+                    outline: active.status===s ? `2px solid ${(S[s]||S.Terbuka).tc}` : "none" }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ padding:"16px 20px", maxHeight:400, overflowY:"auto" }}>
+            <div style={{ marginBottom:16, display:"flex", gap:10 }}>
+              <div style={{ width:32, height:32, borderRadius:"50%", background:"#0ea5e9", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, flexShrink:0 }}>
+                {active.guru_nama[0]}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:12, fontWeight:700, marginBottom:4 }}>{active.guru_nama} <span style={{ color:"var(--text3)", fontWeight:400 }}>· {fmt(active.created_at)}</span></div>
+                <div style={{ background:"var(--bg)", borderRadius:10, padding:"10px 14px", fontSize:13, lineHeight:1.7, whiteSpace:"pre-wrap" }}>{active.mesej}</div>
+              </div>
+            </div>
+            {(active.support_replies||[]).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).map(r=>(
+              <div key={r.id} style={{ marginBottom:14, display:"flex", gap:10, flexDirection:r.is_admin?"row-reverse":"row" }}>
+                <div style={{ width:32, height:32, borderRadius:"50%", background:r.is_admin?"#6366f1":"#0ea5e9", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, flexShrink:0 }}>
+                  {r.is_admin?"A":r.pengirim_nama[0]}
+                </div>
+                <div style={{ flex:1, textAlign:r.is_admin?"right":"left" }}>
+                  <div style={{ fontSize:12, fontWeight:700, marginBottom:4 }}>
+                    {r.is_admin?"✦ Admin":r.pengirim_nama} <span style={{ color:"var(--text3)", fontWeight:400 }}>· {fmt(r.created_at)}</span>
+                  </div>
+                  <div style={{ display:"inline-block", background:r.is_admin?"#6366f115":"var(--bg)", borderRadius:10, padding:"10px 14px", fontSize:13, lineHeight:1.7, border:`1px solid ${r.is_admin?"#6366f130":"var(--border)"}`, whiteSpace:"pre-wrap" }}>{r.mesej}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding:"14px 20px", borderTop:"1px solid var(--border)" }}>
+            <form onSubmit={sendReply} style={{ display:"flex", gap:10 }}>
+              <input value={replyText} onChange={e=>setReplyText(e.target.value)}
+                placeholder="Balas sebagai Admin..." required
+                style={{ flex:1, padding:"9px 12px", borderRadius:10, border:"1.5px solid var(--border)", background:"var(--bg)", color:"var(--text1)", fontSize:13 }}/>
+              <button type="submit" disabled={submitting}
+                style={{ padding:"9px 16px", borderRadius:10, background:"#6366f1", color:"#fff", border:"none", fontWeight:800, cursor:"pointer" }}>
+                {submitting?"⏳":"Balas"}
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap", alignItems:"center" }}>
+            {["Semua","Terbuka","Dalam Semakan","Selesai"].map(s=>(
+              <button key={s} onClick={()=>setFilterStatus(s)}
+                style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontWeight:700, fontSize:12,
+                  background: filterStatus===s ? "#2563eb" : "var(--bg)", color: filterStatus===s ? "#fff" : "var(--text2)" }}>
+                {s}
+              </button>
+            ))}
+            <div style={{ marginLeft:"auto", fontSize:12, color:"var(--text2)" }}>
+              {unread > 0 && <span style={{ background:"#ef4444", color:"#fff", borderRadius:20, padding:"2px 8px", fontWeight:800, fontSize:11 }}>🔴 {unread} belum dibaca</span>}
+            </div>
+            <button onClick={load} style={{ background:"none", border:"1px solid var(--border)", borderRadius:8, padding:"4px 10px", fontSize:12, cursor:"pointer", color:"var(--text2)", fontWeight:700 }}>🔄</button>
+          </div>
+          {loading ? <div style={{ textAlign:"center", padding:40, color:"var(--text2)" }}>⏳ Memuatkan...</div>
+          : filtered.length === 0 ? <div style={{ textAlign:"center", padding:40, color:"var(--text2)", fontSize:14 }}>Tiada tiket {filterStatus !== "Semua" ? `(${filterStatus})` : ""}.</div>
+          : (
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {filtered.map(t => (
+                <button key={t.id} onClick={()=>openTicket(t)}
+                  style={{ width:"100%", textAlign:"left", padding:"14px 18px", background:"var(--card)", borderRadius:12,
+                    border:`1.5px solid ${t.dibaca_admin ? "var(--border)" : "#fbbf24"}`,
+                    cursor:"pointer", position:"relative" }}>
+                  {!t.dibaca_admin && (
+                    <span style={{ position:"absolute", top:10, right:12, width:8, height:8, borderRadius:"50%", background:"#ef4444", display:"block" }}/>
+                  )}
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontWeight:800, color:"var(--text1)", fontSize:14 }}>
+                        {JENIS_ICO[t.jenis]} {t.tajuk}
+                      </div>
+                      <div style={{ fontSize:12, color:"var(--text2)", marginTop:3 }}>
+                        👤 {t.guru_nama} · {t.guru_email}
+                      </div>
+                      <div style={{ fontSize:11, color:"var(--text3)", marginTop:2 }}>
+                        {fmt(t.created_at)} {(t.support_replies||[]).length > 0 && `· 💬 ${(t.support_replies||[]).length} balasan`}
+                      </div>
+                    </div>
+                    <span style={{ padding:"3px 10px", borderRadius:20, fontSize:11, fontWeight:800, whiteSpace:"nowrap",
+                      background:(S[t.status]||S.Terbuka).bg, color:(S[t.status]||S.Terbuka).tc,
+                      border:`1px solid ${(S[t.status]||S.Terbuka).br}` }}>
+                      {t.status}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function AdminPanel() {
+  const [panelTab, setPanelTab] = useState("akaun");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [msg, setMsg] = useState(null);
   const [delConfirm, setDelConfirm] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    supabase.from("support_tickets").select("id", { count:"exact" }).eq("dibaca_admin", false)
+      .then(({ count }) => setUnreadCount(count || 0));
+  }, []);
 
   const callFn = async (body) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -1463,11 +1845,29 @@ function AdminPanel() {
 
   return (
     <div style={{padding:"24px 20px",maxWidth:800,margin:"0 auto"}}>
-      <div style={{marginBottom:24}}>
-        <div style={{fontSize:22,fontWeight:900,color:"var(--text1)",marginBottom:4}}>⚙️ Urus Akaun Guru</div>
-        <div style={{fontSize:13,color:"var(--text2)"}}>Jemput guru baru atau padam akaun sedia ada.</div>
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:22,fontWeight:900,color:"var(--text1)",marginBottom:4}}>⚙️ Panel Admin</div>
       </div>
 
+      {/* Tab switcher */}
+      <div style={{display:"flex",gap:8,marginBottom:24}}>
+        {[["akaun","👥 Akaun Guru"],["tiket","🎫 Tiket Sokongan"]].map(([t,lbl])=>(
+          <button key={t} onClick={()=>setPanelTab(t)}
+            style={{padding:"9px 20px",borderRadius:20,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,position:"relative",
+              background:panelTab===t?"#2563eb":"var(--card)",color:panelTab===t?"#fff":"var(--text1)"}}>
+            {lbl}
+            {t==="tiket" && unreadCount>0 && (
+              <span style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",borderRadius:"50%",width:18,height:18,fontSize:10,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                {unreadCount}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {panelTab==="tiket" && <AdminTickets />}
+
+      {panelTab==="akaun" && <>
       {/* Invite form */}
       <div style={{background:"var(--card)",borderRadius:16,padding:"20px 22px",marginBottom:20,border:"1.5px solid var(--border)"}}>
         <div style={{fontSize:14,fontWeight:800,color:"var(--text1)",marginBottom:12}}>✉️ Jemput Guru Baru</div>
@@ -1563,12 +1963,13 @@ function AdminPanel() {
           </div>
         )}
       </div>
+      </>}
     </div>
   );
 }
 
 // ─── SIDEBAR ──────────────────────────────────────────────────────────────────
-function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLogout }) {
+function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLogout, unreadTickets }) {
   const greetings = ["Semoga hari cikgu menyeronokkan! ✨","Hebat! Cikgu dah log masuk 🎉","Selamat bertugas, Cikgu! 💪","Jom buat kerja best harini! 🚀"];
   const [g] = useState(() => greetings[Math.floor(Math.random()*greetings.length)]);
   const initials = user.name.split(" ").map(w=>w[0]).join("").slice(0,2);
@@ -1629,12 +2030,24 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
               <div className="sb-urole">{user.role}</div>
             </div>
           </div>
+          <button onClick={()=>{ onNav("support", null); onClose(); }}
+            style={{width:"100%",marginBottom:6,padding:"8px 14px",borderRadius:10,background:"rgba(14,165,233,0.15)",
+              border:"1px solid rgba(14,165,233,0.35)",color:"rgba(255,255,255,0.85)",
+              cursor:"pointer",fontSize:13,fontWeight:800,textAlign:"left"}}>
+            🆘 &nbsp;Bantuan &amp; Aduan
+          </button>
           {user.email === import.meta.env.VITE_ADMIN_EMAIL && (
             <button onClick={()=>{ onNav("admin", null); onClose(); }}
               style={{width:"100%",marginBottom:6,padding:"8px 14px",borderRadius:10,background:"rgba(99,102,241,0.18)",
                 border:"1px solid rgba(99,102,241,0.35)",color:"rgba(255,255,255,0.85)",
-                cursor:"pointer",fontSize:13,fontWeight:800,textAlign:"left"}}>
+                cursor:"pointer",fontSize:13,fontWeight:800,textAlign:"left",position:"relative"}}>
               ⚙️ &nbsp;Urus Akaun Guru
+              {unreadTickets > 0 && (
+                <span style={{position:"absolute",top:6,right:10,background:"#ef4444",color:"#fff",borderRadius:"50%",
+                  width:18,height:18,fontSize:10,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {unreadTickets}
+                </span>
+              )}
             </button>
           )}
           <button className="sb-out" onClick={onLogout}>🚪 &nbsp;Log Keluar</button>
@@ -11476,6 +11889,7 @@ export default function App() {
   const [actMod, setActMod] = useState(null);
   const [actSub, setActSub] = useState(null);
   const [theme, setTheme] = useState(() => localStorage.getItem("edu-theme") || "light");
+  const [unreadTickets, setUnreadTickets] = useState(0);
 
   useEffect(() => {
     localStorage.removeItem("edu-user");
@@ -11507,6 +11921,16 @@ export default function App() {
     localStorage.setItem("edu-theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    if (!user || user.email !== import.meta.env.VITE_ADMIN_EMAIL) return;
+    const fetchUnread = () =>
+      supabase.from("support_tickets").select("id", { count:"exact", head:true })
+        .eq("dibaca_admin", false).then(({ count }) => setUnreadTickets(count || 0));
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 60000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   const onNav = (mod, sub) => { setActMod(mod); setActSub(sub); if(mod) setExp(mod); };
   const m = MODULES.find(x=>x.id===actMod);
   const idx = m?.ids.indexOf(actSub)??-1;
@@ -11530,14 +11954,16 @@ export default function App() {
       <div className="app">
         <Sidebar open={sbOpen} onClose={()=>setSbOpen(false)}
           exp={exp} setExp={setExp} actMod={actMod} actSub={actSub}
-          onNav={onNav} user={user} onLogout={async ()=>{ await supabase.auth.signOut(); }}/>
+          onNav={onNav} user={user} onLogout={async ()=>{ await supabase.auth.signOut(); }}
+          unreadTickets={unreadTickets}/>
 
         <div className="main">
           <div className="topbar">
             <button className="tb-hamburger" onClick={()=>setSbOpen(true)}>☰</button>
             <div className="tb-bread">
               <span style={{cursor:"pointer",fontSize:16}} onClick={()=>onNav(null,null)}>🏠</span>
-              {actMod==="admin"&&<><span className="tb-sep">›</span><span className="cur">⚙️ Urus Akaun Guru</span></>}
+              {actMod==="admin"&&<><span className="tb-sep">›</span><span className="cur">⚙️ Panel Admin</span></>}
+              {actMod==="support"&&<><span className="tb-sep">›</span><span className="cur">🆘 Bantuan & Aduan</span></>}
               {m&&<><span className="tb-sep">›</span><span>{m.icon} {m.label}</span></>}
               {sName&&<><span className="tb-sep">›</span><span className="cur">{sName}</span></>}
             </div>
@@ -11557,9 +11983,11 @@ export default function App() {
           <div className="content">
             {!actMod
               ? <Overview onNav={onNav} user={user}/>
-              : actMod==="admin"
-                ? <AdminPanel />
-                : actMod==="kurikulum"
+              : actMod==="support"
+                ? <SupportPanel user={user}/>
+                : actMod==="admin"
+                  ? <AdminPanel />
+                  : actMod==="kurikulum"
                   ? <KurikulumPage subId={actSub} onNav={onNav}/>
                   : actMod==="hem"
                     ? <HEMPage subId={actSub} onNav={onNav}/>
