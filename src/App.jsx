@@ -5789,17 +5789,45 @@ function HemKaunseling() {
 }
 
 // ─── HEM 4. KESIHATAN MURID ───────────────────────────────────────────────────
+const JENIS_PEMERIKSAAN_LIST = [
+  "Pemeriksaan Fizikal (Umum)",
+  "Pemeriksaan Mata (Penglihatan)",
+  "Pemeriksaan Telinga (Pendengaran)",
+  "Pemeriksaan Pergigian (Gigi)",
+  "Pemeriksaan Berat & Tinggi (BMI)",
+  "Pemeriksaan Darah",
+  "Ujian Urin",
+  "Pemeriksaan Kulit",
+  "Pemeriksaan Jantung",
+  "Vaksinasi / Imunisasi",
+  "Saringan Skoliosis (Tulang Belakang)",
+  "Saringan Kaki Rata (Flat Foot)",
+  "Saringan Kesihatan Mental",
+  "Lain-lain",
+];
+
 function HemKesihatan() {
-  const TABS_KH=['🏥 Rekod','📊 Analisis','🚑 Perlu Tindakan'];
-  const [subtab,setSubtab]=useState(0);
+  const TABS_KH = ['🏥 Rekod', '📊 Analisis', '🚑 Perlu Tindakan'];
+  const [subtab, setSubtab] = useState(0);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [q,setQ]=useState(''); const [filterKelas,setFilterKelas]=useState(''); const [filterStatus,setFilterStatus]=useState('');
+  const [q, setQ] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
+  const [filterKelas, setFilterKelas] = useState('');
+  const [filterJenis, setFilterJenis] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const blank = { nama_murid:"", kelas:"", tarikh:"", jenis_pemeriksaan:"", catatan:"", status:"Normal" };
   const [form, setForm] = useState(blank);
-  const badgeMap = { "Normal":"b-green","Perlu Perhatian":"b-yellow","Dirujuk":"b-red" };
+  const badgeMap = { "Normal":"b-green", "Perlu Perhatian":"b-yellow", "Dirujuk":"b-red" };
+  const KH_ACCENT = "#10b981";
+
+  const fmtTarikh = (t) => {
+    if (!t) return '—';
+    const d = new Date(t);
+    return isNaN(d) ? t : d.toLocaleDateString('ms-MY', { day:'numeric', month:'short', year:'numeric' });
+  };
 
   const load = async () => {
     setLoading(true);
@@ -5821,171 +5849,233 @@ function HemKesihatan() {
     if (!ok) return;
     toast("Dikemaskini!", "success"); setEditItem(null); load();
   };
-  const handleDel = async (id) => {
+  const handleDel = async (id, nama) => {
+    if (!window.confirm(`Padam rekod ${nama}?`)) return;
     const ok = await dbRun(() => supabase.from('hem_kesihatan').delete().eq('id', id));
-    if (ok) setData(d => d.filter(r => r.id !== id));
+    if (ok) { setData(d => d.filter(r => r.id !== id)); toast("Dipadam.", "info"); }
   };
 
+  const namaMuridList = [...new Set(data.map(r => r.nama_murid).filter(Boolean))].sort();
+
   const filtered = data.filter(r => {
-    if(q && !r.nama_murid?.toLowerCase().includes(q.toLowerCase()) && !r.jenis_pemeriksaan?.toLowerCase().includes(q.toLowerCase())) return false;
-    if(filterKelas && r.kelas !== filterKelas) return false;
-    if(filterStatus && r.status !== filterStatus) return false;
+    if (q && !r.nama_murid?.toLowerCase().includes(q.toLowerCase()) && !r.jenis_pemeriksaan?.toLowerCase().includes(q.toLowerCase())) return false;
+    if (filterTahun && !r.kelas?.startsWith(`Tahun ${filterTahun}`)) return false;
+    if (filterKelas && r.kelas !== filterKelas) return false;
+    if (filterJenis && r.jenis_pemeriksaan !== filterJenis) return false;
+    if (filterStatus && r.status !== filterStatus) return false;
     return true;
   });
-  const kelasList = [...new Set(data.map(r=>r.kelas).filter(Boolean))].sort();
-  const byPemeriksaan = Object.entries(data.reduce((a,r)=>{ a[r.jenis_pemeriksaan||'Lain-lain']=(a[r.jenis_pemeriksaan||'Lain-lain']||0)+1; return a; },{})).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const byKelas = [...new Set(data.map(r=>r.kelas).filter(Boolean))].sort().map(k=>({ kelas:k, count:data.filter(r=>r.kelas===k).length })).sort((a,b)=>b.count-a.count);
-  const needAction = data.filter(r=>r.status==="Perlu Perhatian"||r.status==="Dirujuk");
-  const maxP = byPemeriksaan[0]?.[1]||1; const maxK = byKelas[0]?.count||1;
 
-  const normal = data.filter(r => r.status === "Normal").length;
+  const activeFilters = [filterTahun && `Tahun ${filterTahun}`, filterKelas, filterJenis, filterStatus].filter(Boolean);
+  const resetFilters = () => { setQ(''); setFilterTahun(''); setFilterKelas(''); setFilterJenis(''); setFilterStatus(''); };
+
+  const byJenis = Object.entries(data.reduce((a,r)=>{ const k=r.jenis_pemeriksaan||'Lain-lain'; a[k]=(a[k]||0)+1; return a; },{})).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const byKelas = [...new Set(data.map(r=>r.kelas).filter(Boolean))].sort().map(k=>({ kelas:k, count:data.filter(r=>r.kelas===k).length })).sort((a,b)=>b.count-a.count).slice(0,10);
+  const byStatus = [["Normal","✅","#10b981"],["Perlu Perhatian","⚠️","#f59e0b"],["Dirujuk","🚑","#ef4444"]].map(([s,ico,col])=>({ s,ico,col, cnt:data.filter(r=>r.status===s).length }));
+  const needAction = data.filter(r => r.status === "Perlu Perhatian" || r.status === "Dirujuk");
+  const maxJ = byJenis[0]?.[1] || 1;
+  const maxK = byKelas[0]?.count || 1;
+
+  const KesihatanForm = ({ val, set, onSubmit, btnLabel }) => (
+    <form onSubmit={onSubmit}>
+      <datalist id="kh-nama-list">{namaMuridList.map(n => <option key={n} value={n}/>)}</datalist>
+      <div className="form-row">
+        <div className="form-field">
+          <label className="form-label">Nama Murid *</label>
+          <input className="form-input" required list="kh-nama-list" placeholder="Nama penuh murid"
+            value={val.nama_murid} onChange={e=>set(f=>({...f,nama_murid:e.target.value}))}/>
+        </div>
+        <div className="form-field">
+          <label className="form-label">Kelas *</label>
+          <select className="form-input" required value={val.kelas} onChange={e=>set(f=>({...f,kelas:e.target.value}))}>
+            <option value="">— Pilih Kelas —</option>
+            {[1,2,3,4,5,6].map(t=>(
+              <optgroup key={t} label={`Tahun ${t}`}>
+                {KELAS_NAMA_LIST.map(n=><option key={n} value={`Tahun ${t} ${n}`}>Tahun {t} {n}</option>)}
+              </optgroup>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-field">
+          <label className="form-label">Tarikh Pemeriksaan *</label>
+          <input className="form-input" required type="date"
+            value={val.tarikh} onChange={e=>set(f=>({...f,tarikh:e.target.value}))}/>
+        </div>
+        <div className="form-field">
+          <label className="form-label">Jenis Pemeriksaan *</label>
+          <select className="form-input" required value={val.jenis_pemeriksaan} onChange={e=>set(f=>({...f,jenis_pemeriksaan:e.target.value}))}>
+            <option value="">— Pilih Jenis —</option>
+            {JENIS_PEMERIKSAAN_LIST.map(j=><option key={j}>{j}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="form-field">
+        <label className="form-label">Catatan / Penemuan</label>
+        <textarea className="form-input" rows={2} placeholder="Maklumat tambahan, simptom, arahan doktor…"
+          value={val.catatan} onChange={e=>set(f=>({...f,catatan:e.target.value}))}/>
+      </div>
+      <div className="form-field">
+        <label className="form-label">Status</label>
+        <select className="form-input" value={val.status} onChange={e=>set(f=>({...f,status:e.target.value}))}>
+          <option>Normal</option>
+          <option>Perlu Perhatian</option>
+          <option>Dirujuk</option>
+        </select>
+      </div>
+      <button className="btn-primary" type="submit" style={{background:KH_ACCENT}}>{btnLabel}</button>
+    </form>
+  );
+
   return (
     <KurPage title="Kesihatan Murid" sub="HEM · SK Darau, Kota Kinabalu"
       stats={[
-        { ico:"🏥", val:data.length, lbl:"Rekod" },
-        { ico:"✅", val:normal, lbl:"Normal" },
-        { ico:"⚠️", val:data.filter(r=>r.status==="Perlu Perhatian").length, lbl:"Perlu Perhatian" },
-        { ico:"🚑", val:data.filter(r=>r.status==="Dirujuk").length, lbl:"Dirujuk" },
+        { ico:"🏥", val:data.length, lbl:"Jumlah Rekod" },
+        { ico:"✅", val:byStatus[0].cnt, lbl:"Normal" },
+        { ico:"⚠️", val:byStatus[1].cnt, lbl:"Perlu Perhatian" },
+        { ico:"🚑", val:byStatus[2].cnt, lbl:"Dirujuk" },
       ]}>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
-        {TABS_KH.map((t,i)=><button key={i} onClick={()=>setSubtab(i)} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,background:subtab===i?"var(--accent)":"var(--card2)",color:subtab===i?"#fff":"var(--text2)"}}>{t}</button>)}
+        {TABS_KH.map((t,i)=>(
+          <button key={i} onClick={()=>setSubtab(i)} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,
+            background:subtab===i?KH_ACCENT:"var(--card2)",color:subtab===i?"#fff":"var(--text2)"}}>
+            {t}
+          </button>
+        ))}
       </div>
+
       {subtab===0 && (<>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8,alignItems:"center"}}>
-          <input className="form-input" style={{maxWidth:200,marginBottom:0}} placeholder="🔍 Cari nama / pemeriksaan…" value={q} onChange={e=>setQ(e.target.value)}/>
-          <select className="form-input" style={{maxWidth:160,marginBottom:0}} value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}>
-            <option value="">Semua Kelas</option>{kelasList.map(k=><option key={k}>{k}</option>)}
+          <input className="form-input" style={{maxWidth:200,marginBottom:0}} placeholder="🔍 Cari nama / pemeriksaan…"
+            value={q} onChange={e=>setQ(e.target.value)}/>
+          <select className="form-input" style={{maxWidth:120,marginBottom:0}} value={filterTahun} onChange={e=>{ setFilterTahun(e.target.value); setFilterKelas(''); }}>
+            <option value="">Semua Tahun</option>
+            {[1,2,3,4,5,6].map(t=><option key={t} value={t}>Tahun {t}</option>)}
           </select>
-          <select className="form-input" style={{maxWidth:180,marginBottom:0}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
-            <option value="">Semua Status</option><option>Normal</option><option>Perlu Perhatian</option><option>Dirujuk</option>
+          <select className="form-input" style={{maxWidth:180,marginBottom:0}} value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}>
+            <option value="">Semua Kelas</option>
+            {filterTahun
+              ? KELAS_NAMA_LIST.map(n=><option key={n} value={`Tahun ${filterTahun} ${n}`}>Tahun {filterTahun} {n}</option>)
+              : [1,2,3,4,5,6].flatMap(t=>KELAS_NAMA_LIST.map(n=><option key={`${t}${n}`} value={`Tahun ${t} ${n}`}>Tahun {t} {n}</option>))
+            }
           </select>
-          <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Rekod</button>
+          <select className="form-input" style={{maxWidth:220,marginBottom:0}} value={filterJenis} onChange={e=>setFilterJenis(e.target.value)}>
+            <option value="">Semua Jenis</option>
+            {JENIS_PEMERIKSAAN_LIST.map(j=><option key={j}>{j}</option>)}
+          </select>
+          <select className="form-input" style={{maxWidth:160,marginBottom:0}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+            <option value="">Semua Status</option>
+            <option>Normal</option><option>Perlu Perhatian</option><option>Dirujuk</option>
+          </select>
+          {(q||activeFilters.length>0) && <button onClick={resetFilters} style={{padding:"6px 12px",borderRadius:8,border:"1px solid var(--border)",background:"var(--card2)",cursor:"pointer",fontSize:12,color:"var(--text3)"}}>✕ Reset</button>}
+          <button className="btn-add" style={{marginLeft:"auto",background:KH_ACCENT}} onClick={()=>setShowAdd(true)}>+ Tambah Rekod</button>
         </div>
+        {activeFilters.length>0 && (
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+            {activeFilters.map(f=><span key={f} style={{background:KH_ACCENT+"22",color:KH_ACCENT,borderRadius:12,padding:"2px 10px",fontSize:11,fontWeight:700}}>{f}</span>)}
+            <span style={{fontSize:11,color:"var(--text3)",alignSelf:"center"}}>{filtered.length} rekod</span>
+          </div>
+        )}
         {loading ? <div className="loading">⏳ Memuatkan…</div> : (
           <div className="kur-table-wrap">
             <table className="kur-table">
-              <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Pemeriksaan</th><th>Catatan</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>#</th><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Jenis Pemeriksaan</th><th>Catatan</th><th>Status</th><th></th></tr></thead>
               <tbody>
-                {filtered.map(r => (
-                  <tr key={r.id}>
+                {filtered.map((r,i) => (
+                  <tr key={r.id} style={r.status==="Dirujuk"?{background:"#fef2f2"}:r.status==="Perlu Perhatian"?{background:"#fffbeb"}:{}}>
+                    <td style={{color:"var(--text3)",fontSize:12}}>{i+1}</td>
                     <td style={{fontWeight:800}}>{r.nama_murid}</td>
-                    <td style={{color:"var(--text3)"}}>{r.kelas}</td>
-                    <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
-                    <td>{r.jenis_pemeriksaan}</td>
-                    <td style={{fontSize:12,color:"var(--text2)"}}>{r.catatan}</td>
+                    <td><span style={{background:TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1]+'18',color:TAHUN_COLORS[(parseInt(r.kelas?.split(' ')[1])||1)-1],borderRadius:8,padding:"2px 8px",fontSize:11,fontWeight:700}}>{r.kelas}</span></td>
+                    <td style={{color:"var(--text3)",whiteSpace:"nowrap",fontSize:12}}>{fmtTarikh(r.tarikh)}</td>
+                    <td style={{fontSize:12}}>{r.jenis_pemeriksaan}</td>
+                    <td style={{fontSize:11,color:"var(--text2)",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.catatan||'—'}</td>
                     <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
                     <td style={{display:"flex",gap:4}}>
-                      <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
-                      <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
+                      <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={()=>setEditItem({...r})}>✏️</button>
+                      <button className="btn-del" onClick={()=>handleDel(r.id, r.nama_murid)}>🗑</button>
                     </td>
                   </tr>
                 ))}
-                {filtered.length===0 && <tr><td colSpan={7} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada rekod</td></tr>}
+                {filtered.length===0 && <tr><td colSpan={8} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada rekod ditemui</td></tr>}
               </tbody>
             </table>
           </div>
         )}
       </>)}
+
       {subtab===1 && (<>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
+          {byStatus.map(({s,ico,col,cnt})=>(
+            <div key={s} style={{textAlign:"center",padding:"16px 8px",background:col+"10",borderRadius:12,border:`1.5px solid ${col}30`}}>
+              <div style={{fontSize:26}}>{ico}</div>
+              <div style={{fontWeight:900,fontSize:28,color:col}}>{cnt}</div>
+              <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{s}</div>
+              <div style={{fontSize:10,color:"var(--text3)"}}>{data.length?Math.round(cnt/data.length*100):0}%</div>
+            </div>
+          ))}
+        </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
           <div className="kur-card" style={{padding:16}}>
             <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Jenis Pemeriksaan</div>
-            {byPemeriksaan.map(([k,c])=>(
+            {byJenis.map(([k,c])=>(
               <div key={k} style={{marginBottom:8}}>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span>{k}</span><b>{c}</b></div>
-                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(c/maxP)*100}%`,height:8,borderRadius:4,background:"var(--accent)"}}></div></div>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",paddingRight:8}}>{k}</span><b>{c}</b></div>
+                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(c/maxJ)*100}%`,height:8,borderRadius:4,background:KH_ACCENT}}></div></div>
               </div>
             ))}
-            {byPemeriksaan.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
+            {byJenis.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
           </div>
           <div className="kur-card" style={{padding:16}}>
             <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Rekod Mengikut Kelas</div>
             {byKelas.map(({kelas,count})=>(
               <div key={kelas} style={{marginBottom:8}}>
                 <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span>{kelas}</span><b>{count}</b></div>
-                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(count/maxK)*100}%`,height:8,borderRadius:4,background:"var(--accent2)"}}></div></div>
+                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(count/maxK)*100}%`,height:8,borderRadius:4,background:TAHUN_COLORS[(parseInt(kelas?.split(' ')[1])||1)-1]}}></div></div>
               </div>
             ))}
             {byKelas.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
           </div>
         </div>
-        <div className="kur-card" style={{padding:16,marginTop:16}}>
-          <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Status Kesihatan</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
-            {[["Normal","b-green","✅"],["Perlu Perhatian","b-yellow","⚠️"],["Dirujuk","b-red","🚑"]].map(([s,b,ico])=>{
-              const cnt=data.filter(r=>r.status===s).length;
-              return <div key={s} style={{textAlign:"center",padding:"12px 8px",background:"var(--card2)",borderRadius:10}}>
-                <div style={{fontSize:22}}>{ico}</div>
-                <div style={{fontWeight:900,fontSize:22,color:"var(--accent)"}}>{cnt}</div>
-                <div style={{fontSize:11,color:"var(--text3)"}}>{s}</div>
-              </div>;
-            })}
+      </>)}
+
+      {subtab===2 && (<>
+        <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:12,padding:"10px 16px",marginBottom:12,display:"flex",gap:10,alignItems:"center"}}>
+          <span style={{fontSize:20}}>🚑</span>
+          <div>
+            <div style={{fontWeight:700,fontSize:13,color:"#dc2626"}}>Murid Perlu Tindakan Segera</div>
+            <div style={{fontSize:11,color:"#7f1d1d"}}>{needAction.length} murid dengan status Perlu Perhatian atau Dirujuk</div>
           </div>
         </div>
-      </>)}
-      {subtab===2 && (<>
-        <div style={{fontWeight:700,marginBottom:4,color:"var(--text2)"}}>Murid Perlu Tindakan Segera</div>
-        <div style={{fontSize:12,color:"var(--text3)",marginBottom:12}}>Status: Perlu Perhatian atau Dirujuk</div>
         <div className="kur-table-wrap">
           <table className="kur-table">
-            <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Pemeriksaan</th><th>Catatan</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh</th><th>Jenis Pemeriksaan</th><th>Catatan</th><th>Status</th><th></th></tr></thead>
             <tbody>
               {needAction.map(r=>(
-                <tr key={r.id}>
+                <tr key={r.id} style={r.status==="Dirujuk"?{background:"#fef2f2"}:{background:"#fffbeb"}}>
                   <td style={{fontWeight:800}}>{r.nama_murid}</td>
-                  <td style={{color:"var(--text3)"}}>{r.kelas}</td>
-                  <td style={{color:"var(--text3)",whiteSpace:"nowrap"}}>{r.tarikh}</td>
-                  <td>{r.jenis_pemeriksaan}</td>
-                  <td style={{fontSize:12,color:"var(--text2)"}}>{r.catatan}</td>
+                  <td style={{color:"var(--text3)",fontSize:12}}>{r.kelas}</td>
+                  <td style={{color:"var(--text3)",whiteSpace:"nowrap",fontSize:12}}>{fmtTarikh(r.tarikh)}</td>
+                  <td style={{fontSize:12}}>{r.jenis_pemeriksaan}</td>
+                  <td style={{fontSize:11,color:"var(--text2)"}}>{r.catatan||'—'}</td>
                   <td><span className={`badge ${badgeMap[r.status]||"b-gray"}`}>{r.status}</span></td>
-                  <td><button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button></td>
+                  <td><button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={()=>setEditItem({...r})}>✏️</button></td>
                 </tr>
               ))}
-              {needAction.length===0 && <tr><td colSpan={7} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Semua murid dalam keadaan baik 🎉</td></tr>}
+              {needAction.length===0 && <tr><td colSpan={7} style={{textAlign:"center",color:"#10b981",padding:24,fontWeight:700}}>Semua murid dalam keadaan baik 🎉</td></tr>}
             </tbody>
           </table>
         </div>
       </>)}
+
       {showAdd && (
-        <Modal title="Tambah Rekod Kesihatan" onClose={() => setShowAdd(false)}>
-          <form onSubmit={handleAdd}>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" required value={form.nama_murid} onChange={e=>setForm(f=>({...f,nama_murid:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))}/></div>
-            </div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={form.tarikh} onChange={e=>setForm(f=>({...f,tarikh:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Jenis Pemeriksaan</label><input className="form-input" value={form.jenis_pemeriksaan} onChange={e=>setForm(f=>({...f,jenis_pemeriksaan:e.target.value}))} placeholder="cth: Pemeriksaan Gigi"/></div>
-            </div>
-            <div className="form-field"><label className="form-label">Catatan</label><textarea className="form-input" rows={2} value={form.catatan} onChange={e=>setForm(f=>({...f,catatan:e.target.value}))}/></div>
-            <div className="form-field"><label className="form-label">Status</label>
-              <select className="form-input" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
-                <option>Normal</option><option>Perlu Perhatian</option><option>Dirujuk</option>
-              </select>
-            </div>
-            <button className="btn-primary" type="submit">+ Tambah</button>
-          </form>
+        <Modal title="Tambah Rekod Kesihatan" onClose={()=>setShowAdd(false)}>
+          <KesihatanForm val={form} set={setForm} onSubmit={handleAdd} btnLabel="+ Tambah Rekod"/>
         </Modal>
       )}
       {editItem && (
-        <Modal title={`Edit — ${editItem.nama_murid}`} onClose={() => setEditItem(null)}>
-          <form onSubmit={handleEdit}>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" value={editItem.nama_murid} onChange={e=>setEditItem(f=>({...f,nama_murid:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Kelas</label><input className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}/></div>
-            </div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Tarikh</label><input className="form-input" value={editItem.tarikh} onChange={e=>setEditItem(f=>({...f,tarikh:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Jenis Pemeriksaan</label><input className="form-input" value={editItem.jenis_pemeriksaan} onChange={e=>setEditItem(f=>({...f,jenis_pemeriksaan:e.target.value}))}/></div>
-            </div>
-            <div className="form-field"><label className="form-label">Catatan</label><textarea className="form-input" rows={2} value={editItem.catatan} onChange={e=>setEditItem(f=>({...f,catatan:e.target.value}))}/></div>
-            <div className="form-field"><label className="form-label">Status</label>
-              <select className="form-input" value={editItem.status} onChange={e=>setEditItem(f=>({...f,status:e.target.value}))}>
-                <option>Normal</option><option>Perlu Perhatian</option><option>Dirujuk</option>
-              </select>
-            </div>
-            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
-          </form>
+        <Modal title={`Edit — ${editItem.nama_murid}`} onClose={()=>setEditItem(null)}>
+          <KesihatanForm val={editItem} set={setEditItem} onSubmit={handleEdit} btnLabel="💾 Simpan Perubahan"/>
         </Modal>
       )}
     </KurPage>
