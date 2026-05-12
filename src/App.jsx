@@ -9835,159 +9835,187 @@ function PencapaianKoku() {
 }
 
 function OPRPage() {
-  const TABS_OPR=['📋 Rekod OPR','📊 Analisis Kelas','🖨️ Jana PDF'];
+  const OPR_ACCENT='#0891b2';
+  const DOMAINS=[
+    {id:'kurikulum',  label:'Kurikulum',   icon:'📚',color:'#2563eb'},
+    {id:'hem',        label:'HEM',         icon:'👫',color:'#0ea5e9'},
+    {id:'kokurikulum',label:'Kokurikulum', icon:'🏅',color:'#6366f1'},
+    {id:'prasekolah', label:'Prasekolah',  icon:'🌈',color:'#7c3aed'},
+  ];
+  const TAHUN_OPTS=['2024','2025','2026','2027'];
+  const tahunNow=new Date().getFullYear().toString();
+  const [domain,setDomain]=useState('kurikulum');
   const [subtab,setSubtab]=useState(0);
   const [data,setData]=useState([]);
   const [loading,setLoading]=useState(true);
   const [showAdd,setShowAdd]=useState(false);
   const [editItem,setEditItem]=useState(null);
-  const [filterKelas,setFilterKelas]=useState('');
   const [q,setQ]=useState('');
-  const tahunNow=new Date().getFullYear().toString();
-  const blank={nama_murid:'',kelas:'',kelab:'',m_kelab:0,uniform:'',m_uniform:0,sukan:'',m_sukan:0,catatan:'',tahun:tahunNow};
+  const [filterTahun,setFilterTahun]=useState(tahunNow);
+  const blank={domain:'kurikulum',tarikh:'',masa:'',nama_program:'',penganjur:'',sasaran:'',impak:'',catatan:'',tahun:tahunNow};
   const [form,setForm]=useState(blank);
-  const load=async()=>{setLoading(true);const{data:d}=await supabase.from('koku_opr').select('*').neq('status','PADAM').order('nama_murid');setData(d||[]);setLoading(false);};
+
+  const load=async()=>{
+    setLoading(true);
+    const{data:d}=await supabase.from('opr_program').select('*').neq('status','PADAM').order('tarikh',{ascending:false});
+    setData(d||[]);setLoading(false);
+  };
   useEffect(()=>{load();},[]);
-  const calcJml=r=>r.m_kelab+r.m_uniform+r.m_sukan;
+
+  const curDomain=DOMAINS.find(d=>d.id===domain);
+  const domainData=data.filter(r=>r.domain===domain&&(!filterTahun||r.tahun===filterTahun));
+  const filtered=domainData.filter(r=>!q||r.nama_program.toLowerCase().includes(q.toLowerCase())||(r.penganjur||'').toLowerCase().includes(q.toLowerCase()));
+
   const handleAdd=async e=>{
-    e.preventDefault();const jumlah=calcJml(form);
-    const ok=await dbRun(()=>supabase.from('koku_opr').insert([{...form,jumlah,gred:gradeOPR(jumlah)}]));
-    if(!ok)return;toast('Ditambah!','success');setShowAdd(false);setForm(blank);load();
+    e.preventDefault();
+    const ok=await dbRun(()=>supabase.from('opr_program').insert([{...form,domain,tahun:filterTahun}]));
+    if(!ok)return;toast('Program ditambah!','success');setShowAdd(false);setForm({...blank,domain,tahun:filterTahun});load();
   };
   const handleEdit=async e=>{
-    e.preventDefault();const{id,created_at,...rest}=editItem;const jumlah=calcJml(rest);
-    const ok=await dbRun(()=>supabase.from('koku_opr').update({...rest,jumlah,gred:gradeOPR(jumlah)}).eq('id',id));
+    e.preventDefault();
+    const{id,created_at,...rest}=editItem;
+    const ok=await dbRun(()=>supabase.from('opr_program').update(rest).eq('id',id));
     if(!ok)return;toast('Dikemaskini!','success');setEditItem(null);load();
   };
-  const handleDel=async id=>{const ok=await dbRun(()=>supabase.from('koku_opr').update({status:'PADAM'}).eq('id',id));if(ok){setData(d=>d.filter(r=>r.id!==id));toast('Dipadam.','success');}};
-  const gc={A:'b-green',B:'b-blue',C:'b-yellow',D:'b-red',E:'b-red'};
-  const filtered=data.filter(d=>(!filterKelas||d.kelas===filterKelas)&&(!q||d.nama_murid.toLowerCase().includes(q.toLowerCase())));
-  const kelasList=[...new Set(data.map(d=>d.kelas).filter(Boolean))].sort();
-  const byKelas=kelasList.map(k=>{
-    const murid=data.filter(d=>d.kelas===k);
-    const gc2={A:0,B:0,C:0,D:0,E:0};
-    murid.forEach(m=>{gc2[m.gred]=(gc2[m.gred]||0)+1;});
-    const purata=murid.length?Math.round(murid.reduce((s,m)=>s+m.jumlah,0)/murid.length):0;
-    return{k,total:murid.length,...gc2,purata};
-  });
-  return(
-    <KurPage title="OPR — Pelaporan Kokurikulum" sub="OPR · SK Darau"
-      stats={[{ico:'📊',val:data.length,lbl:'Rekod'},{ico:'⭐',val:data.filter(d=>d.gred==='A').length,lbl:'Gred A'},{ico:'📈',val:data.length?Math.round(data.reduce((s,d)=>s+d.jumlah,0)/data.length):0,lbl:'Purata Jumlah'},{ico:'🏫',val:kelasList.length,lbl:'Kelas'}]}>
-      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:16}}>
-        {TABS_OPR.map((t,i)=><button key={i} onClick={()=>setSubtab(i)} style={{padding:'7px 16px',borderRadius:20,border:'none',cursor:'pointer',fontWeight:subtab===i?700:400,background:subtab===i?'var(--accent)':'var(--card2)',color:subtab===i?'#fff':'var(--text1)',fontSize:13}}>{t}</button>)}
+  const handleDel=async id=>{
+    if(!confirm('Padam rekod program ini?'))return;
+    const ok=await dbRun(()=>supabase.from('opr_program').update({status:'PADAM'}).eq('id',id));
+    if(ok){setData(d=>d.filter(r=>r.id!==id));toast('Dipadam.','success');}
+  };
+
+  const fmtT=t=>t?new Date(t).toLocaleDateString('ms-MY',{day:'2-digit',month:'short',year:'numeric'}):'—';
+
+  const printProgram=(rows,domLabel)=>{
+    const w=window.open('','_blank');
+    const tbl=rows.map((r,i)=>`<tr><td>${i+1}</td><td style="white-space:nowrap">${fmtT(r.tarikh)}</td><td>${r.masa||'—'}</td><td style="font-weight:700">${r.nama_program}</td><td>${r.penganjur||'—'}</td><td>${r.sasaran||'—'}</td><td>${r.impak||'—'}</td><td>${r.catatan||'—'}</td></tr>`).join('');
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan OPR</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:24px}h2{text-align:center;font-size:16px;margin:0 0 3px}h3{text-align:center;font-size:11px;font-weight:400;margin:0 0 16px;color:#555}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:5px 7px;vertical-align:top}th{background:#0891b2;color:#fff;font-size:10px;text-align:left}tr:nth-child(even){background:#f5f5f5}.meta{text-align:right;font-size:10px;color:#888;margin-bottom:6px}@media print{.no-print{display:none}}</style></head><body><h2>Laporan OPR — ${domLabel}</h2><h3>SK Darau, Kota Kinabalu, Sabah &nbsp;|&nbsp; Tahun Pelajaran ${filterTahun}</h3><div class="meta">Dijana: ${new Date().toLocaleDateString('ms-MY')} &nbsp;|&nbsp; Jumlah Program: ${rows.length}</div><table><thead><tr><th>#</th><th>Tarikh</th><th>Masa</th><th>Nama Program</th><th>Penganjur/Guru</th><th>Sasaran/Peserta</th><th>Impak / Outcome</th><th>Catatan</th></tr></thead><tbody>${tbl}</tbody></table><br><button class="no-print" onclick="window.print()" style="padding:8px 20px;background:#0891b2;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px">🖨️ Cetak PDF</button></body></html>`);
+    w.document.close();
+  };
+
+  const FormFields=({val,set})=>(
+    <>
+      <div className="form-row">
+        <div className="form-field"><label className="form-label">Tarikh *</label><input className="form-input" type="date" required value={val.tarikh||''} onChange={e=>set(f=>({...f,tarikh:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Masa</label><input className="form-input" type="time" value={val.masa||''} onChange={e=>set(f=>({...f,masa:e.target.value}))}/></div>
       </div>
+      <div className="form-field"><label className="form-label">Nama Program *</label><input className="form-input" required placeholder="Contoh: Kem Literasi Membaca" value={val.nama_program||''} onChange={e=>set(f=>({...f,nama_program:e.target.value}))}/></div>
+      <div className="form-row">
+        <div className="form-field"><label className="form-label">Penganjur / Guru Bertanggungjawab</label><input className="form-input" value={val.penganjur||''} onChange={e=>set(f=>({...f,penganjur:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Sasaran / Peserta</label><input className="form-input" placeholder="Contoh: Murid Tahun 4, 5, 6" value={val.sasaran||''} onChange={e=>set(f=>({...f,sasaran:e.target.value}))}/></div>
+      </div>
+      <div className="form-field"><label className="form-label">Impak / Outcome</label><textarea className="form-input" rows={3} placeholder="Huraikan impak atau hasil program ini..." value={val.impak||''} onChange={e=>set(f=>({...f,impak:e.target.value}))}/></div>
+      <div className="form-field"><label className="form-label">Catatan</label><input className="form-input" value={val.catatan||''} onChange={e=>set(f=>({...f,catatan:e.target.value}))}/></div>
+    </>
+  );
+
+  return(
+    <KurPage title="OPR — Pelaporan Program" sub="OPR · SK Darau"
+      stats={[
+        {ico:'📋',val:data.filter(r=>r.tahun===filterTahun).length,lbl:'Program Tahun Ini'},
+        {ico:'📚',val:data.filter(r=>r.domain==='kurikulum'&&r.tahun===filterTahun).length,lbl:'Kurikulum'},
+        {ico:'👫',val:data.filter(r=>r.domain==='hem'&&r.tahun===filterTahun).length,lbl:'HEM'},
+        {ico:'🏅',val:data.filter(r=>r.domain==='kokurikulum'&&r.tahun===filterTahun).length,lbl:'Kokurikulum'},
+      ]}>
+
+      {/* Domain tabs */}
+      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
+        {DOMAINS.map(d=>(
+          <button key={d.id} onClick={()=>{setDomain(d.id);setSubtab(0);setQ('');}}
+            style={{padding:'8px 18px',borderRadius:20,border:`2px solid ${domain===d.id?d.color:'var(--border)'}`,cursor:'pointer',fontWeight:domain===d.id?800:500,background:domain===d.id?d.color:'var(--surface)',color:domain===d.id?'#fff':'var(--text1)',fontSize:13,transition:'all 0.15s'}}>
+            {d.icon} {d.label}
+          </button>
+        ))}
+        <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:6}}>
+          <label style={{fontSize:12,color:'var(--text2)'}}>Tahun:</label>
+          <select className="kur-select" value={filterTahun} onChange={e=>setFilterTahun(e.target.value)}>{TAHUN_OPTS.map(y=><option key={y}>{y}</option>)}</select>
+        </div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div style={{display:'flex',gap:6,marginBottom:14}}>
+        {['📋 Rekod Program','🖨️ Jana PDF'].map((t,i)=>(
+          <button key={i} onClick={()=>setSubtab(i)}
+            style={{padding:'6px 14px',borderRadius:16,border:'none',cursor:'pointer',fontWeight:subtab===i?700:400,background:subtab===i?OPR_ACCENT:'var(--card2)',color:subtab===i?'#fff':'var(--text1)',fontSize:12}}>
+            {t}
+          </button>
+        ))}
+      </div>
+
       {loading?<div className="loading">⏳ Memuatkan…</div>:(<>
         {subtab===0&&(<>
           <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12,alignItems:'center'}}>
-            <input className="kur-search" placeholder="Cari nama murid…" value={q} onChange={e=>setQ(e.target.value)} style={{flex:1,minWidth:150}}/>
-            <select className="kur-select" value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}><option value="">Semua Kelas</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}</select>
-            <button className="btn-add" onClick={()=>{setForm(blank);setShowAdd(true)}}>+ Tambah Rekod</button>
+            <div style={{padding:'6px 14px',borderRadius:10,background:`${curDomain.color}18`,color:curDomain.color,fontWeight:800,fontSize:13,border:`1.5px solid ${curDomain.color}30`}}>
+              {curDomain.icon} {curDomain.label} — {filtered.length} program
+            </div>
+            <input className="kur-search" placeholder="Cari nama program / penganjur…" value={q} onChange={e=>setQ(e.target.value)} style={{flex:1,minWidth:160}}/>
+            <button className="btn-add" onClick={()=>{setForm({...blank,domain,tahun:filterTahun});setShowAdd(true);}}>+ Tambah Program</button>
           </div>
+
           <div className="kur-table-wrap"><table className="kur-table">
-            <thead>
-              <tr><th rowSpan="2">#</th><th rowSpan="2">Nama Murid</th><th rowSpan="2">Kelas</th><th colSpan="2" style={{background:'#eff6ff'}}>A — Kelab/Persatuan</th><th colSpan="2" style={{background:'#f0fdf4'}}>B — Badan Beruniform</th><th colSpan="2" style={{background:'#fefce8'}}>C — Sukan/Permainan</th><th rowSpan="2">Jml(30)</th><th rowSpan="2">Gred</th><th rowSpan="2">Catatan</th><th rowSpan="2"></th></tr>
-              <tr><th style={{background:'#eff6ff',fontSize:10}}>Nama</th><th style={{background:'#eff6ff',fontSize:10}}>Markah</th><th style={{background:'#f0fdf4',fontSize:10}}>Nama</th><th style={{background:'#f0fdf4',fontSize:10}}>Markah</th><th style={{background:'#fefce8',fontSize:10}}>Nama</th><th style={{background:'#fefce8',fontSize:10}}>Markah</th></tr>
-            </thead>
-            <tbody>{filtered.map((p,i)=>(
-              <tr key={p.id}>
+            <thead><tr><th>#</th><th>Tarikh</th><th>Masa</th><th>Nama Program</th><th>Penganjur/Guru</th><th>Sasaran/Peserta</th><th>Impak / Outcome</th><th>Catatan</th><th></th></tr></thead>
+            <tbody>{filtered.length===0
+              ?<tr><td colSpan={9} style={{textAlign:'center',padding:28,color:'var(--text3)',fontSize:13}}>Tiada rekod. Klik "+ Tambah Program" untuk mula.</td></tr>
+              :filtered.map((r,i)=>(
+              <tr key={r.id}>
                 <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
-                <td style={{fontWeight:800}}>{p.nama_murid}</td><td style={{fontSize:12}}>{p.kelas}</td>
-                <td style={{fontSize:11}}>{p.kelab}</td><td style={{fontWeight:700,color:'#2563eb'}}>{p.m_kelab}</td>
-                <td style={{fontSize:11}}>{p.uniform}</td><td style={{fontWeight:700,color:'#16a34a'}}>{p.m_uniform}</td>
-                <td style={{fontSize:11}}>{p.sukan}</td><td style={{fontWeight:700,color:'#d97706'}}>{p.m_sukan}</td>
-                <td style={{fontWeight:800,fontSize:15}}>{p.jumlah}</td>
-                <td><span className={`badge ${gc[p.gred]||'b-gray'}`}>{p.gred}</span></td>
-                <td style={{color:'var(--text2)',fontSize:11}}>{p.catatan||'—'}</td>
+                <td style={{fontSize:12,whiteSpace:'nowrap'}}>{fmtT(r.tarikh)}</td>
+                <td style={{fontSize:12}}>{r.masa||'—'}</td>
+                <td style={{fontWeight:700}}>{r.nama_program}</td>
+                <td style={{fontSize:12}}>{r.penganjur||'—'}</td>
+                <td style={{fontSize:12,color:'var(--text2)'}}>{r.sasaran||'—'}</td>
+                <td style={{fontSize:12,maxWidth:220}}>{r.impak||'—'}</td>
+                <td style={{fontSize:11,color:'var(--text3)'}}>{r.catatan||'—'}</td>
                 <td style={{display:'flex',gap:4}}>
-                  <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditItem({...p})}>✏️</button>
-                  <button className="btn-del" onClick={()=>handleDel(p.id)}>🗑</button>
+                  <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditItem({...r})}>✏️</button>
+                  <button className="btn-del" onClick={()=>handleDel(r.id)}>🗑</button>
                 </td>
               </tr>
             ))}</tbody>
           </table></div>
-          {showAdd&&<Modal title="Tambah Rekod OPR" onClose={()=>setShowAdd(false)}><form onSubmit={handleAdd}>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" required value={form.nama_murid} onChange={e=>setForm(f=>({...f,nama_murid:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Kelas</label><select className="form-input" value={form.kelas} onChange={e=>setForm(f=>({...f,kelas:e.target.value}))}><option value="">-</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}</select></div>
-            </div>
-            <p style={{fontSize:12,color:'var(--text2)',margin:'0 0 6px'}}>A — Kelab/Persatuan</p>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Nama Kelab</label><input className="form-input" value={form.kelab} onChange={e=>setForm(f=>({...f,kelab:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Markah A (/10)</label><input className="form-input" type="number" min="0" max="10" value={form.m_kelab} onChange={e=>setForm(f=>({...f,m_kelab:+e.target.value}))}/></div>
-            </div>
-            <p style={{fontSize:12,color:'var(--text2)',margin:'0 0 6px'}}>B — Badan Beruniform</p>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Nama Badan</label><input className="form-input" value={form.uniform} onChange={e=>setForm(f=>({...f,uniform:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Markah B (/10)</label><input className="form-input" type="number" min="0" max="10" value={form.m_uniform} onChange={e=>setForm(f=>({...f,m_uniform:+e.target.value}))}/></div>
-            </div>
-            <p style={{fontSize:12,color:'var(--text2)',margin:'0 0 6px'}}>C — Sukan/Permainan</p>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Nama Sukan</label><input className="form-input" value={form.sukan} onChange={e=>setForm(f=>({...f,sukan:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Markah C (/10)</label><input className="form-input" type="number" min="0" max="10" value={form.m_sukan} onChange={e=>setForm(f=>({...f,m_sukan:+e.target.value}))}/></div>
-            </div>
-            <p style={{fontSize:13,fontWeight:700,margin:'4px 0 8px'}}>Jumlah: {form.m_kelab+form.m_uniform+form.m_sukan}/30 — Gred: {gradeOPR(form.m_kelab+form.m_uniform+form.m_sukan)}</p>
-            <div className="form-field"><label className="form-label">Catatan</label><input className="form-input" value={form.catatan} onChange={e=>setForm(f=>({...f,catatan:e.target.value}))}/></div>
-            <button className="btn-primary" type="submit">+ Tambah</button>
-          </form></Modal>}
-          {editItem&&<Modal title={`Edit — ${editItem.nama_murid}`} onClose={()=>setEditItem(null)}><form onSubmit={handleEdit}>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Nama Murid</label><input className="form-input" required value={editItem.nama_murid} onChange={e=>setEditItem(f=>({...f,nama_murid:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Kelas</label><select className="form-input" value={editItem.kelas} onChange={e=>setEditItem(f=>({...f,kelas:e.target.value}))}><option value="">-</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}</select></div>
-            </div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Nama Kelab (A)</label><input className="form-input" value={editItem.kelab||''} onChange={e=>setEditItem(f=>({...f,kelab:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Markah A (/10)</label><input className="form-input" type="number" min="0" max="10" value={editItem.m_kelab} onChange={e=>setEditItem(f=>({...f,m_kelab:+e.target.value}))}/></div>
-            </div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Nama Badan (B)</label><input className="form-input" value={editItem.uniform||''} onChange={e=>setEditItem(f=>({...f,uniform:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Markah B (/10)</label><input className="form-input" type="number" min="0" max="10" value={editItem.m_uniform} onChange={e=>setEditItem(f=>({...f,m_uniform:+e.target.value}))}/></div>
-            </div>
-            <div className="form-row">
-              <div className="form-field"><label className="form-label">Nama Sukan (C)</label><input className="form-input" value={editItem.sukan||''} onChange={e=>setEditItem(f=>({...f,sukan:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Markah C (/10)</label><input className="form-input" type="number" min="0" max="10" value={editItem.m_sukan} onChange={e=>setEditItem(f=>({...f,m_sukan:+e.target.value}))}/></div>
-            </div>
-            <p style={{fontSize:13,fontWeight:700,margin:'4px 0 8px'}}>Jumlah: {editItem.m_kelab+editItem.m_uniform+editItem.m_sukan}/30 — Gred: {gradeOPR(editItem.m_kelab+editItem.m_uniform+editItem.m_sukan)}</p>
-            <div className="form-field"><label className="form-label">Catatan</label><input className="form-input" value={editItem.catatan||''} onChange={e=>setEditItem(f=>({...f,catatan:e.target.value}))}/></div>
-            <button className="btn-primary" type="submit">💾 Simpan</button>
-          </form></Modal>}
+
+          {showAdd&&<Modal title={`Tambah Program — ${curDomain.icon} ${curDomain.label}`} onClose={()=>setShowAdd(false)}>
+            <form onSubmit={handleAdd}>
+              <FormFields val={form} set={setForm}/>
+              <button className="btn-primary" type="submit">+ Tambah Program</button>
+            </form>
+          </Modal>}
+
+          {editItem&&<Modal title={`Edit — ${editItem.nama_program}`} onClose={()=>setEditItem(null)}>
+            <form onSubmit={handleEdit}>
+              <FormFields val={editItem} set={setEditItem}/>
+              <button className="btn-primary" type="submit">💾 Simpan</button>
+            </form>
+          </Modal>}
         </>)}
+
         {subtab===1&&(<>
-          <div className="kur-table-wrap"><table className="kur-table">
-            <thead><tr><th>Kelas</th><th>Jumlah</th><th style={{color:'#16a34a'}}>A</th><th style={{color:'#2563eb'}}>B</th><th style={{color:'#d97706'}}>C</th><th style={{color:'#dc2626'}}>D</th><th style={{color:'#dc2626'}}>E</th><th>Purata</th><th>Status</th></tr></thead>
-            <tbody>{byKelas.map(r=>{
-              const pctA=r.total?Math.round(r.A/r.total*100):0;
-              const status=pctA>=80?'🟢 Cemerlang':pctA>=60?'🟡 Memuaskan':'🔴 Perlu Tindakan';
-              return(<tr key={r.k}>
-                <td style={{fontWeight:700}}>{r.k}</td>
-                <td>{r.total}</td>
-                <td style={{fontWeight:700,color:'#16a34a'}}>{r.A}</td>
-                <td style={{fontWeight:700,color:'#2563eb'}}>{r.B}</td>
-                <td style={{fontWeight:700,color:'#d97706'}}>{r.C}</td>
-                <td style={{fontWeight:700,color:'#dc2626'}}>{r.D}</td>
-                <td style={{fontWeight:700,color:'#dc2626'}}>{r.E}</td>
-                <td style={{fontWeight:800}}>{r.purata}/30</td>
-                <td style={{fontSize:12}}>{status}</td>
-              </tr>);})}
-            </tbody>
-          </table></div>
-          <div style={{marginTop:16,padding:12,background:'var(--card2)',borderRadius:10,fontSize:13,color:'var(--text2)'}}>
-            Gred: <b>A</b> ≥25 · <b>B</b> ≥19 · <b>C</b> ≥13 · <b>D</b> ≥7 · <b>E</b> &lt;7 (daripada 30 markah)
-          </div>
-        </>)}
-        {subtab===2&&(<>
-          <div style={{textAlign:'center',padding:'40px 20px'}}>
-            <div style={{fontSize:48,marginBottom:12}}>🖨️</div>
-            <p style={{fontWeight:700,fontSize:16,marginBottom:4}}>Jana Laporan OPR PDF</p>
-            <p style={{color:'var(--text2)',marginBottom:20,fontSize:13}}>Senarai OPR dengan maklumat markah A/B/C, jumlah dan gred. Boleh tapis mengikut kelas terlebih dahulu.</p>
-            <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap',marginBottom:20}}>
-              <select className="kur-select" value={filterKelas} onChange={e=>setFilterKelas(e.target.value)}><option value="">Semua Kelas</option>{KELAS_LIST.map(k=><option key={k}>{k}</option>)}</select>
+          <div style={{textAlign:'center',padding:'36px 20px'}}>
+            <div style={{fontSize:48,marginBottom:10}}>{curDomain.icon}</div>
+            <p style={{fontWeight:800,fontSize:17,marginBottom:4}}>Jana Laporan OPR — {curDomain.label}</p>
+            <p style={{color:'var(--text2)',marginBottom:24,fontSize:13}}>
+              PDF akan menyenaraikan semua program bagi domain <b>{curDomain.label}</b> untuk tahun pelajaran <b>{filterTahun}</b>.
+            </p>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,maxWidth:320,margin:'0 auto 28px'}}>
+              <div style={{background:'var(--card2)',borderRadius:10,padding:14,textAlign:'center'}}>
+                <div style={{fontWeight:900,fontSize:24,color:curDomain.color}}>{filtered.length}</div>
+                <div style={{fontSize:11,color:'var(--text2)',marginTop:3}}>Program</div>
+              </div>
+              <div style={{background:'var(--card2)',borderRadius:10,padding:14,textAlign:'center'}}>
+                <div style={{fontWeight:900,fontSize:24,color:'#16a34a'}}>{[...new Set(filtered.map(r=>r.penganjur).filter(Boolean))].length}</div>
+                <div style={{fontSize:11,color:'var(--text2)',marginTop:3}}>Penganjur</div>
+              </div>
+              <div style={{background:'var(--card2)',borderRadius:10,padding:14,textAlign:'center'}}>
+                <div style={{fontWeight:900,fontSize:24,color:'#f59e0b'}}>{filterTahun}</div>
+                <div style={{fontSize:11,color:'var(--text2)',marginTop:3}}>Tahun</div>
+              </div>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,maxWidth:360,margin:'0 auto 24px'}}>
-              <div style={{background:'var(--card2)',borderRadius:8,padding:12,textAlign:'center'}}><div style={{fontWeight:800,fontSize:20}}>{filtered.length}</div><div style={{fontSize:11,color:'var(--text2)'}}>Murid</div></div>
-              <div style={{background:'var(--card2)',borderRadius:8,padding:12,textAlign:'center'}}><div style={{fontWeight:800,fontSize:20,color:'#16a34a'}}>{filtered.filter(d=>d.gred==='A').length}</div><div style={{fontSize:11,color:'var(--text2)'}}>Gred A</div></div>
-              <div style={{background:'var(--card2)',borderRadius:8,padding:12,textAlign:'center'}}><div style={{fontWeight:800,fontSize:20}}>{filtered.length?Math.round(filtered.reduce((s,d)=>s+d.jumlah,0)/filtered.length):0}</div><div style={{fontSize:11,color:'var(--text2)'}}>Purata</div></div>
-            </div>
-            <button className="btn-primary" style={{padding:'12px 32px',fontSize:15,borderRadius:10}} onClick={()=>printOPR(filtered,filterKelas||'Semua Kelas')}>🖨️ Jana PDF Sekarang</button>
+            {filtered.length===0
+              ?<p style={{color:'var(--text3)',fontSize:13}}>Tiada rekod untuk dijana. Tambah program dahulu.</p>
+              :<button className="btn-primary" style={{padding:'13px 40px',fontSize:15,borderRadius:12}}
+                  onClick={()=>printProgram(filtered,`${curDomain.icon} ${curDomain.label}`)}>
+                  🖨️ Jana PDF Sekarang
+                </button>
+            }
           </div>
         </>)}
       </>)}
