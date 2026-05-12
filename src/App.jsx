@@ -7241,21 +7241,36 @@ function HemPengawas() {
 }
 
 // ─── HEM 8. KOPERASI ──────────────────────────────────────────────────────────
+const KP_ACCENT = "#e11d48";
+const KAT_LIST = ["Alat Tulis","Pakaian","Makanan & Minuman","Buku","Lain-lain"];
+const KAT_COLORS = {
+  "Alat Tulis":    { bg:"#2563eb20", col:"#2563eb" },
+  "Pakaian":       { bg:"#7c3aed20", col:"#7c3aed" },
+  "Makanan & Minuman":{ bg:"#d9770620", col:"#d97706" },
+  "Buku":          { bg:"#05966920", col:"#059669" },
+  "Lain-lain":     { bg:"#64748b20", col:"#64748b" },
+};
+
 function HemKoperasi() {
-  const TABS_KP=['🏪 Inventori','📊 Analisis Stok','💰 Nilai & Laporan'];
-  const [subtab,setSubtab]=useState(0);
+  const TABS_KP = ['🏪 Inventori', '📊 Analisis Stok', '💰 Nilai & Laporan'];
+  const [subtab, setSubtab] = useState(0);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [q,setQ]=useState(''); const [filterKat,setFilterKat]=useState('');
+  const [q, setQ] = useState('');
+  const [filterKat, setFilterKat] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const blank = { nama_produk:"", kategori:"Alat Tulis", stok:0, harga:0, status:"Tersedia" };
   const [form, setForm] = useState(blank);
-  const KAT = ["Alat Tulis","Pakaian","Makanan & Minuman","Buku","Lain-lain"];
+
+  const fmtRM = v => 'RM ' + parseFloat(v||0).toLocaleString('ms-MY', { minimumFractionDigits:2 });
+  const stokStatus = (stok) => stok === 0 ? 'Habis' : stok < 10 ? 'Sedikit' : 'Tersedia';
+  const stokBadge = (stok) => stok === 0 ? 'b-red' : stok < 10 ? 'b-yellow' : 'b-green';
 
   const load = async () => {
     setLoading(true);
-    const { data: rows } = await supabase.from('hem_koperasi').select('*').order('created_at');
+    const { data: rows } = await supabase.from('hem_koperasi').select('*').order('kategori').then(r=>({...r,data:(r.data||[]).sort((a,b)=>a.kategori.localeCompare(b.kategori)||a.nama_produk.localeCompare(b.nama_produk))}));
     setData(rows || []); setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -7274,9 +7289,10 @@ function HemKoperasi() {
     if (!ok) return;
     toast("Dikemaskini!", "success"); setEditItem(null); load();
   };
-  const handleDel = async (id) => {
+  const handleDel = async (id, nama) => {
+    if (!window.confirm(`Padam produk "${nama}"?`)) return;
     const ok = await dbRun(() => supabase.from('hem_koperasi').delete().eq('id', id));
-    if (ok) setData(d => d.filter(r => r.id !== id));
+    if (ok) { setData(d => d.filter(r => r.id !== id)); toast("Dipadam.", "info"); }
   };
   const adjustStok = async (id, cur, delta) => {
     const val = Math.max(0, cur + delta);
@@ -7285,158 +7301,244 @@ function HemKoperasi() {
   };
 
   const filtered = data.filter(r => {
-    if(q && !r.nama_produk?.toLowerCase().includes(q.toLowerCase())) return false;
-    if(filterKat && r.kategori !== filterKat) return false;
+    if (q && !r.nama_produk?.toLowerCase().includes(q.toLowerCase())) return false;
+    if (filterKat && r.kategori !== filterKat) return false;
+    if (filterStatus) {
+      const ss = stokStatus(r.stok);
+      if (filterStatus !== ss) return false;
+    }
     return true;
   });
-  const byKat = KAT.map(k=>({
+  const activeFilters = [filterKat, filterStatus].filter(Boolean);
+  const resetFilters = () => { setQ(''); setFilterKat(''); setFilterStatus(''); };
+
+  const byKat = KAT_LIST.map(k => ({
     kat:k,
     count:data.filter(r=>r.kategori===k).length,
     stok:data.filter(r=>r.kategori===k).reduce((a,r)=>a+(r.stok||0),0),
     nilai:data.filter(r=>r.kategori===k).reduce((a,r)=>a+(r.stok||0)*(r.harga||0),0),
   })).filter(k=>k.count>0);
-  const lowStock = data.filter(r=>r.stok<10 && r.stok>0).sort((a,b)=>a.stok-b.stok);
+
+  const lowStock = data.filter(r=>r.stok>0 && r.stok<10).sort((a,b)=>a.stok-b.stok);
   const habis = data.filter(r=>r.stok===0);
   const totalNilai = data.reduce((a,r)=>a+(r.stok||0)*(r.harga||0),0);
-  const maxStok = byKat[0] ? Math.max(...byKat.map(k=>k.stok)) : 1;
+  const totalStok = data.reduce((a,r)=>a+(r.stok||0),0);
+  const maxStok = byKat.length ? Math.max(...byKat.map(k=>k.stok),1) : 1;
+  const maxNilai = byKat.length ? Math.max(...byKat.map(k=>k.nilai),1) : 1;
+  const top5 = [...data].sort((a,b)=>((b.stok||0)*(b.harga||0))-((a.stok||0)*(a.harga||0))).slice(0,5);
 
-  const tersedia = data.filter(r => r.status === "Tersedia").length;
-  const totalStok = data.reduce((a, r) => a + (r.stok || 0), 0);
   return (
     <KurPage title="Koperasi Sekolah" sub="HEM · SK Darau, Kota Kinabalu"
       stats={[
         { ico:"🏪", val:data.length, lbl:"Produk" },
-        { ico:"✅", val:tersedia, lbl:"Tersedia" },
-        { ico:"📦", val:totalStok, lbl:"Jumlah Stok" },
-        { ico:"🚫", val:data.filter(r=>r.stok===0).length, lbl:"Kehabisan" },
+        { ico:"📦", val:totalStok, lbl:"Jumlah Unit" },
+        { ico:"⚠️", val:lowStock.length, lbl:"Stok Rendah" },
+        { ico:"🚫", val:habis.length, lbl:"Kehabisan" },
       ]}>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
-        {TABS_KP.map((t,i)=><button key={i} onClick={()=>setSubtab(i)} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,background:subtab===i?"var(--accent)":"var(--card2)",color:subtab===i?"#fff":"var(--text2)"}}>{t}</button>)}
+        {TABS_KP.map((t,i)=>(
+          <button key={i} onClick={()=>setSubtab(i)} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,
+            background:subtab===i?KP_ACCENT:"var(--card2)",color:subtab===i?"#fff":"var(--text2)"}}>
+            {t}
+          </button>
+        ))}
       </div>
+
       {subtab===0 && (<>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8,alignItems:"center"}}>
           <input className="form-input" style={{maxWidth:200,marginBottom:0}} placeholder="🔍 Cari produk…" value={q} onChange={e=>setQ(e.target.value)}/>
           <select className="form-input" style={{maxWidth:180,marginBottom:0}} value={filterKat} onChange={e=>setFilterKat(e.target.value)}>
-            <option value="">Semua Kategori</option>{KAT.map(k=><option key={k}>{k}</option>)}
+            <option value="">Semua Kategori</option>{KAT_LIST.map(k=><option key={k}>{k}</option>)}
           </select>
-          <button className="btn-add" onClick={() => setShowAdd(true)}>+ Tambah Produk</button>
+          <select className="form-input" style={{maxWidth:140,marginBottom:0}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+            <option value="">Semua Status</option>
+            <option>Tersedia</option><option>Sedikit</option><option>Habis</option>
+          </select>
+          {(q||activeFilters.length>0) && <button onClick={resetFilters} style={{padding:"6px 10px",borderRadius:8,border:"1px solid var(--border)",background:"var(--card2)",cursor:"pointer",fontSize:12,color:"var(--text3)"}}>✕ Reset</button>}
+          <button className="btn-add" style={{marginLeft:"auto",background:KP_ACCENT}} onClick={()=>setShowAdd(true)}>+ Tambah Produk</button>
         </div>
+        {activeFilters.length>0 && (
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+            {activeFilters.map(f=><span key={f} style={{background:KP_ACCENT+"22",color:KP_ACCENT,borderRadius:12,padding:"2px 10px",fontSize:11,fontWeight:700}}>{f}</span>)}
+            <span style={{fontSize:11,color:"var(--text3)",alignSelf:"center"}}>{filtered.length} produk</span>
+          </div>
+        )}
         {loading ? <div className="loading">⏳ Memuatkan…</div> : (
           <div className="kur-table-wrap">
             <table className="kur-table">
-              <thead><tr><th>Nama Produk</th><th>Kategori</th><th>Stok</th><th>Harga (RM)</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>#</th><th>Nama Produk</th><th>Kategori</th><th>Stok</th><th>Harga</th><th>Nilai</th><th>Status</th><th></th></tr></thead>
               <tbody>
-                {filtered.map(r => (
-                  <tr key={r.id}>
-                    <td style={{fontWeight:800}}>{r.nama_produk}</td>
-                    <td><span className="badge b-blue">{r.kategori}</span></td>
-                    <td>
-                      <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        <button onClick={() => adjustStok(r.id, r.stok, -1)} style={{border:"1px solid var(--border)",background:"var(--surface)",borderRadius:4,width:22,height:22,cursor:"pointer",color:"var(--text)",fontWeight:900,lineHeight:1}}>-</button>
-                        <span style={{fontWeight:900,color:r.stok===0?"var(--danger)":r.stok<10?"var(--warning)":"var(--accent)",minWidth:24,textAlign:"center"}}>{r.stok}</span>
-                        <button onClick={() => adjustStok(r.id, r.stok, 1)} style={{border:"1px solid var(--border)",background:"var(--surface)",borderRadius:4,width:22,height:22,cursor:"pointer",color:"var(--text)",fontWeight:900,lineHeight:1}}>+</button>
-                      </div>
-                    </td>
-                    <td style={{fontWeight:700}}>RM {Number(r.harga).toFixed(2)}</td>
-                    <td><span className={`badge ${r.stok===0?"b-red":r.stok<10?"b-yellow":"b-green"}`}>{r.stok===0?"Habis":r.stok<10?"Sedikit":"Tersedia"}</span></td>
-                    <td style={{display:"flex",gap:4}}>
-                      <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={() => setEditItem({...r})}>✏️</button>
-                      <button className="btn-del" onClick={() => handleDel(r.id)}>🗑</button>
-                    </td>
-                  </tr>
-                ))}
-                {filtered.length===0 && <tr><td colSpan={6} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada rekod</td></tr>}
+                {filtered.map((r,i) => {
+                  const kc = KAT_COLORS[r.kategori]||KAT_COLORS["Lain-lain"];
+                  return (
+                    <tr key={r.id} style={r.stok===0?{background:"#fef2f2"}:r.stok<10?{background:"#fffbeb"}:{}}>
+                      <td style={{color:"var(--text3)",fontSize:12}}>{i+1}</td>
+                      <td style={{fontWeight:800}}>{r.nama_produk}</td>
+                      <td><span style={{background:kc.bg,color:kc.col,borderRadius:8,padding:"2px 8px",fontSize:11,fontWeight:700}}>{r.kategori}</span></td>
+                      <td>
+                        <div style={{display:"flex",alignItems:"center",gap:5}}>
+                          <button onClick={()=>adjustStok(r.id,r.stok,-1)} style={{border:"1px solid var(--border)",background:"var(--surface)",borderRadius:4,width:22,height:22,cursor:"pointer",fontWeight:900,lineHeight:1}}>−</button>
+                          <span style={{fontWeight:900,minWidth:26,textAlign:"center",color:r.stok===0?"#dc2626":r.stok<10?"#d97706":"var(--accent)"}}>{r.stok}</span>
+                          <button onClick={()=>adjustStok(r.id,r.stok,1)} style={{border:"1px solid var(--border)",background:"var(--surface)",borderRadius:4,width:22,height:22,cursor:"pointer",fontWeight:900,lineHeight:1}}>+</button>
+                        </div>
+                      </td>
+                      <td style={{fontWeight:700,fontSize:12}}>{fmtRM(r.harga)}</td>
+                      <td style={{fontWeight:700,fontSize:12,color:KP_ACCENT}}>{fmtRM((r.stok||0)*(r.harga||0))}</td>
+                      <td><span className={`badge ${stokBadge(r.stok)}`}>{stokStatus(r.stok)}</span></td>
+                      <td style={{display:"flex",gap:4}}>
+                        <button className="btn-add" style={{padding:"4px 8px",fontSize:11}} onClick={()=>setEditItem({...r})}>✏️</button>
+                        <button className="btn-del" onClick={()=>handleDel(r.id, r.nama_produk)}>🗑</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length===0 && <tr><td colSpan={8} style={{textAlign:"center",color:"var(--text3)",padding:24}}>Tiada rekod</td></tr>}
               </tbody>
             </table>
           </div>
         )}
       </>)}
+
       {subtab===1 && (<>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
           <div className="kur-card" style={{padding:16}}>
-            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Stok Mengikut Kategori</div>
-            {byKat.map(({kat,stok})=>(
-              <div key={kat} style={{marginBottom:8}}>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span>{kat}</span><b>{stok} unit</b></div>
-                <div style={{background:"var(--border)",borderRadius:4,height:8}}><div style={{width:`${(stok/maxStok)*100}%`,height:8,borderRadius:4,background:"var(--accent)"}}></div></div>
-              </div>
-            ))}
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Unit Stok Mengikut Kategori</div>
+            {byKat.map(({kat,stok})=>{
+              const kc = KAT_COLORS[kat]||KAT_COLORS["Lain-lain"];
+              return (
+                <div key={kat} style={{marginBottom:8}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}>
+                    <span style={{fontWeight:700,color:kc.col}}>{kat}</span><b>{stok} unit</b>
+                  </div>
+                  <div style={{background:"var(--border)",borderRadius:4,height:8}}>
+                    <div style={{width:`${(stok/maxStok)*100}%`,height:8,borderRadius:4,background:kc.col}}></div>
+                  </div>
+                </div>
+              );
+            })}
             {byKat.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
           </div>
           <div className="kur-card" style={{padding:16}}>
-            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Amaran Stok Rendah (&lt;10)</div>
-            {lowStock.map(r=>(
-              <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid var(--border)"}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>⚠️ Amaran Stok ({lowStock.length+habis.length} produk)</div>
+            {habis.map(r=>(
+              <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid var(--border)"}}>
                 <div>
-                  <div style={{fontWeight:700,fontSize:13}}>{r.nama_produk}</div>
-                  <div style={{fontSize:11,color:"var(--text3)"}}>{r.kategori}</div>
-                </div>
-                <span className="badge b-yellow">{r.stok} unit</span>
-              </div>
-            ))}
-            {habis.length>0 && habis.map(r=>(
-              <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid var(--border)"}}>
-                <div>
-                  <div style={{fontWeight:700,fontSize:13}}>{r.nama_produk}</div>
-                  <div style={{fontSize:11,color:"var(--text3)"}}>{r.kategori}</div>
+                  <div style={{fontWeight:700,fontSize:12}}>{r.nama_produk}</div>
+                  <div style={{fontSize:10,color:"var(--text3)"}}>{r.kategori}</div>
                 </div>
                 <span className="badge b-red">Habis</span>
               </div>
             ))}
-            {lowStock.length===0 && habis.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Semua stok mencukupi 👍</div>}
-          </div>
-        </div>
-      </>)}
-      {subtab===2 && (<>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
-          <div className="kur-card" style={{padding:16}}>
-            <div style={{fontWeight:700,marginBottom:4,color:"var(--text2)"}}>Jumlah Nilai Stok</div>
-            <div style={{fontSize:36,fontWeight:900,color:"var(--accent)"}}>RM {totalNilai.toFixed(2)}</div>
-            <div style={{fontSize:12,color:"var(--text3)",marginTop:4}}>{data.length} produk · {totalStok} unit</div>
-          </div>
-          <div className="kur-card" style={{padding:16}}>
-            <div style={{fontWeight:700,marginBottom:4,color:"var(--text2)"}}>Keadaan Stok</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:8}}>
-              {[["Tersedia","b-green",data.filter(r=>r.stok>=10).length],["Sedikit","b-yellow",data.filter(r=>r.stok>0&&r.stok<10).length],["Habis","b-red",habis.length]].map(([s,b,c])=>(
-                <div key={s} style={{textAlign:"center",padding:"10px 4px",background:"var(--card2)",borderRadius:8}}>
-                  <div style={{fontWeight:900,fontSize:20,color:"var(--accent)"}}>{c}</div>
-                  <div style={{fontSize:10,color:"var(--text3)"}}>{s}</div>
+            {lowStock.map(r=>(
+              <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid var(--border)"}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:12}}>{r.nama_produk}</div>
+                  <div style={{fontSize:10,color:"var(--text3)"}}>{r.kategori}</div>
                 </div>
-              ))}
-            </div>
+                <span className="badge b-yellow">{r.stok} unit</span>
+              </div>
+            ))}
+            {lowStock.length===0 && habis.length===0 && <div style={{color:"#10b981",fontSize:13,fontWeight:700,marginTop:8}}>Semua stok mencukupi 👍</div>}
           </div>
         </div>
         <div className="kur-card" style={{padding:16}}>
-          <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Nilai Mengikut Kategori</div>
-          <table className="kur-table" style={{fontSize:12}}>
-            <thead><tr><th>Kategori</th><th>Produk</th><th>Unit</th><th>Nilai (RM)</th></tr></thead>
-            <tbody>
-              {byKat.map(({kat,count,stok,nilai})=>(
-                <tr key={kat}>
-                  <td><span className="badge b-blue">{kat}</span></td>
-                  <td>{count}</td>
-                  <td style={{fontWeight:700}}>{stok}</td>
-                  <td style={{fontWeight:800,color:"var(--accent)"}}>RM {nilai.toFixed(2)}</td>
-                </tr>
-              ))}
-              <tr style={{borderTop:"2px solid var(--border)"}}>
-                <td style={{fontWeight:800}}>JUMLAH</td>
-                <td style={{fontWeight:800}}>{data.length}</td>
-                <td style={{fontWeight:800}}>{totalStok}</td>
-                <td style={{fontWeight:900,color:"var(--accent)"}}>RM {totalNilai.toFixed(2)}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Nilai Stok Mengikut Kategori</div>
+          {byKat.map(({kat,nilai})=>{
+            const kc = KAT_COLORS[kat]||KAT_COLORS["Lain-lain"];
+            return (
+              <div key={kat} style={{marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}>
+                  <span style={{fontWeight:700}}>{kat}</span><b style={{color:KP_ACCENT}}>{fmtRM(nilai)}</b>
+                </div>
+                <div style={{background:"var(--border)",borderRadius:4,height:8}}>
+                  <div style={{width:`${(nilai/maxNilai)*100}%`,height:8,borderRadius:4,background:kc.col}}></div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </>)}
+
+      {subtab===2 && (<>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
+          {[
+            {ico:"💰",label:"Jumlah Nilai Stok",val:fmtRM(totalNilai),col:KP_ACCENT},
+            {ico:"📦",label:"Jumlah Unit",val:totalStok,col:"#2563eb"},
+            {ico:"🏪",label:"Jenis Produk",val:data.length,col:"#059669"},
+          ].map(c=>(
+            <div key={c.label} style={{background:c.col+"10",border:`1.5px solid ${c.col}30`,borderRadius:12,padding:"14px 12px",textAlign:"center"}}>
+              <div style={{fontSize:22}}>{c.ico}</div>
+              <div style={{fontWeight:900,fontSize:20,color:c.col,marginTop:4}}>{c.val}</div>
+              <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{c.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>Nilai Mengikut Kategori</div>
+            <table className="kur-table" style={{fontSize:12}}>
+              <thead><tr><th>Kategori</th><th>Produk</th><th>Unit</th><th>Nilai</th></tr></thead>
+              <tbody>
+                {byKat.map(({kat,count,stok,nilai})=>{
+                  const kc = KAT_COLORS[kat]||KAT_COLORS["Lain-lain"];
+                  return (
+                    <tr key={kat}>
+                      <td><span style={{background:kc.bg,color:kc.col,borderRadius:6,padding:"1px 7px",fontSize:11,fontWeight:700}}>{kat}</span></td>
+                      <td style={{textAlign:"center"}}>{count}</td>
+                      <td style={{fontWeight:700,textAlign:"center"}}>{stok}</td>
+                      <td style={{fontWeight:800,color:KP_ACCENT}}>{fmtRM(nilai)}</td>
+                    </tr>
+                  );
+                })}
+                <tr style={{borderTop:"2px solid var(--border)"}}>
+                  <td style={{fontWeight:800}}>JUMLAH</td>
+                  <td style={{fontWeight:800,textAlign:"center"}}>{data.length}</td>
+                  <td style={{fontWeight:800,textAlign:"center"}}>{totalStok}</td>
+                  <td style={{fontWeight:900,color:KP_ACCENT}}>{fmtRM(totalNilai)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="kur-card" style={{padding:16}}>
+            <div style={{fontWeight:700,marginBottom:12,color:"var(--text2)"}}>🏆 Top 5 Produk Bernilai Tinggi</div>
+            {top5.map((r,i)=>{
+              const nilai = (r.stok||0)*(r.harga||0);
+              const kc = KAT_COLORS[r.kategori]||KAT_COLORS["Lain-lain"];
+              return (
+                <div key={r.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <div style={{width:22,height:22,borderRadius:"50%",background:KP_ACCENT,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:11,flexShrink:0}}>{i+1}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:700,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.nama_produk}</div>
+                    <div style={{fontSize:10,color:kc.col,fontWeight:700}}>{r.kategori} · {r.stok} unit</div>
+                  </div>
+                  <div style={{fontWeight:800,fontSize:12,color:KP_ACCENT,flexShrink:0}}>{fmtRM(nilai)}</div>
+                </div>
+              );
+            })}
+            {top5.length===0 && <div style={{color:"var(--text3)",fontSize:13}}>Tiada data</div>}
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+          {[["Tersedia","b-green",data.filter(r=>r.stok>=10).length,"#10b981"],["Sedikit (< 10)","b-yellow",lowStock.length,"#d97706"],["Habis","b-red",habis.length,"#dc2626"]].map(([s,b,c,col])=>(
+            <div key={s} style={{textAlign:"center",padding:"12px 8px",background:col+"10",border:`1.5px solid ${col}30`,borderRadius:10}}>
+              <div style={{fontWeight:900,fontSize:24,color:col}}>{c}</div>
+              <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{s}</div>
+            </div>
+          ))}
+        </div>
+      </>)}
+
       {showAdd && (
-        <Modal title="Tambah Produk Koperasi" onClose={() => setShowAdd(false)}>
+        <Modal title="Tambah Produk Koperasi" onClose={()=>setShowAdd(false)}>
           <form onSubmit={handleAdd}>
-            <div className="form-field"><label className="form-label">Nama Produk</label><input className="form-input" required value={form.nama_produk} onChange={e=>setForm(f=>({...f,nama_produk:e.target.value}))} placeholder="cth: Buku Tulis A4"/></div>
+            <div className="form-field"><label className="form-label">Nama Produk *</label>
+              <input className="form-input" required value={form.nama_produk} placeholder="cth: Buku Tulis A4"
+                onChange={e=>setForm(f=>({...f,nama_produk:e.target.value}))}/>
+            </div>
             <div className="form-row">
               <div className="form-field"><label className="form-label">Kategori</label>
                 <select className="form-input" value={form.kategori} onChange={e=>setForm(f=>({...f,kategori:e.target.value}))}>
-                  {KAT.map(k=><option key={k}>{k}</option>)}
+                  {KAT_LIST.map(k=><option key={k}>{k}</option>)}
                 </select>
               </div>
               <div className="form-field"><label className="form-label">Status</label>
@@ -7446,21 +7548,28 @@ function HemKoperasi() {
               </div>
             </div>
             <div className="form-row">
-              <div className="form-field"><label className="form-label">Stok</label><input className="form-input" type="number" min="0" value={form.stok} onChange={e=>setForm(f=>({...f,stok:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Harga (RM)</label><input className="form-input" type="number" min="0" step="0.01" value={form.harga} onChange={e=>setForm(f=>({...f,harga:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Stok (unit)</label>
+                <input className="form-input" type="number" min="0" value={form.stok} onChange={e=>setForm(f=>({...f,stok:e.target.value}))}/>
+              </div>
+              <div className="form-field"><label className="form-label">Harga Seunit (RM)</label>
+                <input className="form-input" type="number" min="0" step="0.01" value={form.harga} onChange={e=>setForm(f=>({...f,harga:e.target.value}))}/>
+                {(form.stok>0&&form.harga>0) && <div style={{fontSize:10,color:KP_ACCENT,marginTop:4,fontWeight:700}}>Nilai: {fmtRM(form.stok*form.harga)}</div>}
+              </div>
             </div>
-            <button className="btn-primary" type="submit">+ Tambah</button>
+            <button className="btn-primary" type="submit" style={{background:KP_ACCENT}}>+ Tambah Produk</button>
           </form>
         </Modal>
       )}
       {editItem && (
-        <Modal title={`Edit — ${editItem.nama_produk}`} onClose={() => setEditItem(null)}>
+        <Modal title={`Edit — ${editItem.nama_produk}`} onClose={()=>setEditItem(null)}>
           <form onSubmit={handleEdit}>
-            <div className="form-field"><label className="form-label">Nama Produk</label><input className="form-input" value={editItem.nama_produk} onChange={e=>setEditItem(f=>({...f,nama_produk:e.target.value}))}/></div>
+            <div className="form-field"><label className="form-label">Nama Produk</label>
+              <input className="form-input" value={editItem.nama_produk} onChange={e=>setEditItem(f=>({...f,nama_produk:e.target.value}))}/>
+            </div>
             <div className="form-row">
               <div className="form-field"><label className="form-label">Kategori</label>
                 <select className="form-input" value={editItem.kategori} onChange={e=>setEditItem(f=>({...f,kategori:e.target.value}))}>
-                  {KAT.map(k=><option key={k}>{k}</option>)}
+                  {KAT_LIST.map(k=><option key={k}>{k}</option>)}
                 </select>
               </div>
               <div className="form-field"><label className="form-label">Status</label>
@@ -7470,10 +7579,15 @@ function HemKoperasi() {
               </div>
             </div>
             <div className="form-row">
-              <div className="form-field"><label className="form-label">Stok</label><input className="form-input" type="number" min="0" value={editItem.stok} onChange={e=>setEditItem(f=>({...f,stok:e.target.value}))}/></div>
-              <div className="form-field"><label className="form-label">Harga (RM)</label><input className="form-input" type="number" min="0" step="0.01" value={editItem.harga} onChange={e=>setEditItem(f=>({...f,harga:e.target.value}))}/></div>
+              <div className="form-field"><label className="form-label">Stok (unit)</label>
+                <input className="form-input" type="number" min="0" value={editItem.stok} onChange={e=>setEditItem(f=>({...f,stok:e.target.value}))}/>
+              </div>
+              <div className="form-field"><label className="form-label">Harga Seunit (RM)</label>
+                <input className="form-input" type="number" min="0" step="0.01" value={editItem.harga} onChange={e=>setEditItem(f=>({...f,harga:e.target.value}))}/>
+                {(editItem.stok>0&&editItem.harga>0) && <div style={{fontSize:10,color:KP_ACCENT,marginTop:4,fontWeight:700}}>Nilai: {fmtRM(editItem.stok*editItem.harga)}</div>}
+              </div>
             </div>
-            <button className="btn-primary" type="submit">💾 Simpan Perubahan</button>
+            <button className="btn-primary" type="submit" style={{background:KP_ACCENT}}>💾 Simpan Perubahan</button>
           </form>
         </Modal>
       )}
