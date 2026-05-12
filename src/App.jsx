@@ -10,8 +10,8 @@ const MODULES = [
     subs:["Pendaftaran & Data Murid","Disiplin","Bimbingan & Kaunseling","Kesihatan Murid","Bantuan Pelajaran","Keselamatan & 3K","Pengawas Sekolah","Koperasi"],
     ids:["apdm","disiplin","kaunseling","kesihatan","bantuan","3k","pengawas","koperasi"] },
   { id:"kokurikulum", label:"Kokurikulum", icon:"🏅", color:"#6366f1", light:"#eef2ff", tag:"GPK Koku",
-    subs:["Kelab & Persatuan","Badan Beruniform","Sukan & Permainan","PAJSK","Profil Murid Koku","Pencapaian","OPR","Takwim Kokurikulum"],
-    ids:["kelab","uniform","sukan","pajsk","profil","pencapaian","opr","takwim"] },
+    subs:["Kelab & Persatuan","Badan Beruniform","Sukan & Permainan","PAJSK","Profil Murid Koku","Pencapaian","Takwim Kokurikulum"],
+    ids:["kelab","uniform","sukan","pajsk","profil","pencapaian","takwim"] },
   { id:"pentadbiran", label:"Pentadbiran Am", icon:"🏛️", color:"#0284c7", light:"#e0f2fe", tag:"Pentadbir",
     subs:["Kewangan (PCG)","Aset (JKPAK)","Staf & Guru","Surat & Pekeliling","Mesyuarat & Minit"],
     ids:["kewangan","aset","staf","surat","mesyuarat"] },
@@ -21,6 +21,9 @@ const MODULES = [
   { id:"prasekolah", label:"Prasekolah", icon:"🌈", color:"#7c3aed", light:"#f5f3ff", tag:"Guru PRA",
     subs:["Data Murid Prasekolah","Jadual & Aktiviti","Penilaian Murid","Laporan"],
     ids:["murid-pra","aktiviti-pra","penilaian-pra","laporan-pra"] },
+  { id:"opr", label:"OPR", icon:"📋", color:"#0891b2", light:"#ecfeff", tag:"GPK Koku",
+    subs:["Rekod & Analisis OPR"],
+    ids:["opr-rekod"] },
 ];
 
 const TAG_OPTS = [
@@ -9868,7 +9871,7 @@ function OPRPage() {
     return{k,total:murid.length,...gc2,purata};
   });
   return(
-    <KurPage title="OPR — Pelaporan Kokurikulum" sub="Kokurikulum · SK Darau"
+    <KurPage title="OPR — Pelaporan Kokurikulum" sub="OPR · SK Darau"
       stats={[{ico:'📊',val:data.length,lbl:'Rekod'},{ico:'⭐',val:data.filter(d=>d.gred==='A').length,lbl:'Gred A'},{ico:'📈',val:data.length?Math.round(data.reduce((s,d)=>s+d.jumlah,0)/data.length):0,lbl:'Purata Jumlah'},{ico:'🏫',val:kelasList.length,lbl:'Kelas'}]}>
       <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:16}}>
         {TABS_OPR.map((t,i)=><button key={i} onClick={()=>setSubtab(i)} style={{padding:'7px 16px',borderRadius:20,border:'none',cursor:'pointer',fontWeight:subtab===i?700:400,background:subtab===i?'var(--accent)':'var(--card2)',color:subtab===i?'#fff':'var(--text1)',fontSize:13}}>{t}</button>)}
@@ -10144,7 +10147,6 @@ function KokurikulumPage({ subId, onNav }) {
     pajsk:      <PAJSKPage />,
     profil:     <ProfilMuridKoku />,
     pencapaian: <PencapaianKoku />,
-    opr:        <OPRPage />,
     takwim:     <TakwimKokurikulum />,
   };
   return (
@@ -11031,7 +11033,9 @@ export default function App() {
                         ? <ICTPage subId={actSub} onNav={onNav}/>
                         : actMod==="prasekolah"
                           ? <PrasekolahPage subId={actSub} onNav={onNav}/>
-                          : <Page modId={actMod} subId={actSub}/>}
+                          : actMod==="opr"
+                            ? <OPRPage />
+                            : <Page modId={actMod} subId={actSub}/>}
           </div>
         </div>
       </div>
