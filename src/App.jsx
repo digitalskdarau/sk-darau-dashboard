@@ -10244,6 +10244,7 @@ function OPRPage() {
   const [loading,setLoading]=useState(true);
   const [showAdd,setShowAdd]=useState(false);
   const [editItem,setEditItem]=useState(null);
+  const [viewItem,setViewItem]=useState(null);
   const [q,setQ]=useState('');
   const [filterTahun,setFilterTahun]=useState(tahunNow);
   const blank={domain:'kurikulum',tarikh:'',masa:'',nama_program:'',penganjur:'',sasaran:'',impak:'',catatan:'',tahun:tahunNow,gambar_links:[]};
