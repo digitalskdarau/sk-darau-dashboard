@@ -9834,6 +9834,24 @@ function PencapaianKoku() {
   );
 }
 
+function OPRFormFields({val,set}) {
+  return(
+    <>
+      <div className="form-row">
+        <div className="form-field"><label className="form-label">Tarikh *</label><input className="form-input" type="date" required value={val.tarikh||''} onChange={e=>set(f=>({...f,tarikh:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Masa</label><input className="form-input" type="time" value={val.masa||''} onChange={e=>set(f=>({...f,masa:e.target.value}))}/></div>
+      </div>
+      <div className="form-field"><label className="form-label">Nama Program *</label><input className="form-input" required placeholder="Contoh: Kem Literasi Membaca" value={val.nama_program||''} onChange={e=>set(f=>({...f,nama_program:e.target.value}))}/></div>
+      <div className="form-row">
+        <div className="form-field"><label className="form-label">Penganjur / Guru Bertanggungjawab</label><input className="form-input" value={val.penganjur||''} onChange={e=>set(f=>({...f,penganjur:e.target.value}))}/></div>
+        <div className="form-field"><label className="form-label">Sasaran / Peserta</label><input className="form-input" placeholder="Contoh: Murid Tahun 4, 5, 6" value={val.sasaran||''} onChange={e=>set(f=>({...f,sasaran:e.target.value}))}/></div>
+      </div>
+      <div className="form-field"><label className="form-label">Impak / Outcome</label><textarea className="form-input" rows={3} placeholder="Huraikan impak atau hasil program ini..." value={val.impak||''} onChange={e=>set(f=>({...f,impak:e.target.value}))}/></div>
+      <div className="form-field"><label className="form-label">Catatan</label><input className="form-input" value={val.catatan||''} onChange={e=>set(f=>({...f,catatan:e.target.value}))}/></div>
+    </>
+  );
+}
+
 function OPRPage() {
   const OPR_ACCENT='#0891b2';
   const DOMAINS=[
@@ -9891,22 +9909,6 @@ function OPRPage() {
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan OPR</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:24px}h2{text-align:center;font-size:16px;margin:0 0 3px}h3{text-align:center;font-size:11px;font-weight:400;margin:0 0 16px;color:#555}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:5px 7px;vertical-align:top}th{background:#0891b2;color:#fff;font-size:10px;text-align:left}tr:nth-child(even){background:#f5f5f5}.meta{text-align:right;font-size:10px;color:#888;margin-bottom:6px}@media print{.no-print{display:none}}</style></head><body><h2>Laporan OPR — ${domLabel}</h2><h3>SK Darau, Kota Kinabalu, Sabah &nbsp;|&nbsp; Tahun Pelajaran ${filterTahun}</h3><div class="meta">Dijana: ${new Date().toLocaleDateString('ms-MY')} &nbsp;|&nbsp; Jumlah Program: ${rows.length}</div><table><thead><tr><th>#</th><th>Tarikh</th><th>Masa</th><th>Nama Program</th><th>Penganjur/Guru</th><th>Sasaran/Peserta</th><th>Impak / Outcome</th><th>Catatan</th></tr></thead><tbody>${tbl}</tbody></table><br><button class="no-print" onclick="window.print()" style="padding:8px 20px;background:#0891b2;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px">🖨️ Cetak PDF</button></body></html>`);
     w.document.close();
   };
-
-  const FormFields=({val,set})=>(
-    <>
-      <div className="form-row">
-        <div className="form-field"><label className="form-label">Tarikh *</label><input className="form-input" type="date" required value={val.tarikh||''} onChange={e=>set(f=>({...f,tarikh:e.target.value}))}/></div>
-        <div className="form-field"><label className="form-label">Masa</label><input className="form-input" type="time" value={val.masa||''} onChange={e=>set(f=>({...f,masa:e.target.value}))}/></div>
-      </div>
-      <div className="form-field"><label className="form-label">Nama Program *</label><input className="form-input" required placeholder="Contoh: Kem Literasi Membaca" value={val.nama_program||''} onChange={e=>set(f=>({...f,nama_program:e.target.value}))}/></div>
-      <div className="form-row">
-        <div className="form-field"><label className="form-label">Penganjur / Guru Bertanggungjawab</label><input className="form-input" value={val.penganjur||''} onChange={e=>set(f=>({...f,penganjur:e.target.value}))}/></div>
-        <div className="form-field"><label className="form-label">Sasaran / Peserta</label><input className="form-input" placeholder="Contoh: Murid Tahun 4, 5, 6" value={val.sasaran||''} onChange={e=>set(f=>({...f,sasaran:e.target.value}))}/></div>
-      </div>
-      <div className="form-field"><label className="form-label">Impak / Outcome</label><textarea className="form-input" rows={3} placeholder="Huraikan impak atau hasil program ini..." value={val.impak||''} onChange={e=>set(f=>({...f,impak:e.target.value}))}/></div>
-      <div className="form-field"><label className="form-label">Catatan</label><input className="form-input" value={val.catatan||''} onChange={e=>set(f=>({...f,catatan:e.target.value}))}/></div>
-    </>
-  );
 
   return(
     <KurPage title="OPR — Pelaporan Program" sub="OPR · SK Darau"
@@ -9975,14 +9977,14 @@ function OPRPage() {
 
           {showAdd&&<Modal title={`Tambah Program — ${curDomain.icon} ${curDomain.label}`} onClose={()=>setShowAdd(false)}>
             <form onSubmit={handleAdd}>
-              <FormFields val={form} set={setForm}/>
+              <OPRFormFields val={form} set={setForm}/>
               <button className="btn-primary" type="submit">+ Tambah Program</button>
             </form>
           </Modal>}
 
           {editItem&&<Modal title={`Edit — ${editItem.nama_program}`} onClose={()=>setEditItem(null)}>
             <form onSubmit={handleEdit}>
-              <FormFields val={editItem} set={setEditItem}/>
+              <OPRFormFields val={editItem} set={setEditItem}/>
               <button className="btn-primary" type="submit">💾 Simpan</button>
             </form>
           </Modal>}
