@@ -1200,6 +1200,8 @@ function Login({ onLogin }) {
   const [show, setShow] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const submit = async () => {
     setErr("");
@@ -1217,16 +1219,33 @@ function Login({ onLogin }) {
     setLoading(false);
   };
 
+  const sendReset = async () => {
+    setErr("");
+    if (!email) { setErr("Sila isi emel dahulu."); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + "/",
+    });
+    if (error) {
+      setErr("Gagal hantar emel. Cuba semula.");
+    } else {
+      setResetSent(true);
+    }
+    setLoading(false);
+  };
+
+  const blobs = [
+    { w:240, h:240, bg:"rgba(255,255,255,0.06)", top:"5%",   left:"5%",   delay:"0s" },
+    { w:180, h:180, bg:"rgba(99,102,241,0.18)",  bottom:"8%",right:"5%",  delay:"2s" },
+    { w:110, h:110, bg:"rgba(255,255,255,0.04)", top:"38%",  right:"14%", delay:"1s" },
+    { w:80,  h:80,  bg:"rgba(255,255,255,0.07)", bottom:"28%",left:"9%",  delay:"3s" },
+    { w:60,  h:60,  bg:"rgba(14,165,233,0.15)",  top:"60%",  left:"25%",  delay:"1.5s" },
+  ];
+
   return (
     <div className="login-page">
       <style>{CSS}</style>
-      {[
-        { w:240, h:240, bg:"rgba(255,255,255,0.06)", top:"5%",   left:"5%",   delay:"0s" },
-        { w:180, h:180, bg:"rgba(99,102,241,0.18)",  bottom:"8%",right:"5%",  delay:"2s" },
-        { w:110, h:110, bg:"rgba(255,255,255,0.04)", top:"38%",  right:"14%", delay:"1s" },
-        { w:80,  h:80,  bg:"rgba(255,255,255,0.07)", bottom:"28%",left:"9%",  delay:"3s" },
-        { w:60,  h:60,  bg:"rgba(14,165,233,0.15)",  top:"60%",  left:"25%",  delay:"1.5s" },
-      ].map((b,i) => (
+      {blobs.map((b,i) => (
         <div key={i} className="blob" style={{
           width:b.w, height:b.h, background:b.bg,
           top:b.top, left:b.left, bottom:b.bottom, right:b.right,
@@ -1243,33 +1262,64 @@ function Login({ onLogin }) {
           </div>
         </div>
 
-        <div className="lc-greet">
-          <h1>Selamat Datang! 👋</h1>
-          <p>Log masuk dengan akaun sekolah anda.</p>
-        </div>
-
-        {err && <div className="lc-err">⚠️ {err}</div>}
-
-        <div className="lc-field">
-          <label className="lc-label">Emel</label>
-          <input className="lc-input" type="email" placeholder="guru@sekolah.edu.my"
-            value={email} onChange={e=>setEmail(e.target.value)}
-            onKeyDown={e=>e.key==="Enter"&&submit()} />
-        </div>
-
-        <div className="lc-field">
-          <label className="lc-label">Kata Laluan</label>
-          <div className="lc-pw">
-            <input className="lc-input" type={show?"text":"password"} placeholder="••••••••"
-              value={pass} onChange={e=>setPass(e.target.value)}
-              onKeyDown={e=>e.key==="Enter"&&submit()} />
-            <button className="lc-pw-btn" onClick={()=>setShow(!show)}>{show?"🙈":"👁️"}</button>
-          </div>
-        </div>
-
-        <button className="lc-btn" onClick={submit} disabled={loading}>
-          {loading ? "⏳  Sedang masuk..." : "Log Masuk →"}
-        </button>
+        {forgotMode ? (
+          <>
+            <div className="lc-greet">
+              <h1>Lupa Kata Laluan 🔑</h1>
+              <p>{resetSent ? "Link reset telah dihantar! Semak emel anda." : "Masukkan emel anda untuk terima link reset."}</p>
+            </div>
+            {err && <div className="lc-err">⚠️ {err}</div>}
+            {!resetSent && (
+              <>
+                <div className="lc-field">
+                  <label className="lc-label">Emel</label>
+                  <input className="lc-input" type="email" placeholder="guru@sekolah.edu.my"
+                    value={email} onChange={e=>setEmail(e.target.value)}
+                    onKeyDown={e=>e.key==="Enter"&&sendReset()} />
+                </div>
+                <button className="lc-btn" onClick={sendReset} disabled={loading}>
+                  {loading ? "⏳ Menghantar..." : "Hantar Link Reset →"}
+                </button>
+              </>
+            )}
+            <button onClick={()=>{setForgotMode(false);setResetSent(false);setErr("");}}
+              style={{marginTop:12,background:"none",border:"none",color:"#2563eb",cursor:"pointer",fontSize:13,fontWeight:700}}>
+              ← Kembali Log Masuk
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="lc-greet">
+              <h1>Selamat Datang! 👋</h1>
+              <p>Log masuk dengan akaun sekolah anda.</p>
+            </div>
+            {err && <div className="lc-err">⚠️ {err}</div>}
+            <div className="lc-field">
+              <label className="lc-label">Emel</label>
+              <input className="lc-input" type="email" placeholder="guru@sekolah.edu.my"
+                value={email} onChange={e=>setEmail(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&submit()} />
+            </div>
+            <div className="lc-field">
+              <label className="lc-label">Kata Laluan</label>
+              <div className="lc-pw">
+                <input className="lc-input" type={show?"text":"password"} placeholder="••••••••"
+                  value={pass} onChange={e=>setPass(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&submit()} />
+                <button className="lc-pw-btn" onClick={()=>setShow(!show)}>{show?"🙈":"👁️"}</button>
+              </div>
+            </div>
+            <button className="lc-btn" onClick={submit} disabled={loading}>
+              {loading ? "⏳  Sedang masuk..." : "Log Masuk →"}
+            </button>
+            <div style={{textAlign:"center",marginTop:10}}>
+              <button onClick={()=>{setForgotMode(true);setErr("");}}
+                style={{background:"none",border:"none",color:"#2563eb",cursor:"pointer",fontSize:12,fontWeight:700}}>
+                Lupa kata laluan?
+              </button>
+            </div>
+          </>
+        )}
 
         <div className="lc-foot">SK Darau · Sistem Pengurusan Sekolah 2025</div>
         <div style={{marginTop:14,padding:"10px 14px",background:"rgba(239,246,255,0.8)",border:"1.5px solid rgba(147,197,253,0.6)",borderRadius:12,textAlign:"center"}}>
@@ -1277,6 +1327,241 @@ function Login({ onLogin }) {
           <div style={{fontSize:12,color:"#1d4ed8",fontWeight:900}}>En. Khairul Azwani bin Haji Ahinin</div>
           <div style={{fontSize:11,color:"#64748b",fontWeight:700}}>Guru ICT · SK Darau, Kota Kinabalu</div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── RESET PASSWORD ───────────────────────────────────────────────────────────
+function ResetPassword({ onDone }) {
+  const [pass, setPass] = useState("");
+  const [pass2, setPass2] = useState("");
+  const [show, setShow] = useState(false);
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const submit = async () => {
+    setErr("");
+    if (!pass || !pass2) { setErr("Sila isi kedua-dua medan."); return; }
+    if (pass.length < 6) { setErr("Kata laluan sekurang-kurangnya 6 aksara."); return; }
+    if (pass !== pass2) { setErr("Kata laluan tidak sepadan."); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password: pass });
+    if (error) {
+      setErr("Gagal kemaskini kata laluan: " + error.message);
+    } else {
+      setDone(true);
+      setTimeout(() => { supabase.auth.signOut(); onDone(); }, 2500);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="login-page">
+      <style>{CSS}</style>
+      <div className="login-card">
+        <div className="lc-logo">
+          <div className="lc-mark">🔐</div>
+          <div>
+            <div className="lc-name">EduDashboard</div>
+            <div className="lc-school">SK Darau, Kota Kinabalu</div>
+          </div>
+        </div>
+        <div className="lc-greet">
+          <h1>{done ? "Berjaya! ✅" : "Tetapkan Kata Laluan Baru"}</h1>
+          <p>{done ? "Kata laluan dikemaskini. Sila log masuk semula." : "Masukkan kata laluan baru anda."}</p>
+        </div>
+        {err && <div className="lc-err">⚠️ {err}</div>}
+        {!done && (
+          <>
+            <div className="lc-field">
+              <label className="lc-label">Kata Laluan Baru</label>
+              <div className="lc-pw">
+                <input className="lc-input" type={show?"text":"password"} placeholder="Min. 6 aksara"
+                  value={pass} onChange={e=>setPass(e.target.value)} />
+                <button className="lc-pw-btn" onClick={()=>setShow(s=>!s)}>{show?"🙈":"👁️"}</button>
+              </div>
+            </div>
+            <div className="lc-field">
+              <label className="lc-label">Ulang Kata Laluan</label>
+              <input className="lc-input" type="password" placeholder="Sama seperti atas"
+                value={pass2} onChange={e=>setPass2(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&submit()} />
+            </div>
+            <button className="lc-btn" onClick={submit} disabled={loading}>
+              {loading ? "⏳ Menyimpan..." : "Simpan Kata Laluan →"}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── ADMIN PANEL ──────────────────────────────────────────────────────────────
+const FN_URL = import.meta.env.VITE_SUPABASE_URL + "/functions/v1/user-mgmt";
+
+function AdminPanel() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [delConfirm, setDelConfirm] = useState(null);
+
+  const callFn = async (body) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch(FN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + session.access_token,
+      },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  };
+
+  const loadUsers = async () => {
+    setLoading(true);
+    const data = await callFn({ action: "list" });
+    setUsers(data.users || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadUsers(); }, []);
+
+  const invite = async (e) => {
+    e.preventDefault();
+    if (!inviteEmail) return;
+    setInviting(true);
+    setMsg(null);
+    const data = await callFn({ action: "invite", email: inviteEmail });
+    if (data.error) {
+      setMsg({ type: "err", text: "Gagal: " + data.error });
+    } else {
+      setMsg({ type: "ok", text: `Jemputan dihantar ke ${inviteEmail}` });
+      setInviteEmail("");
+      loadUsers();
+    }
+    setInviting(false);
+  };
+
+  const deleteUser = async (userId, email) => {
+    const data = await callFn({ action: "delete", userId });
+    if (data.error) {
+      setMsg({ type: "err", text: "Gagal padam: " + data.error });
+    } else {
+      setMsg({ type: "ok", text: `Akaun ${email} dipadam.` });
+      setUsers(u => u.filter(x => x.id !== userId));
+    }
+    setDelConfirm(null);
+  };
+
+  const fmt = (d) => d ? new Date(d).toLocaleDateString("ms-MY", { day:"2-digit", month:"short", year:"numeric" }) : "—";
+
+  return (
+    <div style={{padding:"24px 20px",maxWidth:800,margin:"0 auto"}}>
+      <div style={{marginBottom:24}}>
+        <div style={{fontSize:22,fontWeight:900,color:"var(--text1)",marginBottom:4}}>⚙️ Urus Akaun Guru</div>
+        <div style={{fontSize:13,color:"var(--text2)"}}>Jemput guru baru atau padam akaun sedia ada.</div>
+      </div>
+
+      {/* Invite form */}
+      <div style={{background:"var(--card)",borderRadius:16,padding:"20px 22px",marginBottom:20,border:"1.5px solid var(--border)"}}>
+        <div style={{fontSize:14,fontWeight:800,color:"var(--text1)",marginBottom:12}}>✉️ Jemput Guru Baru</div>
+        <form onSubmit={invite} style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+          <input
+            type="email" required placeholder="email@guru.com"
+            value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}
+            style={{flex:1,minWidth:220,padding:"9px 14px",borderRadius:10,border:"1.5px solid var(--border)",
+              background:"var(--bg)",color:"var(--text1)",fontSize:14,outline:"none"}}
+          />
+          <button type="submit" disabled={inviting}
+            style={{padding:"9px 20px",borderRadius:10,background:"#2563eb",color:"#fff",
+              border:"none",fontWeight:800,fontSize:14,cursor:"pointer",whiteSpace:"nowrap"}}>
+            {inviting ? "⏳ Menghantar..." : "Hantar Jemputan →"}
+          </button>
+        </form>
+        {msg && (
+          <div style={{marginTop:10,padding:"8px 12px",borderRadius:8,fontSize:13,fontWeight:700,
+            background: msg.type==="ok" ? "#f0fdf4" : "#fef2f2",
+            color: msg.type==="ok" ? "#15803d" : "#dc2626",
+            border: `1px solid ${msg.type==="ok" ? "#bbf7d0" : "#fecaca"}`}}>
+            {msg.type==="ok" ? "✅" : "⚠️"} {msg.text}
+          </div>
+        )}
+      </div>
+
+      {/* User list */}
+      <div style={{background:"var(--card)",borderRadius:16,border:"1.5px solid var(--border)",overflow:"hidden"}}>
+        <div style={{padding:"14px 22px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:14,fontWeight:800,color:"var(--text1)"}}>👥 Senarai Akaun ({users.length})</div>
+          <button onClick={loadUsers} style={{background:"none",border:"1px solid var(--border)",borderRadius:8,
+            padding:"4px 10px",fontSize:12,cursor:"pointer",color:"var(--text2)",fontWeight:700}}>
+            🔄 Muat Semula
+          </button>
+        </div>
+        {loading ? (
+          <div style={{padding:40,textAlign:"center",color:"var(--text2)",fontSize:14}}>⏳ Memuatkan...</div>
+        ) : users.length === 0 ? (
+          <div style={{padding:40,textAlign:"center",color:"var(--text2)",fontSize:14}}>Tiada akaun.</div>
+        ) : (
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+              <thead>
+                <tr style={{background:"var(--bg)"}}>
+                  {["Emel","Daftar","Log Masuk Terakhir","Status",""].map((h,i)=>(
+                    <th key={i} style={{padding:"10px 16px",textAlign:"left",fontWeight:800,
+                      color:"var(--text2)",fontSize:11,textTransform:"uppercase",letterSpacing:"0.05em",
+                      borderBottom:"1px solid var(--border)"}}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(u => (
+                  <tr key={u.id} style={{borderBottom:"1px solid var(--border)"}}>
+                    <td style={{padding:"11px 16px",fontWeight:700,color:"var(--text1)"}}>{u.email}</td>
+                    <td style={{padding:"11px 16px",color:"var(--text2)"}}>{fmt(u.created_at)}</td>
+                    <td style={{padding:"11px 16px",color:"var(--text2)"}}>{fmt(u.last_sign_in_at)}</td>
+                    <td style={{padding:"11px 16px"}}>
+                      {u.confirmed_at ? (
+                        <span style={{background:"#f0fdf4",color:"#15803d",borderRadius:6,padding:"2px 8px",fontSize:11,fontWeight:800}}>Aktif</span>
+                      ) : (
+                        <span style={{background:"#fffbeb",color:"#92400e",borderRadius:6,padding:"2px 8px",fontSize:11,fontWeight:800}}>Jemputan Hantar</span>
+                      )}
+                    </td>
+                    <td style={{padding:"11px 16px"}}>
+                      {delConfirm === u.id ? (
+                        <div style={{display:"flex",gap:6}}>
+                          <button onClick={()=>deleteUser(u.id, u.email)}
+                            style={{padding:"3px 10px",borderRadius:6,background:"#ef4444",color:"#fff",
+                              border:"none",fontSize:11,fontWeight:800,cursor:"pointer"}}>
+                            Confirm Padam
+                          </button>
+                          <button onClick={()=>setDelConfirm(null)}
+                            style={{padding:"3px 10px",borderRadius:6,background:"var(--bg)",color:"var(--text2)",
+                              border:"1px solid var(--border)",fontSize:11,fontWeight:800,cursor:"pointer"}}>
+                            Batal
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={()=>setDelConfirm(u.id)}
+                          style={{padding:"3px 10px",borderRadius:6,background:"#fef2f2",color:"#ef4444",
+                            border:"1px solid #fecaca",fontSize:11,fontWeight:800,cursor:"pointer"}}>
+                          🗑️ Padam
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1344,6 +1629,14 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
               <div className="sb-urole">{user.role}</div>
             </div>
           </div>
+          {user.email === import.meta.env.VITE_ADMIN_EMAIL && (
+            <button onClick={()=>{ onNav("admin", null); onClose(); }}
+              style={{width:"100%",marginBottom:6,padding:"8px 14px",borderRadius:10,background:"rgba(99,102,241,0.18)",
+                border:"1px solid rgba(99,102,241,0.35)",color:"rgba(255,255,255,0.85)",
+                cursor:"pointer",fontSize:13,fontWeight:800,textAlign:"left"}}>
+              ⚙️ &nbsp;Urus Akaun Guru
+            </button>
+          )}
           <button className="sb-out" onClick={onLogout}>🚪 &nbsp;Log Keluar</button>
           <div style={{marginTop:10,padding:"9px 12px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,textAlign:"center"}}>
             <div style={{fontSize:9.5,color:"rgba(255,255,255,0.45)",fontWeight:900,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>Pentadbir Sistem</div>
@@ -11176,6 +11469,7 @@ function Page({ modId, subId }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [showReset, setShowReset] = useState(false);
   const [sbOpen, setSbOpen] = useState(false);
   const [exp, setExp] = useState("");
   const [actMod, setActMod] = useState(null);
@@ -11194,7 +11488,11 @@ export default function App() {
       setAuthChecked(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) { setUser(null); return; }
+      if (event === "PASSWORD_RECOVERY") {
+        setShowReset(true);
+        return;
+      }
+      if (!session) { setUser(null); setShowReset(false); return; }
       const u = session.user;
       const name = u.user_metadata?.name || u.user_metadata?.full_name || u.email.split("@")[0];
       const role = u.user_metadata?.role || "Guru";
@@ -11221,6 +11519,8 @@ export default function App() {
     </div></>
   );
 
+  if (showReset) return <ResetPassword onDone={()=>{ setShowReset(false); setUser(null); }}/>;
+
   if (!user) return <Login onLogin={u=>setUser(u)}/>;
 
   return (
@@ -11236,6 +11536,7 @@ export default function App() {
             <button className="tb-hamburger" onClick={()=>setSbOpen(true)}>☰</button>
             <div className="tb-bread">
               <span style={{cursor:"pointer",fontSize:16}} onClick={()=>onNav(null,null)}>🏠</span>
+              {actMod==="admin"&&<><span className="tb-sep">›</span><span className="cur">⚙️ Urus Akaun Guru</span></>}
               {m&&<><span className="tb-sep">›</span><span>{m.icon} {m.label}</span></>}
               {sName&&<><span className="tb-sep">›</span><span className="cur">{sName}</span></>}
             </div>
@@ -11255,23 +11556,25 @@ export default function App() {
           <div className="content">
             {!actMod
               ? <Overview onNav={onNav} user={user}/>
-              : actMod==="kurikulum"
-                ? <KurikulumPage subId={actSub} onNav={onNav}/>
-                : actMod==="hem"
-                  ? <HEMPage subId={actSub} onNav={onNav}/>
-                  : actMod==="kokurikulum"
-                    ? <KokurikulumPage subId={actSub} onNav={onNav}/>
-                    : actMod==="pentadbiran"
-                      ? <PentadbiranPage subId={actSub} onNav={onNav}/>
-                      : actMod==="ict"
-                        ? <ICTPage subId={actSub} onNav={onNav}/>
-                        : actMod==="prasekolah"
-                          ? <PrasekolahPage subId={actSub} onNav={onNav}/>
-                          : actMod==="opr"
-                            ? actSub==="drive"
-                              ? <DriveFolderView folderId="1uzANo3j3XIorOcABBpSkgrQ9jp9TZr-N" title="ePBD SK Darau" driveUrl="https://drive.google.com/drive/folders/1uzANo3j3XIorOcABBpSkgrQ9jp9TZr-N?usp=drive_link"/>
-                              : <OPRPage />
-                            : <Page modId={actMod} subId={actSub}/>}
+              : actMod==="admin"
+                ? <AdminPanel />
+                : actMod==="kurikulum"
+                  ? <KurikulumPage subId={actSub} onNav={onNav}/>
+                  : actMod==="hem"
+                    ? <HEMPage subId={actSub} onNav={onNav}/>
+                    : actMod==="kokurikulum"
+                      ? <KokurikulumPage subId={actSub} onNav={onNav}/>
+                      : actMod==="pentadbiran"
+                        ? <PentadbiranPage subId={actSub} onNav={onNav}/>
+                        : actMod==="ict"
+                          ? <ICTPage subId={actSub} onNav={onNav}/>
+                          : actMod==="prasekolah"
+                            ? <PrasekolahPage subId={actSub} onNav={onNav}/>
+                            : actMod==="opr"
+                              ? actSub==="drive"
+                                ? <DriveFolderView folderId="1uzANo3j3XIorOcABBpSkgrQ9jp9TZr-N" title="ePBD SK Darau" driveUrl="https://drive.google.com/drive/folders/1uzANo3j3XIorOcABBpSkgrQ9jp9TZr-N?usp=drive_link"/>
+                                : <OPRPage />
+                              : <Page modId={actMod} subId={actSub}/>}
           </div>
         </div>
       </div>
