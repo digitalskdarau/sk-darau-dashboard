@@ -9056,6 +9056,7 @@ function PAJSKPage() {
   const [loading,setLoading]=useState(true);
   const [showAdd,setShowAdd]=useState(false);
   const [editItem,setEditItem]=useState(null);
+  const [viewItem,setViewItem]=useState(null);
   const [filterKelas,setFilterKelas]=useState('');
   const [q,setQ]=useState('');
   const tahunNow=new Date().getFullYear().toString();
@@ -10074,20 +10075,19 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1a1a1a;backgr
           </div>
 
           <div className="kur-table-wrap"><table className="kur-table">
-            <thead><tr><th>#</th><th>Tarikh</th><th>Masa</th><th>Nama Program</th><th>Penganjur/Guru</th><th>Sasaran/Peserta</th><th>Impak / Outcome</th><th>Catatan</th><th>📸</th><th></th></tr></thead>
+            <thead><tr><th>#</th><th>Tarikh</th><th>Masa</th><th>Nama Program</th><th>Penganjur/Guru</th><th>Sasaran/Peserta</th><th>Impak / Outcome</th><th>Catatan</th><th></th></tr></thead>
             <tbody>{filtered.length===0
-              ?<tr><td colSpan={9} style={{textAlign:'center',padding:28,color:'var(--text3)',fontSize:13}}>Tiada rekod. Klik "+ Tambah Program" untuk mula.</td></tr>
+              ?<tr><td colSpan={8} style={{textAlign:'center',padding:28,color:'var(--text3)',fontSize:13}}>Tiada rekod. Klik "+ Tambah Program" untuk mula.</td></tr>
               :filtered.map((r,i)=>(
               <tr key={r.id}>
                 <td style={{color:'var(--text3)',fontWeight:800}}>{i+1}</td>
                 <td style={{fontSize:12,whiteSpace:'nowrap'}}>{fmtT(r.tarikh)}</td>
                 <td style={{fontSize:12}}>{r.masa||'—'}</td>
-                <td style={{fontWeight:700}}>{r.nama_program}</td>
+                <td style={{fontWeight:700,cursor:'pointer',color:'#0891b2'}} onClick={()=>setViewItem({...r})} title="Klik untuk lihat butiran & gambar">{r.nama_program} {(r.gambar_links||[]).length>0&&<span style={{fontSize:10,background:'#0891b215',border:'1px solid #0891b230',borderRadius:10,padding:'1px 6px',marginLeft:4,fontWeight:600}}>📷{(r.gambar_links||[]).length}</span>}</td>
                 <td style={{fontSize:12}}>{r.penganjur||'—'}</td>
                 <td style={{fontSize:12,color:'var(--text2)'}}>{r.sasaran||'—'}</td>
                 <td style={{fontSize:12,maxWidth:220}}>{r.impak||'—'}</td>
                 <td style={{fontSize:11,color:'var(--text3)'}}>{r.catatan||'—'}</td>
-                <td style={{textAlign:'center',fontSize:13}}>{(r.gambar_links||[]).length>0?`📷 ${(r.gambar_links||[]).length}`:'—'}</td>
                 <td style={{display:'flex',gap:4}}>
                   <button className="btn-add" style={{padding:'4px 8px',fontSize:11,background:'#0891b2',color:'white'}} onClick={()=>printSingleProgram(r,curDomain.label,curDomain.icon)} title="Jana PDF">🖨️</button>
                   <button className="btn-add" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditItem({...r})}>✏️</button>
@@ -10109,6 +10109,41 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1a1a1a;backgr
               <OPRFormFields val={editItem} set={setEditItem}/>
               <button className="btn-primary" type="submit">💾 Simpan</button>
             </form>
+          </Modal>}
+
+          {viewItem&&<Modal title={`${curDomain.icon} ${viewItem.nama_program}`} onClose={()=>setViewItem(null)}>
+            <div>
+              <div style={{display:'grid',gridTemplateColumns:'140px 1fr',gap:'6px 12px',fontSize:13,marginBottom:16,background:'var(--card2)',borderRadius:10,padding:14}}>
+                {[['Tarikh',fmtT(viewItem.tarikh)],['Masa',viewItem.masa||'—'],['Penganjur',viewItem.penganjur||'—'],['Sasaran/Peserta',viewItem.sasaran||'—'],['Tahun',viewItem.tahun||filterTahun]].map(([k,v])=>(
+                  <>{k==='Tarikh'?null:null}<span key={k+'k'} style={{fontWeight:700,color:'var(--text2)',fontSize:12}}>{k}</span><span key={k+'v'}>{v}</span></>
+                ))}
+              </div>
+              {viewItem.impak&&<div style={{marginBottom:14}}>
+                <div style={{fontWeight:800,fontSize:10,color:'#0891b2',textTransform:'uppercase',letterSpacing:1,marginBottom:6,paddingBottom:4,borderBottom:'2px solid #0891b2'}}>🎯 Impak / Outcome</div>
+                <div style={{background:'var(--card2)',borderRadius:8,padding:12,fontSize:13,lineHeight:1.8,whiteSpace:'pre-wrap'}}>{viewItem.impak}</div>
+              </div>}
+              {viewItem.catatan&&<div style={{marginBottom:14}}>
+                <div style={{fontWeight:800,fontSize:10,color:'#0891b2',textTransform:'uppercase',letterSpacing:1,marginBottom:6,paddingBottom:4,borderBottom:'2px solid #0891b2'}}>📝 Catatan</div>
+                <div style={{background:'var(--card2)',borderRadius:8,padding:12,fontSize:13,lineHeight:1.8}}>{viewItem.catatan}</div>
+              </div>}
+              {(viewItem.gambar_links||[]).length>0&&<div style={{marginBottom:16}}>
+                <div style={{fontWeight:800,fontSize:10,color:'#0891b2',textTransform:'uppercase',letterSpacing:1,marginBottom:10,paddingBottom:4,borderBottom:'2px solid #0891b2'}}>📸 Gambar Program ({(viewItem.gambar_links||[]).length} gambar)</div>
+                <div style={{display:'grid',gridTemplateColumns:(viewItem.gambar_links||[]).length===1?'1fr':'repeat(2,1fr)',gap:10}}>
+                  {(viewItem.gambar_links||[]).map((id,idx)=>(
+                    <div key={id} style={{aspectRatio:'4/3',borderRadius:10,overflow:'hidden',background:'var(--card2)',border:'1.5px solid var(--border)',position:'relative'}}>
+                      <img src={`https://drive.google.com/thumbnail?id=${id}&sz=w800`} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}} onError={e=>{e.target.style.display='none';}}/>
+                      <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,0.35))',padding:'6px 8px 4px',color:'white',fontSize:10,fontWeight:700}}>Gambar {idx+1}</div>
+                    </div>
+                  ))}
+                </div>
+                <p style={{fontSize:10,color:'var(--text3)',marginTop:8}}>* Gambar dari Google Drive. Pastikan fail dikongsi "Anyone with the link".</p>
+              </div>}
+              {(viewItem.gambar_links||[]).length===0&&<div style={{textAlign:'center',padding:'16px 0',color:'var(--text3)',fontSize:13}}>Tiada gambar dilampirkan untuk program ini.</div>}
+              <div style={{display:'flex',gap:8,marginTop:4}}>
+                <button className="btn-primary" style={{flex:1,padding:'10px'}} onClick={()=>printSingleProgram(viewItem,curDomain.label,curDomain.icon)}>🖨️ Jana PDF (dengan gambar)</button>
+                <button className="btn-add" style={{padding:'10px 16px'}} onClick={()=>{setEditItem({...viewItem});setViewItem(null);}}>✏️ Edit</button>
+              </div>
+            </div>
           </Modal>}
         </>)}
 
