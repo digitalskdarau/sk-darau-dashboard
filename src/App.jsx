@@ -88,7 +88,7 @@ function Toast() {
       background: isErr ? "#ef4444" : "#22c55e",
       color:"white", padding:"12px 20px", borderRadius:14,
       fontWeight:700, fontSize:13, boxShadow:"0 4px 24px rgba(0,0,0,0.25)",
-      fontFamily:"'Nunito',sans-serif", maxWidth:340,
+      fontFamily:"'Inter',sans-serif", maxWidth:340,
       animation:"fadeIn 0.2s ease",
     }}>
       {isErr ? "❌ " : "✅ "}{t.msg}
@@ -140,58 +140,58 @@ function Wave({ flip = false }) {
 
 // ─── CSS ─────────────────────────────────────────────────────────────────────
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&family=Fredoka+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 /* ══ THEME TOKENS ══════════════════════════════════════════════════════════ */
 :root {
-  --bg:           #eef4ff;
-  --bg2:          #f8faff;
+  --bg:           #f5f0e8;
+  --bg2:          #faf6ee;
   --surface:      #ffffff;
   --surface-s:    #ffffff;
-  --border:       #1e293b;
-  --border-s:     #1e293b;
-  --divider:      #dbeafe;
-  --shadow:       3px 3px 0 #1e293b;
-  --shadow-md:    4px 4px 0 #1e293b;
-  --shadow-lg:    6px 6px 0 #1e293b;
-  --text:         #0f172a;
-  --text2:        #334155;
-  --text3:        #64748b;
-  --accent:       #2563eb;
-  --accent2:      #ef4444;
-  --accent-lt:    #dbeafe;
-  --accent-ring:  rgba(37,99,235,0.25);
-  --sb-bg:        #1e40af;
+  --border:       #c9910d;
+  --border-s:     #c9910d;
+  --divider:      #e8d5a3;
+  --shadow:       3px 3px 0 #c9910d;
+  --shadow-md:    4px 4px 0 #c9910d;
+  --shadow-lg:    6px 6px 0 #c9910d;
+  --text:         #0d1b3e;
+  --text2:        #1e3a6b;
+  --text3:        #4a6fa5;
+  --accent:       #1e40af;
+  --accent2:      #c9910d;
+  --accent-lt:    #fef3c7;
+  --accent-ring:  rgba(30,64,175,0.2);
+  --sb-bg:        #061029;
   --tb-bg:        #ffffff;
-  --input-bg:     #f8faff;
-  --input-br:     #1e293b;
-  --scroll:       #93c5fd;
+  --input-bg:     #faf6ee;
+  --input-br:     #c9910d;
+  --scroll:       #c9910d;
   --blur:         none;
 }
 
 [data-theme="dark"] {
-  --bg:           #0d1526;
-  --bg2:          #111c35;
-  --surface:      #1a2540;
-  --surface-s:    #1a2540;
-  --border:       #60a5fa;
-  --border-s:     #60a5fa;
-  --divider:      rgba(96,165,250,0.2);
-  --shadow:       3px 3px 0 #60a5fa;
-  --shadow-md:    4px 4px 0 #60a5fa;
-  --shadow-lg:    6px 6px 0 #60a5fa;
-  --text:         #f0f6ff;
-  --text2:        #bfdbfe;
-  --text3:        #60a5fa;
-  --accent:       #60a5fa;
-  --accent2:      #f87171;
-  --accent-lt:    rgba(96,165,250,0.15);
-  --accent-ring:  rgba(96,165,250,0.3);
-  --sb-bg:        #0f1f4a;
-  --tb-bg:        #111c35;
-  --input-bg:     #1a2540;
-  --input-br:     #60a5fa;
-  --scroll:       #3b82f6;
+  --bg:           #060e1f;
+  --bg2:          #0a1628;
+  --surface:      #0f1e3a;
+  --surface-s:    #0f1e3a;
+  --border:       #d4a017;
+  --border-s:     #d4a017;
+  --divider:      rgba(212,160,23,0.2);
+  --shadow:       3px 3px 0 #d4a017;
+  --shadow-md:    4px 4px 0 #d4a017;
+  --shadow-lg:    6px 6px 0 #d4a017;
+  --text:         #f0e8d0;
+  --text2:        #c8b08a;
+  --text3:        #8a6e4a;
+  --accent:       #d4a017;
+  --accent2:      #f0c040;
+  --accent-lt:    rgba(212,160,23,0.12);
+  --accent-ring:  rgba(212,160,23,0.3);
+  --sb-bg:        #040c1e;
+  --tb-bg:        #0a1628;
+  --input-bg:     #0f1e3a;
+  --input-br:     #d4a017;
+  --scroll:       #d4a017;
   --blur:         none;
 }
 
@@ -199,15 +199,15 @@ const CSS = `
 *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
 html { font-size:16px; }
 [data-theme="dark"] body {
-  background: linear-gradient(160deg,#0a1628 0%,#0d1526 40%,#0a1f3a 70%,#0d1526 100%) !important;
+  background: linear-gradient(160deg,#040c1e 0%,#060e1f 40%,#04101f 70%,#060e1f 100%) !important;
 }
 [data-theme="dark"] body::before {
-  background-image: radial-gradient(rgba(96,165,250,0.08) 1.5px, transparent 1.5px) !important;
+  background-image: radial-gradient(rgba(212,160,23,0.06) 1.5px, transparent 1.5px) !important;
 }
 
 body {
-  font-family: 'Nunito', sans-serif;
-  background: linear-gradient(160deg,#dbeafe 0%,#eff6ff 35%,#e0f2fe 65%,#f0f9ff 100%);
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(160deg,#f5f0e8 0%,#faf6ee 35%,#f0e8d8 65%,#faf6ee 100%);
   background-attachment: fixed;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
@@ -218,13 +218,13 @@ body {
 }
 body::before {
   content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-  background-image: radial-gradient(rgba(37,99,235,0.12) 1.5px, transparent 1.5px);
+  background-image: radial-gradient(rgba(30,64,175,0.07) 1.5px, transparent 1.5px);
   background-size: 28px 28px;
 }
 .app,.login-page { position:relative; z-index:1; }
 
 ::-webkit-scrollbar { width:6px; }
-::-webkit-scrollbar-thumb { background:var(--accent); border-radius:99px; border:2px solid var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--scroll); border-radius:99px; border:2px solid var(--bg); }
 
 /* ══ KEYFRAMES ═════════════════════════════════════════════════════════════ */
 @keyframes float {
@@ -291,10 +291,10 @@ body::before {
   min-height:100vh;
   display:flex; align-items:center; justify-content:center;
   padding:20px 16px;
-  background:#2563eb;
+  background:#061029;
   background-image:
-    radial-gradient(rgba(255,255,255,0.12) 2px, transparent 2px),
-    radial-gradient(rgba(239,68,68,0.18) 2px, transparent 2px);
+    radial-gradient(rgba(212,160,23,0.1) 2px, transparent 2px),
+    radial-gradient(rgba(255,255,255,0.03) 2px, transparent 2px);
   background-size: 32px 32px, 64px 64px;
   background-position: 0 0, 16px 16px;
   position:relative; overflow:hidden;
@@ -312,8 +312,8 @@ body::before {
   background:#ffffff;
   border-radius:24px;
   padding:36px 28px 32px;
-  border:3px solid #0f172a;
-  box-shadow:6px 6px 0 #0f172a;
+  border:3px solid #c9910d;
+  box-shadow:6px 6px 0 #c9910d;
   animation:pop 0.4s cubic-bezier(.34,1.56,.64,1) both;
 }
 
@@ -323,25 +323,25 @@ body::before {
   background:#fff;
   display:flex; align-items:center; justify-content:center;
   overflow:hidden;
-  border:3px solid #0f172a;
-  box-shadow:3px 3px 0 #0f172a;
+  border:3px solid #c9910d;
+  box-shadow:3px 3px 0 #c9910d;
   animation:wiggle 2.5s ease-in-out infinite;
 }
-.lc-name { font-family:'Fredoka One',cursive; font-size:20px; color:#0f172a; letter-spacing:0.02em; }
-.lc-school { font-size:12px; color:#64748b; font-weight:800; margin-top:1px; }
+.lc-name { font-family:'Playfair Display',serif; font-size:20px; color:#0d1b3e; letter-spacing:0.02em; }
+.lc-school { font-size:12px; color:#4a6fa5; font-weight:700; margin-top:1px; letter-spacing:0.04em; }
 
-.lc-greet { margin-bottom:20px; padding-bottom:20px; border-bottom:3px dashed #bfdbfe; }
+.lc-greet { margin-bottom:20px; padding-bottom:20px; border-bottom:3px dashed #e8d5a3; }
 .lc-greet h1 {
-  font-family:'Fredoka One',cursive;
-  font-size:26px; color:#0f172a;
+  font-family:'Playfair Display',serif;
+  font-size:26px; color:#0d1b3e;
   margin-bottom:4px; line-height:1.2; letter-spacing:0.02em;
 }
-.lc-greet p { font-size:14px; color:#475569; font-weight:700; }
+.lc-greet p { font-size:14px; color:#4a6fa5; font-weight:700; }
 
 .lc-hint {
   background:#fef9c3;
-  border:2.5px solid #0f172a; border-radius:14px;
-  box-shadow:3px 3px 0 #0f172a;
+  border:2.5px solid #c9910d; border-radius:14px;
+  box-shadow:3px 3px 0 #c9910d;
   padding:12px 14px; margin-bottom:20px;
   display:flex; align-items:flex-start; gap:10px;
 }
@@ -351,20 +351,20 @@ body::before {
 
 .lc-field { margin-bottom:14px; }
 .lc-label {
-  display:block; font-size:11.5px; font-weight:900;
-  color:#2563eb; letter-spacing:0.08em;
+  display:block; font-size:11.5px; font-weight:700;
+  color:#c9910d; letter-spacing:0.1em;
   text-transform:uppercase; margin-bottom:7px;
 }
 .lc-input {
   width:100%; padding:12px 15px;
-  background:#f8faff; border:2.5px solid #0f172a; border-radius:12px;
-  font-size:15px; font-weight:800;
-  font-family:'Nunito',sans-serif; color:#0f172a;
+  background:#faf6ee; border:2.5px solid #c9910d; border-radius:12px;
+  font-size:15px; font-weight:700;
+  font-family:'Inter',sans-serif; color:#0d1b3e;
   outline:none; transition:all 0.18s;
-  box-shadow:2px 2px 0 #0f172a;
+  box-shadow:2px 2px 0 #c9910d;
 }
-.lc-input:focus { border-color:#2563eb; box-shadow:2px 2px 0 #2563eb, 0 0 0 4px rgba(37,99,235,0.15); background:white; }
-.lc-input::placeholder { color:#94a3b8; font-weight:600; }
+.lc-input:focus { border-color:#d4a017; box-shadow:2px 2px 0 #d4a017, 0 0 0 4px rgba(212,160,23,0.15); background:white; }
+.lc-input::placeholder { color:#a08060; font-weight:500; }
 
 .lc-pw { position:relative; }
 .lc-pw .lc-input { padding-right:50px; }
@@ -384,16 +384,16 @@ body::before {
 }
 .lc-btn {
   width:100%; padding:14px;
-  background:#2563eb;
-  border:2.5px solid #0f172a; border-radius:14px;
-  color:white; font-size:16px; font-weight:900;
-  font-family:'Nunito',sans-serif;
+  background:linear-gradient(135deg,#061029,#1e40af);
+  border:2.5px solid #c9910d; border-radius:14px;
+  color:white; font-size:16px; font-weight:700;
+  font-family:'Inter',sans-serif;
   cursor:pointer; margin-top:4px;
-  box-shadow:4px 4px 0 #0f172a;
-  transition:all 0.15s; letter-spacing:0.03em;
+  box-shadow:4px 4px 0 #c9910d;
+  transition:all 0.15s; letter-spacing:0.06em;
 }
-.lc-btn:hover:not(:disabled) { transform:translate(-2px,-2px); box-shadow:6px 6px 0 #0f172a; }
-.lc-btn:active { transform:translate(2px,2px); box-shadow:2px 2px 0 #0f172a; }
+.lc-btn:hover:not(:disabled) { transform:translate(-2px,-2px); box-shadow:6px 6px 0 #c9910d; }
+.lc-btn:active { transform:translate(2px,2px); box-shadow:2px 2px 0 #c9910d; }
 .lc-btn:disabled { opacity:0.6; cursor:not-allowed; }
 .lc-foot { text-align:center; margin-top:18px; font-size:12px; color:#94a3b8; font-weight:700; }
 
@@ -433,13 +433,13 @@ body::before {
   box-shadow:3px 3px 0 rgba(0,0,0,0.2);
   animation:wobble 4s ease-in-out infinite;
 }
-.sb-name { font-family:'Fredoka One',cursive; font-size:15px; color:#ffffff; letter-spacing:0.03em; }
+.sb-name { font-family:'Playfair Display',serif; font-size:15px; color:#ffffff; letter-spacing:0.03em; }
 .sb-school { font-size:11px; color:rgba(255,255,255,0.65); font-weight:700; margin-top:1px; }
 
 .sb-mood {
   margin-top:12px; padding:10px 12px;
-  background:rgba(255,255,255,0.12);
-  border:2px dashed rgba(255,255,255,0.3);
+  background:rgba(212,160,23,0.1);
+  border:2px dashed rgba(212,160,23,0.35);
   border-radius:14px;
   display:flex; align-items:center; gap:8px;
 }
@@ -448,8 +448,8 @@ body::before {
 
 .sb-nav { flex:1; padding:8px; overflow-y:auto; min-height:0; }
 .sb-sec-lbl {
-  font-size:9.5px; font-weight:900; color:rgba(255,255,255,0.5);
-  letter-spacing:0.14em; text-transform:uppercase;
+  font-size:9.5px; font-weight:700; color:rgba(212,160,23,0.7);
+  letter-spacing:0.16em; text-transform:uppercase;
   padding:14px 8px 5px;
 }
 .sb-btn {
@@ -457,7 +457,7 @@ body::before {
   padding:7px 12px; border-radius:12px; margin-bottom:2px;
   background:transparent; border:none; cursor:pointer;
   color:rgba(255,255,255,0.75); font-size:13px; font-weight:800;
-  font-family:'Nunito',sans-serif; text-align:left;
+  font-family:'Inter',sans-serif; text-align:left;
   transition:all 0.15s;
 }
 .sb-btn:hover { background:rgba(255,255,255,0.15); color:#ffffff; transform:translateX(3px); }
@@ -479,7 +479,7 @@ body::before {
   padding:7px 10px; border-radius:10px; margin-bottom:2px;
   background:transparent; border:none; cursor:pointer;
   color:rgba(255,255,255,0.65); font-size:13px; font-weight:700;
-  font-family:'Nunito',sans-serif; text-align:left; transition:all 0.12s;
+  font-family:'Inter',sans-serif; text-align:left; transition:all 0.12s;
 }
 .sub-btn:hover { color:#ffffff; background:rgba(255,255,255,0.12); transform:translateX(2px); }
 .sub-btn.act { color:#fbbf24; background:rgba(251,191,36,0.12); font-weight:900; }
@@ -498,11 +498,11 @@ body::before {
 }
 .sb-av {
   width:38px; height:38px; border-radius:12px; flex-shrink:0;
-  background:#ef4444;
+  background:linear-gradient(135deg,#c9910d,#f0c040);
   display:flex; align-items:center; justify-content:center;
-  color:white; font-size:13px; font-weight:900;
-  border:2px solid rgba(255,255,255,0.4);
-  box-shadow:2px 2px 0 rgba(0,0,0,0.2);
+  color:#061029; font-size:13px; font-weight:900;
+  border:2px solid rgba(212,160,23,0.5);
+  box-shadow:2px 2px 0 rgba(0,0,0,0.3);
 }
 .sb-uname { font-size:13px; font-weight:900; color:#ffffff; }
 .sb-urole { font-size:11px; color:rgba(255,255,255,0.6); font-weight:700; }
@@ -511,7 +511,7 @@ body::before {
   padding:9px 12px; border-radius:10px;
   background:transparent; border:2px solid transparent; cursor:pointer;
   color:rgba(255,255,255,0.6); font-size:13.5px; font-weight:800;
-  font-family:'Nunito',sans-serif; transition:all 0.15s;
+  font-family:'Inter',sans-serif; transition:all 0.15s;
 }
 .sb-out:hover { background:rgba(239,68,68,0.2); color:#fca5a5; border-color:rgba(239,68,68,0.3); }
 
@@ -528,13 +528,13 @@ body::before {
 }
 .tb-hamburger {
   display:none;
-  background:#dbeafe; border:2.5px solid #0f172a; border-radius:10px;
+  background:#fef3c7; border:2.5px solid #c9910d; border-radius:10px;
   width:40px; height:40px; align-items:center; justify-content:center;
   cursor:pointer; font-size:19px; flex-shrink:0;
-  box-shadow:2px 2px 0 #0f172a;
+  box-shadow:2px 2px 0 #c9910d;
   transition:all 0.15s;
 }
-.tb-hamburger:hover { transform:translate(-1px,-1px); box-shadow:3px 3px 0 #0f172a; }
+.tb-hamburger:hover { transform:translate(-1px,-1px); box-shadow:3px 3px 0 #c9910d; }
 .tb-bread {
   display:flex; align-items:center; gap:6px;
   font-size:13px; color:var(--text2); font-weight:700;
@@ -546,35 +546,35 @@ body::before {
 
 .tb-theme {
   width:38px; height:38px; border-radius:10px;
-  background:#dbeafe; border:2.5px solid #0f172a;
+  background:#fef3c7; border:2.5px solid #c9910d;
   display:flex; align-items:center; justify-content:center;
   font-size:17px; cursor:pointer;
-  box-shadow:2px 2px 0 #0f172a;
+  box-shadow:2px 2px 0 #c9910d;
   transition:all 0.15s; flex-shrink:0;
 }
-.tb-theme:hover { transform:translate(-1px,-1px) rotate(15deg); box-shadow:3px 3px 0 #0f172a; }
+.tb-theme:hover { transform:translate(-1px,-1px) rotate(15deg); box-shadow:3px 3px 0 #c9910d; }
 
 .tb-notif {
   width:38px; height:38px; border-radius:10px;
-  background:#fee2e2; border:2.5px solid #0f172a;
+  background:#fef3c7; border:2.5px solid #c9910d;
   display:flex; align-items:center; justify-content:center;
   font-size:18px; cursor:pointer; position:relative;
-  box-shadow:2px 2px 0 #0f172a;
+  box-shadow:2px 2px 0 #c9910d;
   transition:all 0.15s;
 }
-.tb-notif:hover { transform:translate(-1px,-1px) rotate(-10deg); box-shadow:3px 3px 0 #0f172a; }
+.tb-notif:hover { transform:translate(-1px,-1px) rotate(-10deg); box-shadow:3px 3px 0 #c9910d; }
 .tb-dot { position:absolute; top:5px; right:5px; width:9px; height:9px; border-radius:50%; background:#ef4444; border:2px solid white; }
 .tb-user {
   display:flex; align-items:center; gap:8px;
   padding:5px 12px 5px 5px; border-radius:30px;
-  background:#dbeafe; border:2.5px solid #0f172a; cursor:pointer;
-  box-shadow:2px 2px 0 #0f172a;
+  background:#fef3c7; border:2.5px solid #c9910d; cursor:pointer;
+  box-shadow:2px 2px 0 #c9910d;
   transition:all 0.15s;
 }
-.tb-user:hover { transform:translate(-1px,-1px); box-shadow:3px 3px 0 #0f172a; }
+.tb-user:hover { transform:translate(-1px,-1px); box-shadow:3px 3px 0 #c9910d; }
 .tb-uav {
   width:30px; height:30px; border-radius:50%;
-  background:#2563eb; border:2px solid #0f172a;
+  background:#1e40af; border:2px solid #c9910d;
   display:flex; align-items:center; justify-content:center;
   color:white; font-size:11px; font-weight:900; flex-shrink:0;
 }
@@ -587,7 +587,7 @@ body::before {
 /* ── HERO ── */
 .hero {
   border-radius:28px; margin-bottom:20px;
-  background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 25%,#2563eb 55%,#0ea5e9 82%,#06b6d4 100%);
+  background:linear-gradient(135deg,#040d1e 0%,#0a1f4a 22%,#1a3a6b 48%,#1e40af 72%,#b8860b 90%,#d4a017 100%);
   color:white; position:relative; overflow:hidden;
   border:2px solid rgba(255,255,255,0.22);
   box-shadow:0 20px 60px rgba(30,58,138,0.38),0 8px 20px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.18);
@@ -618,7 +618,7 @@ body::before {
   background:#fff;
 }
 .hero-title {
-  font-family:'Fredoka One',cursive;
+  font-family:'Playfair Display',serif;
   font-size:28px; margin-bottom:8px; line-height:1.2; letter-spacing:0.02em;
   text-shadow:0 2px 10px rgba(0,0,0,0.12);
 }
@@ -680,7 +680,7 @@ body::before {
 }
 .bento-ico { font-size:34px; margin-bottom:10px; display:block; }
 .bento-val {
-  font-family:'Fredoka One',cursive;
+  font-family:'Playfair Display',serif;
   font-size:34px; color:var(--text); line-height:1; letter-spacing:0.02em;
 }
 .bento-lbl { font-size:13px; color:var(--text2); font-weight:800; margin-top:5px; }
@@ -724,7 +724,7 @@ body::before {
   margin-bottom:12px; margin-top:22px;
 }
 .sec-title {
-  font-family:'Fredoka One',cursive;
+  font-family:'Playfair Display',serif;
   font-size:18px; color:var(--text);
   display:flex; align-items:center; gap:8px;
   letter-spacing:0.02em;
@@ -809,7 +809,7 @@ body::before {
 }
 .mc:hover .mc-ico { transform:scale(1.12) rotate(-7deg); }
 .mc-count {
-  font-family:'Fredoka One',cursive;
+  font-family:'Playfair Display',serif;
   font-size:12px; color:var(--text2);
   background:rgba(239,246,255,0.85);
   border:1.5px solid rgba(147,197,253,0.5);
@@ -817,7 +817,7 @@ body::before {
   backdrop-filter:blur(8px);
 }
 .mc-name {
-  font-family:'Fredoka One',cursive;
+  font-family:'Playfair Display',serif;
   font-size:16px; color:var(--text);
   margin-bottom:12px; letter-spacing:0.02em;
 }
@@ -847,7 +847,7 @@ body::before {
 .pg-chip:hover { transform:scale(1.06) rotate(-1deg); }
 .pg-sep { color:var(--text3); font-weight:900; font-size:14px; }
 .pg-title {
-  font-family:'Fredoka One',cursive;
+  font-family:'Playfair Display',serif;
   font-size:26px; color:var(--text);
   margin-bottom:4px; letter-spacing:0.02em;
 }
@@ -863,7 +863,7 @@ body::before {
 }
 .pgs:hover { transform:translate(-2px,-2px); box-shadow:var(--shadow-md); }
 .pgs-ico { font-size:28px; margin-bottom:8px; display:block; }
-.pgs-val { font-family:'Fredoka One',cursive; font-size:22px; color:var(--text); letter-spacing:0.02em; }
+.pgs-val { font-family:'Playfair Display',serif; font-size:22px; color:var(--text); letter-spacing:0.02em; }
 .pgs-lbl { font-size:12px; color:var(--text3); font-weight:800; margin-top:3px; }
 
 .placeholder {
@@ -882,21 +882,21 @@ body::before {
   border:3px solid var(--border); box-shadow:4px 4px 0 var(--border);
 }
 .ph-title {
-  font-family:'Fredoka One',cursive;
+  font-family:'Playfair Display',serif;
   font-size:22px; color:var(--text);
   margin-bottom:10px; letter-spacing:0.02em;
 }
 .ph-text { font-size:14.5px; color:var(--text2); font-weight:700; line-height:1.7; max-width:340px; margin:0 auto 24px; }
 .ph-btn {
   display:inline-flex; align-items:center; gap:8px;
-  background:var(--accent); border:2.5px solid #0f172a;
+  background:var(--accent); border:2.5px solid #c9910d;
   border-radius:12px; padding:12px 24px;
   font-size:14px; font-weight:900; color:white;
-  font-family:'Nunito',sans-serif;
-  box-shadow:3px 3px 0 #0f172a;
+  font-family:'Inter',sans-serif;
+  box-shadow:3px 3px 0 #c9910d;
   transition:all 0.15s;
 }
-.ph-btn:hover { transform:translate(-2px,-2px); box-shadow:5px 5px 0 #0f172a; }
+.ph-btn:hover { transform:translate(-2px,-2px); box-shadow:5px 5px 0 #c9910d; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    RESPONSIVE
@@ -949,7 +949,7 @@ body::before {
   padding:9px 14px; border-radius:12px;
   background:var(--surface); border:2.5px solid var(--border);
   color:var(--text); font-size:13px; font-weight:800;
-  font-family:'Nunito',sans-serif; cursor:pointer;
+  font-family:'Inter',sans-serif; cursor:pointer;
   outline:none; box-shadow:var(--shadow); transition:all 0.15s;
 }
 .kur-select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-ring); }
@@ -959,7 +959,7 @@ body::before {
   width:100%; padding:9px 14px 9px 38px;
   border-radius:12px; background:var(--surface); border:2.5px solid var(--border);
   color:var(--text); font-size:13px; font-weight:700;
-  font-family:'Nunito',sans-serif;
+  font-family:'Inter',sans-serif;
   outline:none; box-shadow:var(--shadow); transition:all 0.15s;
 }
 .kur-search:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-ring); }
@@ -975,7 +975,7 @@ body::before {
 }
 .kur-stat:hover { transform:translate(-2px,-2px); box-shadow:var(--shadow-md); }
 .kur-stat-ico { font-size:24px; margin-bottom:6px; display:block; }
-.kur-stat-val { font-family:'Fredoka One',cursive; font-size:22px; color:var(--text); letter-spacing:0.02em; }
+.kur-stat-val { font-family:'Playfair Display',serif; font-size:22px; color:var(--text); letter-spacing:0.02em; }
 .kur-stat-lbl { font-size:11px; color:var(--text3); font-weight:800; margin-top:2px; }
 
 /* timetable */
@@ -989,7 +989,7 @@ body::before {
   font-size:11.5px; font-weight:900; text-transform:uppercase;
   letter-spacing:0.06em; color:var(--accent);
   background:var(--accent-lt); border-bottom:2.5px solid var(--border);
-  white-space:nowrap; font-family:'Nunito',sans-serif;
+  white-space:nowrap; font-family:'Inter',sans-serif;
 }
 .jadual-table th:first-child { text-align:left; padding-left:16px; min-width:110px; }
 .jadual-table td {
@@ -1014,9 +1014,9 @@ body::before {
 .jadual-cell-guru { font-size:10px; font-weight:700; color:var(--text2); margin-top:1px; }
 .jadual-rehat td {
   padding:6px 16px !important;
-  background:#dbeafe !important;
-  font-size:10.5px; font-weight:900; color:#2563eb !important;
-  letter-spacing:0.12em; text-transform:uppercase; font-family:'Nunito',sans-serif;
+  background:#fef3c7 !important;
+  font-size:10.5px; font-weight:900; color:#c9910d !important;
+  letter-spacing:0.12em; text-transform:uppercase; font-family:'Inter',sans-serif;
 }
 .j-match .jadual-cell { outline:2.5px solid var(--accent); outline-offset:2px; border-radius:10px; }
 .j-dim { opacity:0.2; pointer-events:none; }
@@ -1031,7 +1031,7 @@ body::before {
 .panitia-card:hover { transform:translate(-2px,-2px); box-shadow:var(--shadow-md); }
 .panitia-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
 .panitia-ico { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:21px; flex-shrink:0; border:2.5px solid var(--border); box-shadow:2px 2px 0 var(--border); }
-.panitia-name { font-family:'Fredoka One',cursive; font-size:15px; color:var(--text); letter-spacing:0.02em; }
+.panitia-name { font-family:'Playfair Display',serif; font-size:15px; color:var(--text); letter-spacing:0.02em; }
 .panitia-ketua { font-size:12px; color:var(--text2); font-weight:700; }
 .panitia-body { font-size:12.5px; color:var(--text2); margin-bottom:10px; font-weight:700; }
 .panitia-foot { display:flex; gap:6px; flex-wrap:wrap; }
@@ -1047,7 +1047,7 @@ body::before {
   font-size:11px; font-weight:900; text-transform:uppercase;
   letter-spacing:0.07em; color:var(--accent);
   background:var(--accent-lt); border-bottom:2.5px solid var(--border);
-  white-space:nowrap; font-family:'Nunito',sans-serif;
+  white-space:nowrap; font-family:'Inter',sans-serif;
 }
 .kur-table td {
   padding:11px 14px; font-size:13px; font-weight:700;
@@ -1074,7 +1074,7 @@ body::before {
 
 /* nilam/progress bar */
 .nilam-bar-wrap { width:100%; height:10px; border-radius:99px; background:var(--divider); overflow:hidden; margin-top:5px; border:2px solid var(--border); }
-.nilam-bar { height:100%; border-radius:99px; background:#2563eb; }
+.nilam-bar { height:100%; border-radius:99px; background:linear-gradient(90deg,#c9910d,#f0c040); }
 
 /* program card */
 .prog-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
@@ -1086,7 +1086,7 @@ body::before {
 }
 .prog-card:hover { transform:translate(-2px,-2px); box-shadow:var(--shadow-md); }
 .prog-card-accent { position:absolute; top:0; left:0; right:0; height:5px; border-radius:14px 14px 0 0; }
-.prog-title { font-family:'Fredoka One',cursive; font-size:15px; color:var(--text); margin-bottom:5px; letter-spacing:0.02em; }
+.prog-title { font-family:'Playfair Display',serif; font-size:15px; color:var(--text); margin-bottom:5px; letter-spacing:0.02em; }
 .prog-date { font-size:12px; color:var(--text3); font-weight:800; margin-bottom:8px; }
 .prog-desc { font-size:12.5px; color:var(--text2); line-height:1.6; font-weight:700; }
 
@@ -1136,7 +1136,7 @@ body::before {
   display:flex; align-items:center; justify-content:space-between;
   padding:14px 20px; border-bottom:2.5px solid var(--divider);
 }
-.modal-title { font-family:'Fredoka One',cursive; font-size:17px; color:var(--text); letter-spacing:0.02em; }
+.modal-title { font-family:'Playfair Display',serif; font-size:17px; color:var(--text); letter-spacing:0.02em; }
 .modal-close {
   width:30px; height:30px; border-radius:8px;
   background:#fee2e2; border:2px solid var(--border);
@@ -1155,7 +1155,7 @@ body::before {
   background:var(--input-bg); border:2.5px solid var(--input-br);
   border-radius:10px; color:var(--text);
   font-size:13px; font-weight:700;
-  font-family:'Nunito',sans-serif;
+  font-family:'Inter',sans-serif;
   outline:none; transition:all 0.15s;
   box-shadow:2px 2px 0 var(--border);
 }
@@ -1165,33 +1165,33 @@ body::before {
 .btn-primary {
   width:100%; padding:11px;
   background:var(--accent);
-  border:2.5px solid #0f172a; border-radius:12px;
+  border:2.5px solid #c9910d; border-radius:12px;
   color:white; font-size:14px; font-weight:900;
-  font-family:'Nunito',sans-serif;
+  font-family:'Inter',sans-serif;
   cursor:pointer; margin-top:4px;
-  box-shadow:3px 3px 0 #0f172a; transition:all 0.15s;
+  box-shadow:3px 3px 0 #c9910d; transition:all 0.15s;
 }
-.btn-primary:hover { transform:translate(-1px,-1px); box-shadow:4px 4px 0 #0f172a; }
-.btn-primary:active { transform:translate(1px,1px); box-shadow:2px 2px 0 #0f172a; }
+.btn-primary:hover { transform:translate(-1px,-1px); box-shadow:4px 4px 0 #c9910d; }
+.btn-primary:active { transform:translate(1px,1px); box-shadow:2px 2px 0 #c9910d; }
 .btn-add {
   display:flex; align-items:center; gap:6px;
   padding:8px 16px; border-radius:10px;
-  background:var(--accent); border:2.5px solid #0f172a; color:white;
+  background:var(--accent); border:2.5px solid #c9910d; color:white;
   font-size:12.5px; font-weight:900;
-  font-family:'Nunito',sans-serif;
+  font-family:'Inter',sans-serif;
   cursor:pointer; transition:all 0.15s;
-  box-shadow:3px 3px 0 #0f172a;
+  box-shadow:3px 3px 0 #c9910d;
 }
-.btn-add:hover { transform:translate(-1px,-1px); box-shadow:4px 4px 0 #0f172a; }
-.btn-add:active { transform:translate(1px,1px); box-shadow:2px 2px 0 #0f172a; }
+.btn-add:hover { transform:translate(-1px,-1px); box-shadow:4px 4px 0 #c9910d; }
+.btn-add:active { transform:translate(1px,1px); box-shadow:2px 2px 0 #c9910d; }
 .btn-del {
   padding:4px 9px; border-radius:7px;
   background:transparent; border:2px solid transparent;
   color:var(--text3); font-size:12px; cursor:pointer;
-  font-family:'Nunito',sans-serif; font-weight:800; transition:all 0.15s;
+  font-family:'Inter',sans-serif; font-weight:800; transition:all 0.15s;
 }
 .btn-del:hover { background:#fee2e2; color:#dc2626; border-color:#fca5a5; }
-.loading { padding:48px; text-align:center; color:var(--text3); font-size:15px; font-weight:900; animation:float 2s ease-in-out infinite; font-family:'Fredoka One',cursive; letter-spacing:0.03em; }
+.loading { padding:48px; text-align:center; color:var(--text3); font-size:15px; font-weight:900; animation:float 2s ease-in-out infinite; font-family:'Playfair Display',serif; letter-spacing:0.03em; }
 `;
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
@@ -2206,7 +2206,7 @@ function Overview({ onNav, user }) {
           <div className="bento-bg-circle" style={{background:"#0ea5e9"}}/>
           <span style={{fontSize:28,marginBottom:6}}>👨‍💼</span>
           <div style={{fontSize:11,fontWeight:900,color:"#64748b",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>Pentadbir Sistem</div>
-          <div style={{fontFamily:"'Fredoka One',cursive",fontSize:13.5,color:"#1d4ed8",lineHeight:1.3}}>En. Khairul Azwani<br/>bin Haji Ahinin</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13.5,color:"#1d4ed8",lineHeight:1.3}}>En. Khairul Azwani<br/>bin Haji Ahinin</div>
           <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginTop:3}}>Guru ICT · SK Darau</div>
         </div>
       </div>
@@ -2438,7 +2438,7 @@ function JadualWaktu() {
     border:`1.5px solid ${subtab===i?'#2563eb':'var(--border)'}`,
     background:subtab===i?'#2563eb':'var(--surface)',
     color:subtab===i?'white':'var(--text2)',
-    fontSize:12, fontWeight:800, fontFamily:"'Nunito',sans-serif",
+    fontSize:12, fontWeight:800, fontFamily:"'Inter',sans-serif",
     cursor:'pointer', transition:'all 0.15s'
   });
 
@@ -2800,7 +2800,7 @@ function PanitiaMP() {
     border:`1.5px solid ${subtab===i?'#2563eb':'var(--border)'}`,
     background:subtab===i?'#2563eb':'var(--surface)',
     color:subtab===i?'white':'var(--text2)',
-    fontSize:12, fontWeight:800, fontFamily:"'Nunito',sans-serif",
+    fontSize:12, fontWeight:800, fontFamily:"'Inter',sans-serif",
     cursor:'pointer', transition:'all 0.15s'
   });
 
@@ -2809,7 +2809,7 @@ function PanitiaMP() {
     border:`2px solid ${selId===p.id?(p.color||'#2563eb'):'var(--border)'}`,
     background:selId===p.id?(p.bg||'#eff6ff'):'var(--surface)',
     color:selId===p.id?(p.color||'#2563eb'):'var(--text2)',
-    fontFamily:"'Nunito',sans-serif"
+    fontFamily:"'Inter',sans-serif"
   });
 
   const PanitiaPill = () => (
@@ -2830,7 +2830,7 @@ function PanitiaMP() {
   const quickBtn = (label, onClick) => (
     <button onClick={onClick} style={{padding:'3px 8px',borderRadius:8,fontSize:10,fontWeight:800,
       border:'1.5px solid var(--border)',background:'var(--surface)',cursor:'pointer',
-      fontFamily:"'Nunito',sans-serif",color:'var(--text2)'}}>
+      fontFamily:"'Inter',sans-serif",color:'var(--text2)'}}>
       {label}
     </button>
   );
@@ -5518,7 +5518,7 @@ function HemMurid() {
                   <div style={{
                     padding:'5px 18px',borderRadius:20,
                     background:g.color,color:'#fff',
-                    fontFamily:"'Fredoka One',cursive",fontSize:15,letterSpacing:'0.02em',
+                    fontFamily:"'Playfair Display',serif",fontSize:15,letterSpacing:'0.02em',
                   }}>Tahun {g.tahun}</div>
                   <div style={{fontSize:12,color:'var(--text3)',fontWeight:700}}>
                     {g.total} murid
@@ -5545,8 +5545,8 @@ function HemMurid() {
                         onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='';e.currentTarget.style.borderColor=`${g.color}30`;}}
                       >
                         <div style={{position:'absolute',bottom:-12,right:-12,width:60,height:60,borderRadius:'50%',background:g.color,opacity:0.07}}/>
-                        <div style={{fontFamily:"'Fredoka One',cursive",fontSize:14,color:g.color,marginBottom:4}}>{kelasNama}</div>
-                        <div style={{fontSize:26,fontWeight:900,fontFamily:"'Fredoka One',cursive",color:'var(--text)',lineHeight:1}}>{bk.total}</div>
+                        <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:g.color,marginBottom:4}}>{kelasNama}</div>
+                        <div style={{fontSize:26,fontWeight:900,fontFamily:"'Playfair Display',serif",color:'var(--text)',lineHeight:1}}>{bk.total}</div>
                         <div style={{fontSize:11,color:'var(--text3)',fontWeight:700,marginTop:2}}>murid</div>
                         {bk.total>0&&(
                           <>
@@ -6014,7 +6014,7 @@ function HemDisiplin() {
             {[['✅','Selesai',selesai,'#16a34a'],['⏳','Dalam Proses',dalamProses,'#d97706'],['🚨','Dirujuk',dirujuk,'#dc2626']].map(([ico,lbl,val,clr])=>(
               <div key={lbl} style={{background:`${clr}10`,border:`1.5px solid ${clr}30`,borderRadius:16,padding:'16px 14px',textAlign:'center'}}>
                 <div style={{fontSize:26,marginBottom:4}}>{ico}</div>
-                <div style={{fontFamily:"'Fredoka One',cursive",fontSize:32,color:clr,lineHeight:1}}>{val}</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:32,color:clr,lineHeight:1}}>{val}</div>
                 <div style={{fontSize:12,color:'var(--text3)',fontWeight:700,marginTop:4}}>{lbl}</div>
               </div>
             ))}
@@ -6087,7 +6087,7 @@ function HemDisiplin() {
                         </span>
                       </td>
                       <td>
-                        <span style={{fontFamily:"'Fredoka One',cursive",fontSize:20,color:i<3?'#dc2626':'var(--accent)'}}>{m.count}</span>
+                        <span style={{fontFamily:"'Playfair Display',serif",fontSize:20,color:i<3?'#dc2626':'var(--accent)'}}>{m.count}</span>
                         <span style={{fontSize:12,color:'var(--text3)',marginLeft:4}}>kes</span>
                       </td>
                       <td style={{fontSize:12,color:'var(--text2)'}}>{latest?.kesalahan||'—'}</td>
@@ -6420,7 +6420,7 @@ function HemKaunseling() {
             {[['✅','Selesai',selesai,'#16a34a'],['⏳','Dalam Proses',dalamProses,KS_ACCENT],['🔔','Dirujuk',dirujuk,'#dc2626']].map(([ico,lbl,val,clr])=>(
               <div key={lbl} style={{background:`${clr}10`,border:`1.5px solid ${clr}30`,borderRadius:16,padding:'16px 14px',textAlign:'center'}}>
                 <div style={{fontSize:26,marginBottom:4}}>{ico}</div>
-                <div style={{fontFamily:"'Fredoka One',cursive",fontSize:32,color:clr,lineHeight:1}}>{val}</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:32,color:clr,lineHeight:1}}>{val}</div>
                 <div style={{fontSize:12,color:'var(--text3)',fontWeight:700,marginTop:4}}>{lbl}</div>
                 <div style={{fontSize:10,color:'var(--text3)'}}>{data.length?Math.round(val/data.length*100):0}%</div>
               </div>
@@ -7001,7 +7001,7 @@ function HemBantuan() {
 
   const tabStyle = (i) => ({
     padding:'8px 14px', borderRadius:10, fontWeight:900, fontSize:12, cursor:'pointer',
-    border:'2.5px solid', fontFamily:"'Nunito',sans-serif",
+    border:'2.5px solid', fontFamily:"'Inter',sans-serif",
     background: tab===i ? BP_ACCENT : 'var(--surface)',
     borderColor: tab===i ? BP_ACCENT : 'var(--border)',
     color: tab===i ? '#fff' : 'var(--text)', transition:'all 0.15s',
@@ -7045,7 +7045,7 @@ function HemBantuan() {
                 { lbl:'T20  (> RM10,960)', val:t20, color:'#475569', bg:'#f8fafc', pct: murid.length?Math.round(t20/murid.length*100):0 },
               ].map((c,i) => (
                 <div key={i} style={{background:c.bg, border:`2px solid ${c.color}30`, borderRadius:14, padding:'16px 12px', textAlign:'center'}}>
-                  <div style={{fontSize:26, fontFamily:"'Fredoka One',cursive", color:c.color}}>{c.val}</div>
+                  <div style={{fontSize:26, fontFamily:"'Playfair Display',serif", color:c.color}}>{c.val}</div>
                   <div style={{fontSize:11, fontWeight:900, color:c.color, marginTop:2}}>{c.lbl}</div>
                   <div style={{fontSize:10, color:'#94a3b8', marginTop:4}}>{c.pct}% daripada murid</div>
                   <div style={{marginTop:8, height:5, borderRadius:99, background:`${c.color}20`}}>
@@ -8372,7 +8372,7 @@ function DrivePanelInline({folderId, title}) {
   return(
     <div style={{marginTop:28}}>
       <button onClick={()=>setOpen(o=>!o)}
-        style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 18px',borderRadius:open?'10px 10px 0 0':10,border:'1.5px solid var(--border)',background:'var(--card2)',cursor:'pointer',fontWeight:700,fontSize:13,fontFamily:"'Nunito',sans-serif"}}>
+        style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 18px',borderRadius:open?'10px 10px 0 0':10,border:'1.5px solid var(--border)',background:'var(--card2)',cursor:'pointer',fontWeight:700,fontSize:13,fontFamily:"'Inter',sans-serif"}}>
         <span>📁 Fail Drive — {title}</span>
         <span style={{fontSize:12,color:'var(--text2)',fontWeight:600}}>{open?'▲ Tutup':'▼ Buka Fail'}</span>
       </button>
@@ -8426,7 +8426,7 @@ function HEMPage({ subId, onNav }) {
               background:subId===m.ids[i]?m.color:"var(--surface)",
               color:subId===m.ids[i]?"white":"var(--text2)",
               fontSize:12, fontWeight:800,
-              fontFamily:"'Nunito',sans-serif",
+              fontFamily:"'Inter',sans-serif",
               cursor:"pointer", transition:"all 0.15s",
             }}>
             {s}
@@ -8488,7 +8488,7 @@ function KurikulumPage({ subId, onNav }) {
               background:subId===m.ids[i]?m.color:"var(--surface)",
               color:subId===m.ids[i]?"white":"var(--text2)",
               fontSize:12, fontWeight:800,
-              fontFamily:"'Nunito',sans-serif",
+              fontFamily:"'Inter',sans-serif",
               cursor:"pointer", transition:"all 0.15s",
               backdropFilter:"blur(12px)",
             }}>
@@ -8720,7 +8720,7 @@ function KelabPersatuan() {
 
   const tabStyle=i=>({
     padding:'7px 14px',borderRadius:9,fontWeight:900,fontSize:12,cursor:'pointer',
-    border:'2.5px solid',fontFamily:"'Nunito',sans-serif",
+    border:'2.5px solid',fontFamily:"'Inter',sans-serif",
     background:subtab===i?'var(--accent)':'var(--surface)',
     borderColor:subtab===i?'var(--accent)':'var(--border)',
     color:subtab===i?'#fff':'var(--text)',transition:'all 0.15s',
@@ -8737,7 +8737,7 @@ function KelabPersatuan() {
           return(
             <button key={k.id} onClick={()=>setSelectedId(k.id)} style={{
               padding:'4px 12px',borderRadius:20,fontSize:11,fontWeight:800,
-              border:'2px solid',cursor:'pointer',fontFamily:"'Nunito',sans-serif",transition:'all 0.12s',
+              border:'2px solid',cursor:'pointer',fontFamily:"'Inter',sans-serif",transition:'all 0.12s',
               background:active?'var(--accent)':'var(--surface)',
               borderColor:active?'var(--accent)':'var(--border)',
               color:active?'#fff':'var(--text)',
@@ -9155,7 +9155,7 @@ function KelabPersatuan() {
             {(()=>{const r=computePAJSKKelab(editPajsk);return(
               <div style={{textAlign:'center',background:'var(--surface)',border:'2px solid var(--border)',borderRadius:10,padding:'12px',marginBottom:12}}>
                 <div style={{fontSize:11,color:'var(--text3)',fontWeight:800,marginBottom:4}}>JUMLAH MARKAH PAJSK</div>
-                <div style={{fontSize:26,fontWeight:900,fontFamily:"'Fredoka One',cursive",color:'var(--accent)'}}>
+                <div style={{fontSize:26,fontWeight:900,fontFamily:"'Playfair Display',serif",color:'var(--accent)'}}>
                   {r.total}<span style={{fontSize:14,color:'var(--text3)'}}>/110</span>
                 </div>
                 <div style={{fontSize:13,fontWeight:900}}>Gred: <span className={`badge ${GRED_COLOR[r.gred]||'b-gray'}`}>{r.gred}</span></div>
@@ -9253,8 +9253,8 @@ function BadanBeruniform() {
   const pajskByBadan=id=>pajsk.filter(p=>p.uniform_id===id);
   const filteredBadan=badan.filter(b=>(!filterJenis||b.jenis===filterJenis)&&(!q||b.nama.toLowerCase().includes(q.toLowerCase())||(b.guru_penasihat||'').toLowerCase().includes(q.toLowerCase())));
   const latihanCount=id=>latihanByBadan(id).length;
-  const tabStyle=i=>({padding:'7px 14px',borderRadius:9,fontWeight:900,fontSize:12,cursor:'pointer',border:'2.5px solid',fontFamily:"'Nunito',sans-serif",background:subtab===i?'var(--accent)':'var(--surface)',borderColor:subtab===i?'var(--accent)':'var(--border)',color:subtab===i?'#fff':'var(--text)',transition:'all 0.15s'});
-  function UniformPill(){return(<div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:14,padding:'10px 12px',background:'var(--surface)',border:'2px solid var(--border)',borderRadius:12}}><span style={{fontSize:11,fontWeight:900,color:'var(--text3)',alignSelf:'center',marginRight:4}}>BADAN:</span>{badan.map(b=>{const cnt=ahliByBadan(b.id).length;const active=selectedId===b.id;return(<button key={b.id} onClick={()=>setSelectedId(b.id)} style={{padding:'4px 12px',borderRadius:20,fontSize:11,fontWeight:800,border:'2px solid',cursor:'pointer',fontFamily:"'Nunito',sans-serif",transition:'all 0.12s',background:active?'var(--accent)':'var(--surface)',borderColor:active?'var(--accent)':'var(--border)',color:active?'#fff':'var(--text)'}}>{b.nama} <span style={{opacity:0.7,fontSize:10}}>({cnt})</span></button>);})}{badan.length===0&&<span style={{fontSize:12,color:'var(--text3)'}}>Tiada badan. Tambah dalam tab Senarai.</span>}</div>);}
+  const tabStyle=i=>({padding:'7px 14px',borderRadius:9,fontWeight:900,fontSize:12,cursor:'pointer',border:'2.5px solid',fontFamily:"'Inter',sans-serif",background:subtab===i?'var(--accent)':'var(--surface)',borderColor:subtab===i?'var(--accent)':'var(--border)',color:subtab===i?'#fff':'var(--text)',transition:'all 0.15s'});
+  function UniformPill(){return(<div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:14,padding:'10px 12px',background:'var(--surface)',border:'2px solid var(--border)',borderRadius:12}}><span style={{fontSize:11,fontWeight:900,color:'var(--text3)',alignSelf:'center',marginRight:4}}>BADAN:</span>{badan.map(b=>{const cnt=ahliByBadan(b.id).length;const active=selectedId===b.id;return(<button key={b.id} onClick={()=>setSelectedId(b.id)} style={{padding:'4px 12px',borderRadius:20,fontSize:11,fontWeight:800,border:'2px solid',cursor:'pointer',fontFamily:"'Inter',sans-serif",transition:'all 0.12s',background:active?'var(--accent)':'var(--surface)',borderColor:active?'var(--accent)':'var(--border)',color:active?'#fff':'var(--text)'}}>{b.nama} <span style={{opacity:0.7,fontSize:10}}>({cnt})</span></button>);})}{badan.length===0&&<span style={{fontSize:12,color:'var(--text3)'}}>Tiada badan. Tambah dalam tab Senarai.</span>}</div>);}
   function NoSelection(){return<div style={{textAlign:'center',padding:48,color:'var(--text3)',fontWeight:800,fontSize:14}}>👆 Pilih badan beruniform di atas untuk lihat rekod</div>;}
   const statsCards=[{ico:'🎖️',val:badan.length,lbl:'Badan Beruniform'},{ico:'✅',val:badan.filter(b=>b.status==='Aktif').length,lbl:'Aktif'},{ico:'👥',val:ahli.length,lbl:'Jumlah Ahli'},{ico:'📅',val:latihan.length,lbl:'Rekod Latihan'}];
   return(
@@ -9583,8 +9583,8 @@ function SukanPermainan() {
   const pajskBySukan=id=>pajsk.filter(p=>p.sukan_id===id);
   const filteredSukan=sukan.filter(s=>(!filterKat||s.kategori===filterKat)&&(!q||s.nama.toLowerCase().includes(q.toLowerCase())||(s.guru_jurulatih||'').toLowerCase().includes(q.toLowerCase())));
   const latihanCount=id=>latihanBySukan(id).length;
-  const tabStyle=i=>({padding:'7px 14px',borderRadius:9,fontWeight:900,fontSize:12,cursor:'pointer',border:'2.5px solid',fontFamily:"'Nunito',sans-serif",background:subtab===i?'var(--accent)':'var(--surface)',borderColor:subtab===i?'var(--accent)':'var(--border)',color:subtab===i?'#fff':'var(--text)',transition:'all 0.15s'});
-  function SukanPill(){return(<div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:14,padding:'10px 12px',background:'var(--surface)',border:'2px solid var(--border)',borderRadius:12}}><span style={{fontSize:11,fontWeight:900,color:'var(--text3)',alignSelf:'center',marginRight:4}}>SUKAN:</span>{sukan.map(s=>{const cnt=atletBySukan(s.id).length;const active=selectedId===s.id;return(<button key={s.id} onClick={()=>setSelectedId(s.id)} style={{padding:'4px 12px',borderRadius:20,fontSize:11,fontWeight:800,border:'2px solid',cursor:'pointer',fontFamily:"'Nunito',sans-serif",transition:'all 0.12s',background:active?'var(--accent)':'var(--surface)',borderColor:active?'var(--accent)':'var(--border)',color:active?'#fff':'var(--text)'}}>{s.nama} <span style={{opacity:0.7,fontSize:10}}>({cnt})</span></button>);})}{sukan.length===0&&<span style={{fontSize:12,color:'var(--text3)'}}>Tiada sukan. Tambah dalam tab Senarai.</span>}</div>);}
+  const tabStyle=i=>({padding:'7px 14px',borderRadius:9,fontWeight:900,fontSize:12,cursor:'pointer',border:'2.5px solid',fontFamily:"'Inter',sans-serif",background:subtab===i?'var(--accent)':'var(--surface)',borderColor:subtab===i?'var(--accent)':'var(--border)',color:subtab===i?'#fff':'var(--text)',transition:'all 0.15s'});
+  function SukanPill(){return(<div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:14,padding:'10px 12px',background:'var(--surface)',border:'2px solid var(--border)',borderRadius:12}}><span style={{fontSize:11,fontWeight:900,color:'var(--text3)',alignSelf:'center',marginRight:4}}>SUKAN:</span>{sukan.map(s=>{const cnt=atletBySukan(s.id).length;const active=selectedId===s.id;return(<button key={s.id} onClick={()=>setSelectedId(s.id)} style={{padding:'4px 12px',borderRadius:20,fontSize:11,fontWeight:800,border:'2px solid',cursor:'pointer',fontFamily:"'Inter',sans-serif",transition:'all 0.12s',background:active?'var(--accent)':'var(--surface)',borderColor:active?'var(--accent)':'var(--border)',color:active?'#fff':'var(--text)'}}>{s.nama} <span style={{opacity:0.7,fontSize:10}}>({cnt})</span></button>);})}{sukan.length===0&&<span style={{fontSize:12,color:'var(--text3)'}}>Tiada sukan. Tambah dalam tab Senarai.</span>}</div>);}
   function NoSelection(){return<div style={{textAlign:'center',padding:48,color:'var(--text3)',fontWeight:800,fontSize:14}}>👆 Pilih sukan di atas untuk lihat rekod</div>;}
   const statsCards=[{ico:'⚽',val:sukan.length,lbl:'Jenis Sukan'},{ico:'✅',val:sukan.filter(s=>s.status==='Aktif').length,lbl:'Aktif'},{ico:'🏃',val:atlet.length,lbl:'Jumlah Atlet'},{ico:'📅',val:latihan.length,lbl:'Rekod Latihan'}];
   return(
@@ -10159,7 +10159,7 @@ function ProfilMuridKoku() {
 
   const subTabStyle = (i) => ({
     padding:'7px 14px', borderRadius:9, fontWeight:900, fontSize:12, cursor:'pointer',
-    border:'2.5px solid', fontFamily:"'Nunito',sans-serif",
+    border:'2.5px solid', fontFamily:"'Inter',sans-serif",
     background: subtab===i ? 'var(--accent)' : 'var(--surface)',
     borderColor: subtab===i ? 'var(--accent)' : 'var(--border)',
     color: subtab===i ? '#fff' : 'var(--text)', transition:'all 0.15s',
@@ -10212,7 +10212,7 @@ function ProfilMuridKoku() {
                 style={{
                   padding:'5px 12px', borderRadius:20, fontSize:11, fontWeight:900,
                   border:'2px solid', cursor:'pointer', marginBottom:8, marginRight:6,
-                  fontFamily:"'Nunito',sans-serif", transition:'all 0.15s',
+                  fontFamily:"'Inter',sans-serif", transition:'all 0.15s',
                   background: filterKelas==='' ? 'var(--accent)' : 'var(--surface)',
                   borderColor: filterKelas==='' ? 'var(--accent)' : 'var(--border)',
                   color: filterKelas==='' ? '#fff' : 'var(--text)',
@@ -10231,7 +10231,7 @@ function ProfilMuridKoku() {
                       return (
                         <button key={k} onClick={() => setFilterKelas(active ? '' : k)} style={{
                           padding:'3px 10px', borderRadius:20, fontSize:10, fontWeight:800,
-                          border:'2px solid', cursor:'pointer', fontFamily:"'Nunito',sans-serif",
+                          border:'2px solid', cursor:'pointer', fontFamily:"'Inter',sans-serif",
                           transition:'all 0.12s',
                           background: active ? 'var(--accent)' : 'var(--surface)',
                           borderColor: active ? 'var(--accent)' : 'var(--border)',
@@ -10430,7 +10430,7 @@ function ProfilMuridKoku() {
               padding:'10px 12px', marginBottom:12, textAlign:'center',
             }}>
               <div style={{fontSize:11, color:'var(--text3)', fontWeight:800, marginBottom:4}}>JUMLAH OPR</div>
-              <div style={{fontSize:24, fontWeight:900, fontFamily:"'Fredoka One',cursive", color:'var(--accent)'}}>
+              <div style={{fontSize:24, fontWeight:900, fontFamily:"'Playfair Display',serif", color:'var(--accent)'}}>
                 {(form.m_kelab||0)+(form.m_uniform||0)+(form.m_sukan||0)}<span style={{fontSize:14, color:'var(--text3)'}}>/30</span>
               </div>
               <div style={{fontSize:13, fontWeight:900}}>Gred: <span>{gradeOPR((form.m_kelab||0)+(form.m_uniform||0)+(form.m_sukan||0))}</span></div>
@@ -10450,7 +10450,7 @@ function ProfilMuridKoku() {
               padding:'10px 12px', marginBottom:12, textAlign:'center',
             }}>
               <div style={{fontSize:11, color:'var(--text3)', fontWeight:800, marginBottom:4}}>JUMLAH OPR</div>
-              <div style={{fontSize:24, fontWeight:900, fontFamily:"'Fredoka One',cursive", color:'var(--accent)'}}>
+              <div style={{fontSize:24, fontWeight:900, fontFamily:"'Playfair Display',serif", color:'var(--accent)'}}>
                 {(editItem.m_kelab||0)+(editItem.m_uniform||0)+(editItem.m_sukan||0)}<span style={{fontSize:14, color:'var(--text3)'}}>/30</span>
               </div>
               <div style={{fontSize:13, fontWeight:900}}>Gred: <span>{gradeOPR((editItem.m_kelab||0)+(editItem.m_uniform||0)+(editItem.m_sukan||0))}</span></div>
@@ -11131,7 +11131,7 @@ function KokurikulumPage({ subId, onNav }) {
       </div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
         {m.subs.map((s,i)=>(
-          <button key={m.ids[i]} onClick={()=>onNav("kokurikulum",m.ids[i])} style={{padding:"7px 14px",borderRadius:12,border:`1.5px solid ${subId===m.ids[i]?m.color:"var(--border)"}`,background:subId===m.ids[i]?m.color:"var(--surface)",color:subId===m.ids[i]?"white":"var(--text2)",fontSize:12,fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:"pointer",transition:"all 0.15s"}}>
+          <button key={m.ids[i]} onClick={()=>onNav("kokurikulum",m.ids[i])} style={{padding:"7px 14px",borderRadius:12,border:`1.5px solid ${subId===m.ids[i]?m.color:"var(--border)"}`,background:subId===m.ids[i]?m.color:"var(--surface)",color:subId===m.ids[i]?"white":"var(--text2)",fontSize:12,fontWeight:800,fontFamily:"'Inter',sans-serif",cursor:"pointer",transition:"all 0.15s"}}>
             {s}
           </button>
         ))}
@@ -11443,7 +11443,7 @@ function PentadbiranPage({ subId, onNav }) {
       </div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
         {m.subs.map((s,i)=>(
-          <button key={m.ids[i]} onClick={()=>onNav("pentadbiran",m.ids[i])} style={{padding:"7px 14px",borderRadius:12,border:`1.5px solid ${subId===m.ids[i]?m.color:"var(--border)"}`,background:subId===m.ids[i]?m.color:"var(--surface)",color:subId===m.ids[i]?"white":"var(--text2)",fontSize:12,fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:"pointer",transition:"all 0.15s"}}>
+          <button key={m.ids[i]} onClick={()=>onNav("pentadbiran",m.ids[i])} style={{padding:"7px 14px",borderRadius:12,border:`1.5px solid ${subId===m.ids[i]?m.color:"var(--border)"}`,background:subId===m.ids[i]?m.color:"var(--surface)",color:subId===m.ids[i]?"white":"var(--text2)",fontSize:12,fontWeight:800,fontFamily:"'Inter',sans-serif",cursor:"pointer",transition:"all 0.15s"}}>
             {s}
           </button>
         ))}
@@ -11855,7 +11855,7 @@ function PrasekolahPage({ subId, onNav }) {
       </div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
         {m.subs.map((s,i)=>(
-          <button key={m.ids[i]} onClick={()=>onNav("prasekolah",m.ids[i])} style={{padding:"7px 14px",borderRadius:12,border:`1.5px solid ${subId===m.ids[i]?m.color:"var(--border)"}`,background:subId===m.ids[i]?m.color:"var(--surface)",color:subId===m.ids[i]?"white":"var(--text2)",fontSize:12,fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:"pointer",transition:"all 0.15s"}}>
+          <button key={m.ids[i]} onClick={()=>onNav("prasekolah",m.ids[i])} style={{padding:"7px 14px",borderRadius:12,border:`1.5px solid ${subId===m.ids[i]?m.color:"var(--border)"}`,background:subId===m.ids[i]?m.color:"var(--surface)",color:subId===m.ids[i]?"white":"var(--text2)",fontSize:12,fontWeight:800,fontFamily:"'Inter',sans-serif",cursor:"pointer",transition:"all 0.15s"}}>
             {s}
           </button>
         ))}
@@ -11971,7 +11971,7 @@ export default function App() {
   if (!authChecked) return (
     <><style>{CSS}</style>
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(160deg,#dbeafe,#eff6ff,#e0f2fe)"}}>
-      <div style={{fontFamily:"'Fredoka One',cursive",fontSize:22,color:"#2563eb",animation:"float 2s ease-in-out infinite"}}>🏫 &nbsp;Memuatkan...</div>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:"#2563eb",animation:"float 2s ease-in-out infinite"}}>🏫 &nbsp;Memuatkan...</div>
     </div></>
   );
 
