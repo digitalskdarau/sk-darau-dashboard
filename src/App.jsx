@@ -8609,6 +8609,17 @@ function HEMPage({ subId, onNav }) {
   const idx = m?.ids.indexOf(subId) ?? -1;
   const sName = idx >= 0 ? m.subs[idx] : "";
 
+  const HEM_DRIVE = {
+    apdm:      { id:"15U3dHSxAis1unvw6PI27H0EpSqa8HprV", title:"Pendaftaran & Data Murid" },
+    disiplin:  { id:"1p8E4yEQY2gBKdxgz78JBwvsGECje9YfV", title:"Disiplin" },
+    kaunseling:{ id:"1fo_ZYOxHKLznK5tsiCQ93EdFf6uEHMh8", title:"Bimbingan & Kaunseling" },
+    kesihatan: { id:"1Q6Q3YHQ0d8l2y07PPQ9G1FEtAmEUcT0-", title:"Kesihatan Murid" },
+    bantuan:   { id:"11sxDYUKrH28F3L2v9ugwSFuh19Kax6SU", title:"Bantuan Pelajaran" },
+    "3k":      { id:"1J2Lnakm5PGnGMHj2jC6iqeRnazhpbmiX", title:"Keselamatan & 3K" },
+    pengawas:  { id:"1EVx6xidDAe6RPZ59gjYs1I1YyaQ-UppJ", title:"Pengawas Sekolah" },
+    koperasi:  { id:"1MmS81hGV-b_uQuj2qZMHe7-P3dvoVY40", title:"Koperasi" },
+  };
+
   const views = {
     apdm:      <HemMurid />,
     disiplin:  <HemDisiplin />,
@@ -8618,13 +8629,13 @@ function HEMPage({ subId, onNav }) {
     "3k":      <Hem3K />,
     pengawas:  <HemPengawas />,
     koperasi:  <HemKoperasi />,
-    drive:     <DriveFolderView folderId="1f6LkG3TTJPgWwAOw52KR_4tiJl7UfW2J" title="eHEM" driveUrl="https://drive.google.com/drive/folders/1f6LkG3TTJPgWwAOw52KR_4tiJl7UfW2J?usp=drive_link"/>,
+    drive:     <DriveFolderView folderId="1f6LkG3TTJPgWwAOw52KR_4tiJl7UfW2J" title="eHEM (Semua Fail)" driveUrl="https://drive.google.com/drive/folders/1f6LkG3TTJPgWwAOw52KR_4tiJl7UfW2J?usp=drive_link"/>,
   };
 
   return (
     <div>
       <div className="pg-top" style={{marginBottom:14}}>
-        <div className="pg-chip" style={{color:"#2563eb",borderColor:"#bfdbfe"}}
+        <div className="pg-chip" style={{color:"#0077b6",borderColor:"#bfdbfe"}}
           onClick={() => onNav(null, null)}>🏠 Papan Pemuka</div>
         <span className="pg-sep">›</span>
         <div className="pg-chip" style={{color:m.color,borderColor:`${m.color}40`}}>{m.icon} {m.label}</div>
@@ -8651,6 +8662,7 @@ function HEMPage({ subId, onNav }) {
       </div>
 
       {views[subId] || <div style={{color:"var(--text2)",padding:40,textAlign:"center"}}>Pilih sub-modul</div>}
+      {HEM_DRIVE[subId] && <DrivePanelInline folderId={HEM_DRIVE[subId].id} title={HEM_DRIVE[subId].title}/>}
     </div>
   );
 }
