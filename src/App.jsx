@@ -11339,6 +11339,17 @@ function KokurikulumPage({ subId, onNav }) {
   const m = MODULES.find(x=>x.id==="kokurikulum");
   const idx = m?.ids.indexOf(subId)??-1;
   const sName = idx>=0 ? m.subs[idx] : "";
+
+  const KOKU_DRIVE = {
+    kelab:      { id:"1wFtxuux7tXmRoZVI9BkhlcypldUW7vyt", title:"Kelab & Persatuan" },
+    uniform:    { id:"1sUjvtWxlGP8xYA7dEvrkxUoOdrs1nVwW", title:"Badan Beruniform" },
+    sukan:      { id:"1LQF8gXWk2ia_b1p08UaEvaXjaabEuSWo", title:"Sukan & Permainan" },
+    pajsk:      { id:"1ZZfrczGl4mZF8CO1VZTsM7YyFsE4UWFf", title:"PAJSK" },
+    profil:     { id:"1106_i4zpD_zCjUZ2Zi0Wwz5VgUuCIIR2", title:"Profil Murid Koku" },
+    pencapaian: { id:"1WsNgIv6j87bp__RbMGbECPeKW6T_aP2i", title:"Pencapaian" },
+    takwim:     { id:"139jzC-Eeak6xdBvaKBHhCDZmOq-Sjwrz",  title:"Takwim Kokurikulum" },
+  };
+
   const views = {
     kelab:      <KelabPersatuan />,
     uniform:    <BadanBeruniform />,
@@ -11347,12 +11358,13 @@ function KokurikulumPage({ subId, onNav }) {
     profil:     <ProfilMuridKoku />,
     pencapaian: <PencapaianKoku />,
     takwim:     <TakwimKokurikulum />,
-    drive:      <DriveFolderView folderId="1ZB8Efb6JMklpAFNuzhts_OlGGwBk5_c6" title="eKokurikulum" driveUrl="https://drive.google.com/drive/folders/1ZB8Efb6JMklpAFNuzhts_OlGGwBk5_c6?usp=sharing"/>,
+    drive:      <DriveFolderView folderId="1ZB8Efb6JMklpAFNuzhts_OlGGwBk5_c6" title="eKokurikulum (Semua Fail)" driveUrl="https://drive.google.com/drive/folders/1ZB8Efb6JMklpAFNuzhts_OlGGwBk5_c6?usp=sharing"/>,
   };
+
   return (
     <div>
       <div className="pg-top" style={{marginBottom:14}}>
-        <div className="pg-chip" style={{color:"#2563eb",borderColor:"#bfdbfe"}} onClick={()=>onNav(null,null)}>🏠 Papan Pemuka</div>
+        <div className="pg-chip" style={{color:"#0077b6",borderColor:"#bfdbfe"}} onClick={()=>onNav(null,null)}>🏠 Papan Pemuka</div>
         <span className="pg-sep">›</span>
         <div className="pg-chip" style={{color:m.color,borderColor:`${m.color}40`}}>{m.icon} {m.label}</div>
         {sName&&<><span className="pg-sep">›</span><div className="pg-chip" style={{color:m.color,borderColor:`${m.color}40`,background:m.light}}>{sName}</div></>}
@@ -11365,6 +11377,7 @@ function KokurikulumPage({ subId, onNav }) {
         ))}
       </div>
       {views[subId] || <div style={{color:"var(--text2)",padding:40,textAlign:"center"}}>Pilih sub-modul</div>}
+      {KOKU_DRIVE[subId] && <DrivePanelInline folderId={KOKU_DRIVE[subId].id} title={KOKU_DRIVE[subId].title}/>}
     </div>
   );
 }
