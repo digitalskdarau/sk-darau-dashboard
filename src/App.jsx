@@ -2008,6 +2008,10 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
               <div className="sb-school">SK Darau, KK</div>
             </div>
           </div>
+          <div className="sb-mood">
+            <span className="sb-mood-ico">☀️</span>
+            <div><div className="sb-mood-text">{g}</div></div>
+          </div>
         </div>
 
         <nav className="sb-nav">
@@ -2069,6 +2073,11 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
             </button>
           )}
           <button className="sb-out" onClick={onLogout}>🚪 &nbsp;Log Keluar</button>
+          <div style={{marginTop:8,padding:"9px 12px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,textAlign:"center"}}>
+            <div style={{fontSize:9.5,color:"rgba(255,255,255,0.45)",fontWeight:900,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>Pentadbir Sistem</div>
+            <div style={{fontSize:11.5,color:"rgba(255,255,255,0.82)",fontWeight:900}}>En. Khairul Azwani bin Hj. Ahinin</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",fontWeight:700,marginTop:1}}>Guru ICT SK Darau</div>
+          </div>
         </div>
       </aside>
     </>
