@@ -420,7 +420,7 @@ body::before {
 }
 
 .sb-top {
-  padding:18px 16px 14px;
+  padding:12px 14px 10px;
   border-bottom:2.5px solid rgba(255,255,255,0.15);
 }
 .sb-logo { display:flex; align-items:center; gap:10px; }
@@ -446,7 +446,7 @@ body::before {
 .sb-mood-ico { font-size:20px; animation:float 3s ease-in-out infinite; }
 .sb-mood-text { font-size:12px; font-weight:800; color:rgba(255,255,255,0.9); line-height:1.3; }
 
-.sb-nav { flex:1; padding:10px; overflow-y:auto; min-height:0; }
+.sb-nav { flex:1; padding:8px; overflow-y:auto; min-height:0; }
 .sb-sec-lbl {
   font-size:9.5px; font-weight:900; color:rgba(255,255,255,0.5);
   letter-spacing:0.14em; text-transform:uppercase;
@@ -454,9 +454,9 @@ body::before {
 }
 .sb-btn {
   width:100%; display:flex; align-items:center; gap:10px;
-  padding:10px 12px; border-radius:12px; margin-bottom:3px;
+  padding:7px 12px; border-radius:12px; margin-bottom:2px;
   background:transparent; border:none; cursor:pointer;
-  color:rgba(255,255,255,0.75); font-size:13.5px; font-weight:800;
+  color:rgba(255,255,255,0.75); font-size:13px; font-weight:800;
   font-family:'Nunito',sans-serif; text-align:left;
   transition:all 0.15s;
 }
@@ -486,7 +486,7 @@ body::before {
 .sub-dot { width:5px; height:5px; border-radius:50%; background:currentColor; flex-shrink:0; opacity:0.6; }
 
 .sb-foot {
-  padding:12px 10px;
+  padding:8px 10px;
   border-top:2px solid rgba(255,255,255,0.15);
 }
 .sb-user {
@@ -2008,10 +2008,6 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
               <div className="sb-school">SK Darau, KK</div>
             </div>
           </div>
-          <div className="sb-mood">
-            <span className="sb-mood-ico">☀️</span>
-            <div><div className="sb-mood-text">{g}</div></div>
-          </div>
         </div>
 
         <nav className="sb-nav">
@@ -2073,11 +2069,6 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
             </button>
           )}
           <button className="sb-out" onClick={onLogout}>🚪 &nbsp;Log Keluar</button>
-          <div style={{marginTop:10,padding:"9px 12px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,textAlign:"center"}}>
-            <div style={{fontSize:9.5,color:"rgba(255,255,255,0.45)",fontWeight:900,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>Pentadbir Sistem</div>
-            <div style={{fontSize:11.5,color:"rgba(255,255,255,0.82)",fontWeight:900}}>En. Khairul Azwani bin Hj. Ahinin</div>
-            <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",fontWeight:700,marginTop:1}}>Guru ICT SK Darau</div>
-          </div>
         </div>
       </aside>
     </>
