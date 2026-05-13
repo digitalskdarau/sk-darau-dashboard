@@ -409,7 +409,7 @@ body::before {
   border-right:3px solid var(--border);
   display:flex; flex-direction:column;
   height:100vh; position:sticky; top:0;
-  overflow-y:auto;
+  overflow:hidden;
   box-shadow:4px 0 0 var(--border);
   transition:transform 0.3s cubic-bezier(.34,1.56,.64,1);
   z-index:200;
@@ -446,7 +446,7 @@ body::before {
 .sb-mood-ico { font-size:20px; animation:float 3s ease-in-out infinite; }
 .sb-mood-text { font-size:12px; font-weight:800; color:rgba(255,255,255,0.9); line-height:1.3; }
 
-.sb-nav { flex:1; padding:10px; overflow-y:auto; }
+.sb-nav { flex:1; padding:10px; overflow-y:auto; min-height:0; }
 .sb-sec-lbl {
   font-size:9.5px; font-weight:900; color:rgba(255,255,255,0.5);
   letter-spacing:0.14em; text-transform:uppercase;
