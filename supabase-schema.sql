@@ -474,10 +474,24 @@ create table public.notis (
   tag        text default 'Maklumat',
   tc         text default '#6366f1',
   bg         text default '#f0f0ff',
+  sasaran    text default 'Semua',
   created_at timestamptz default now()
 );
 alter table public.notis enable row level security;
 create policy "anon full access" on public.notis for all to anon using (true) with check (true);
+
+-- Kalendar Sekolah
+drop table if exists public.kalendar cascade;
+create table public.kalendar (
+  id         uuid primary key default gen_random_uuid(),
+  tajuk      text not null,
+  tarikh     date not null,
+  jenis      text default 'Acara',
+  nota       text default '',
+  created_at timestamptz default now()
+);
+alter table public.kalendar enable row level security;
+create policy "anon full access" on public.kalendar for all to anon using (true) with check (true);
 
 -- ═══════════════════════════════════════════════════════
 --  KOKURIKULUM — Sukan, PAJSK, Pencapaian, OPR, Takwim

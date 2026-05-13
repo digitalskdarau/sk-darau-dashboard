@@ -35,6 +35,21 @@ const TAG_OPTS = [
 ];
 const NOTIS_ICONS = ["📅","📋","📦","👦","📢","⚠️","✅","🏫","📌","🔔"];
 
+const SASARAN_OPTS = [
+  { lbl:"Semua",         ico:"🌐", tc:"#374151", bg:"#f3f4f6" },
+  { lbl:"Guru",          ico:"👩‍🏫", tc:"#0077b6", bg:"#e8f4fd" },
+  { lbl:"Warga Sekolah", ico:"🏫", tc:"#7c3aed", bg:"#f5f3ff" },
+  { lbl:"Ibu Bapa",      ico:"👨‍👩‍👧", tc:"#d97706", bg:"#fef3c7" },
+];
+
+const JENIS_HAL = [
+  { lbl:"Cuti",         tc:"#dc2626", bg:"#fef2f2" },
+  { lbl:"Acara",        tc:"#0077b6", bg:"#e8f4fd" },
+  { lbl:"Peperiksaan",  tc:"#d97706", bg:"#fef3c7" },
+  { lbl:"Mesyuarat",    tc:"#7c3aed", bg:"#f5f3ff" },
+  { lbl:"Lain-lain",    tc:"#374151", bg:"#f3f4f6" },
+];
+
 // ─── KURIKULUM DATA ──────────────────────────────────────────────────────────
 const SC = {
   "BM":      { c:"#2563eb", bg:"#eff6ff",  i:"📖" },
@@ -1191,6 +1206,67 @@ body::before {
   font-family:'Inter',sans-serif; font-weight:800; transition:all 0.15s;
 }
 .btn-del:hover { background:#fee2e2; color:#dc2626; border-color:#fca5a5; }
+/* ── MAKLUMAN AUDIENCE TABS ── */
+.mak-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+.mak-tab {
+  display:flex; align-items:center; gap:5px;
+  padding:5px 14px; border-radius:20px;
+  font-size:12px; font-weight:800;
+  border:2.5px solid var(--border);
+  cursor:pointer; background:var(--surface);
+  color:var(--text2); transition:all 0.15s;
+  font-family:'Inter',sans-serif;
+  box-shadow:var(--shadow);
+}
+.mak-tab:hover { transform:translate(-1px,-1px); box-shadow:var(--shadow-md); }
+.mak-tab.act {
+  background:var(--accent); color:#fff;
+  border-color:var(--accent);
+  box-shadow:var(--shadow-md);
+}
+.mak-cnt {
+  font-size:10px; font-weight:900;
+  background:rgba(255,255,255,0.25); border-radius:10px; padding:1px 6px;
+}
+.mak-tab:not(.act) .mak-cnt { background:var(--accent-lt); color:var(--accent); }
+.mak-sasaran {
+  font-size:10px; font-weight:800; padding:2px 8px;
+  border-radius:10px; white-space:nowrap; border:1.5px solid currentColor;
+  flex-shrink:0;
+}
+
+/* ── KALENDAR ── */
+.kal-list { display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
+.kal-card {
+  background:var(--surface);
+  border:2.5px solid var(--border); border-radius:16px;
+  padding:12px 15px; display:flex; align-items:center; gap:14px;
+  box-shadow:var(--shadow); transition:all 0.15s;
+  animation:slideUp 0.35s ease both;
+}
+.kal-card:hover { transform:translate(-2px,-2px); box-shadow:var(--shadow-md); }
+.kal-card.kal-past { opacity:0.5; }
+.kal-date-box {
+  min-width:52px; text-align:center; flex-shrink:0;
+  background:var(--accent); color:#fff;
+  border-radius:12px; padding:6px 4px;
+  border:2px solid var(--border);
+  box-shadow:2px 2px 0 var(--border);
+}
+.kal-date-day { font-family:'Playfair Display',serif; font-size:22px; font-weight:800; line-height:1; }
+.kal-date-mon { font-size:10px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; opacity:0.85; }
+.kal-body { flex:1; min-width:0; }
+.kal-tajuk { font-size:13.5px; font-weight:800; color:var(--text); margin-bottom:2px; }
+.kal-nota { font-size:11.5px; color:var(--text3); font-weight:700; }
+.kal-badges { display:flex; align-items:center; gap:6px; margin-top:5px; flex-wrap:wrap; }
+.kal-countdown {
+  font-size:10.5px; font-weight:900; padding:2px 9px;
+  border-radius:10px; white-space:nowrap; flex-shrink:0;
+  border:1.5px solid currentColor;
+}
+.kal-jenis { font-size:10.5px; font-weight:900; padding:2px 9px; border-radius:10px; border:1.5px solid currentColor; white-space:nowrap; }
+@media (min-width:769px) { .kal-list { display:grid; grid-template-columns:1fr 1fr; } }
+
 .loading { padding:48px; text-align:center; color:var(--text3); font-size:15px; font-weight:900; animation:float 2s ease-in-out infinite; font-family:'Playfair Display',serif; letter-spacing:0.03em; }
 `;
 
@@ -2130,7 +2206,8 @@ function Overview({ onNav, user }) {
 
   const [notisData, setNotisData] = useState([]);
   const [showAddNotis, setShowAddNotis] = useState(false);
-  const [notisForm, setNotisForm] = useState({ icon:"📌", teks:"", tag:"Maklumat" });
+  const [notisFilter, setNotisFilter] = useState("Semua");
+  const [notisForm, setNotisForm] = useState({ icon:"📌", teks:"", tag:"Maklumat", sasaran:"Semua" });
 
   const loadNotis = async () => {
     const { data } = await supabase.from('notis').select('*').order('created_at', { ascending:false });
@@ -2141,15 +2218,57 @@ function Overview({ onNav, user }) {
   const addNotis = async () => {
     if (!notisForm.teks.trim()) return;
     const tagCfg = TAG_OPTS.find(t=>t.lbl===notisForm.tag) || TAG_OPTS[2];
-    await supabase.from('notis').insert([{ icon:notisForm.icon, teks:notisForm.teks, tag:notisForm.tag, tc:tagCfg.tc, bg:tagCfg.bg }]);
-    setShowAddNotis(false);
-    setNotisForm({ icon:"📌", teks:"", tag:"Maklumat" });
-    loadNotis();
+    const ok = await dbRun(() => supabase.from('notis').insert([{
+      icon:notisForm.icon, teks:notisForm.teks, tag:notisForm.tag,
+      tc:tagCfg.tc, bg:tagCfg.bg, sasaran:notisForm.sasaran
+    }]));
+    if (ok) { setShowAddNotis(false); setNotisForm({ icon:"📌", teks:"", tag:"Maklumat", sasaran:"Semua" }); loadNotis(); }
   };
 
   const delNotis = async (id) => {
     await supabase.from('notis').delete().eq('id', id);
     setNotisData(d=>d.filter(r=>r.id!==id));
+  };
+
+  // ── Kalendar ──
+  const [kalendarData, setKalendarData] = useState([]);
+  const [showAddKal, setShowAddKal] = useState(false);
+  const [kalForm, setKalForm] = useState({ tajuk:"", tarikh:"", jenis:"Acara", nota:"" });
+
+  const loadKalendar = async () => {
+    const { data } = await supabase.from('kalendar').select('*').order('tarikh', { ascending:true });
+    setKalendarData(data||[]);
+  };
+  useEffect(() => { loadKalendar(); }, []);
+
+  const addKal = async () => {
+    if (!kalForm.tajuk.trim() || !kalForm.tarikh) { toast("Sila isi tajuk dan tarikh."); return; }
+    const ok = await dbRun(() => supabase.from('kalendar').insert([{
+      tajuk:kalForm.tajuk, tarikh:kalForm.tarikh, jenis:kalForm.jenis, nota:kalForm.nota
+    }]));
+    if (ok) { setShowAddKal(false); setKalForm({ tajuk:"", tarikh:"", jenis:"Acara", nota:"" }); loadKalendar(); }
+  };
+
+  const delKal = async (id) => {
+    await supabase.from('kalendar').delete().eq('id', id);
+    setKalendarData(d=>d.filter(r=>r.id!==id));
+  };
+
+  // ── Calendar helpers ──
+  const fmtKal = (s) => {
+    const d = new Date(s + 'T00:00:00');
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diff = Math.ceil((d - today) / 86400000);
+    const BULAN = ["JAN","FEB","MAR","APR","MEI","JUN","JUL","OGO","SEP","OKT","NOV","DIS"];
+    return { day:d.getDate(), mon:BULAN[d.getMonth()], diff };
+  };
+  const cdown = (diff) => {
+    if (diff < -1) return { lbl:`${Math.abs(diff)} hari lalu`, tc:"#94a3b8", bg:"#f1f5f9" };
+    if (diff === -1) return { lbl:"Semalam", tc:"#94a3b8", bg:"#f1f5f9" };
+    if (diff === 0)  return { lbl:"Hari ini!", tc:"#92400e", bg:"#fef9c3" };
+    if (diff === 1)  return { lbl:"Esok", tc:"#b45309", bg:"#fef3c7" };
+    if (diff <= 7)   return { lbl:`${diff} hari lagi`, tc:"#0077b6", bg:"#e8f4fd" };
+    return { lbl:`${diff} hari lagi`, tc:"#15803d", bg:"#f0fdf4" };
   };
 
   const STATS = [
@@ -2211,55 +2330,152 @@ function Overview({ onNav, user }) {
         </div>
       </div>
 
-      {/* Updates */}
+      {/* ── Makluman ── */}
       <div className="sec-hd">
-        <div className="sec-title">📌 Notis & Kemaskini</div>
+        <div className="sec-title">📢 Makluman Sekolah</div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <span className="sec-sub">{notisData.length} item</span>
           <button className="btn-add" onClick={()=>setShowAddNotis(true)}>+ Tambah</button>
         </div>
       </div>
-      <div className="updates" style={{marginBottom:8}}>
-        {notisData.length === 0 && (
-          <div style={{textAlign:"center",padding:"24px",color:"var(--text3)",fontWeight:700,fontSize:14}}>
-            Tiada notis. Tambah yang pertama!
-          </div>
-        )}
-        {notisData.map((u,i)=>(
-          <div className="upd-card" key={u.id} style={{animationDelay:`${i*0.07}s`}}>
-            <div className="upd-ico" style={{background:u.bg}}>{u.icon}</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div className="upd-text">{u.teks}</div>
-            </div>
-            <div className="upd-tag" style={{background:u.bg,color:u.tc}}>{u.tag}</div>
-            <button onClick={()=>delNotis(u.id)} style={{marginLeft:8,background:"none",border:"none",cursor:"pointer",fontSize:15,opacity:0.45,lineHeight:1}} title="Padam">🗑️</button>
-          </div>
-        ))}
+
+      {/* Audience filter tabs */}
+      <div className="mak-tabs">
+        {SASARAN_OPTS.map(s=>{
+          const cnt = s.lbl==="Semua" ? notisData.length : notisData.filter(n=>(n.sasaran||"Semua")===s.lbl).length;
+          return (
+            <button key={s.lbl} className={`mak-tab${notisFilter===s.lbl?" act":""}`}
+              onClick={()=>setNotisFilter(s.lbl)}>
+              {s.ico} {s.lbl} <span className="mak-cnt">{cnt}</span>
+            </button>
+          );
+        })}
       </div>
+
+      <div className="updates" style={{marginBottom:8}}>
+        {(() => {
+          const filtered = notisFilter==="Semua" ? notisData : notisData.filter(n=>(n.sasaran||"Semua")===notisFilter);
+          if (filtered.length===0) return (
+            <div style={{gridColumn:"1/-1",textAlign:"center",padding:"28px",color:"var(--text3)",fontWeight:700,fontSize:14}}>
+              {notisFilter==="Semua" ? "Tiada makluman. Tambah yang pertama!" : `Tiada makluman untuk ${notisFilter}.`}
+            </div>
+          );
+          return filtered.map((u,i)=>{
+            const sas = SASARAN_OPTS.find(s=>s.lbl===(u.sasaran||"Semua")) || SASARAN_OPTS[0];
+            return (
+              <div className="upd-card" key={u.id} style={{animationDelay:`${i*0.07}s`}}>
+                <div className="upd-ico" style={{background:u.bg}}>{u.icon}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div className="upd-text">{u.teks}</div>
+                  <div style={{marginTop:5,display:"flex",gap:5,flexWrap:"wrap"}}>
+                    <span className="mak-sasaran" style={{color:sas.tc,borderColor:sas.tc,background:sas.bg}}>{sas.ico} {sas.lbl}</span>
+                    <span className="upd-tag" style={{background:u.bg,color:u.tc}}>{u.tag}</span>
+                  </div>
+                </div>
+                <button onClick={()=>delNotis(u.id)} style={{marginLeft:8,background:"none",border:"none",cursor:"pointer",fontSize:15,opacity:0.45,lineHeight:1,flexShrink:0}} title="Padam">🗑️</button>
+              </div>
+            );
+          });
+        })()}
+      </div>
+
       {showAddNotis && (
-        <Modal title="Tambah Notis" onClose={()=>setShowAddNotis(false)}>
+        <Modal title="Tambah Makluman" onClose={()=>setShowAddNotis(false)}>
           <div className="form-field">
             <label className="form-label">Ikon</label>
-            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:4}}>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
               {NOTIS_ICONS.map(ic=>(
                 <button key={ic} onClick={()=>setNotisForm(f=>({...f,icon:ic}))}
-                  style={{fontSize:20,background:notisForm.icon===ic?"var(--accent-lt)":"var(--card)",border:`2px solid ${notisForm.icon===ic?"var(--accent)":"var(--border)"}`,borderRadius:8,padding:"4px 8px",cursor:"pointer"}}>
+                  style={{fontSize:20,background:notisForm.icon===ic?"var(--accent-lt)":"var(--surface)",border:`2px solid ${notisForm.icon===ic?"var(--accent)":"var(--border)"}`,borderRadius:8,padding:"4px 8px",cursor:"pointer"}}>
                   {ic}
                 </button>
               ))}
             </div>
           </div>
           <div className="form-field">
-            <label className="form-label">Teks Notis</label>
-            <input className="form-input" placeholder="cth: Mesyuarat PKG Jumaat ini 2PM" value={notisForm.teks} onChange={e=>setNotisForm(f=>({...f,teks:e.target.value}))}/>
+            <label className="form-label">Teks Makluman</label>
+            <input className="form-input" placeholder="cth: Mesyuarat PKG Jumaat ini 2PM di Bilik Guru" value={notisForm.teks} onChange={e=>setNotisForm(f=>({...f,teks:e.target.value}))}/>
+          </div>
+          <div className="form-row">
+            <div className="form-field">
+              <label className="form-label">Sasaran</label>
+              <select className="form-input" value={notisForm.sasaran} onChange={e=>setNotisForm(f=>({...f,sasaran:e.target.value}))}>
+                {SASARAN_OPTS.map(s=><option key={s.lbl}>{s.lbl}</option>)}
+              </select>
+            </div>
+            <div className="form-field">
+              <label className="form-label">Keutamaan</label>
+              <select className="form-input" value={notisForm.tag} onChange={e=>setNotisForm(f=>({...f,tag:e.target.value}))}>
+                {TAG_OPTS.map(t=><option key={t.lbl}>{t.lbl}</option>)}
+              </select>
+            </div>
+          </div>
+          <button className="btn-add" style={{width:"100%",justifyContent:"center"}} onClick={addNotis}>Simpan Makluman</button>
+        </Modal>
+      )}
+
+      {/* ── Kalendar Sekolah ── */}
+      <div className="sec-hd" style={{marginTop:22}}>
+        <div className="sec-title">📅 Kalendar Sekolah</div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <span className="sec-sub">{kalendarData.length} acara</span>
+          <button className="btn-add" onClick={()=>setShowAddKal(true)}>+ Tambah</button>
+        </div>
+      </div>
+
+      <div className="kal-list">
+        {kalendarData.length===0 && (
+          <div style={{gridColumn:"1/-1",textAlign:"center",padding:"28px",color:"var(--text3)",fontWeight:700,fontSize:14}}>
+            Tiada acara. Tambah tarikh penting sekolah!
+          </div>
+        )}
+        {kalendarData.map((k,i)=>{
+          const { day, mon, diff } = fmtKal(k.tarikh);
+          const cd = cdown(diff);
+          const jn = JENIS_HAL.find(j=>j.lbl===k.jenis)||JENIS_HAL[4];
+          return (
+            <div className={`kal-card${diff<0?" kal-past":""}`} key={k.id} style={{animationDelay:`${i*0.06}s`}}>
+              <div className="kal-date-box" style={diff<0?{background:"var(--text3)"}:{}}>
+                <div className="kal-date-day">{day}</div>
+                <div className="kal-date-mon">{mon}</div>
+              </div>
+              <div className="kal-body">
+                <div className="kal-tajuk">{k.tajuk}</div>
+                {k.nota && <div className="kal-nota">{k.nota}</div>}
+                <div className="kal-badges">
+                  <span className="kal-jenis" style={{color:jn.tc,background:jn.bg,borderColor:jn.tc}}>{k.jenis}</span>
+                  <span className="kal-countdown" style={{color:cd.tc,background:cd.bg,borderColor:cd.tc}}>{cd.lbl}</span>
+                </div>
+              </div>
+              <button onClick={()=>delKal(k.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:15,opacity:0.4,flexShrink:0}} title="Padam">🗑️</button>
+            </div>
+          );
+        })}
+      </div>
+
+      {showAddKal && (
+        <Modal title="Tambah Tarikh Penting" onClose={()=>setShowAddKal(false)}>
+          <div className="form-field">
+            <label className="form-label">Tajuk Acara</label>
+            <input className="form-input" placeholder="cth: Sambutan Hari Guru 2025" value={kalForm.tajuk} onChange={e=>setKalForm(f=>({...f,tajuk:e.target.value}))}/>
+          </div>
+          <div className="form-row">
+            <div className="form-field">
+              <label className="form-label">Tarikh</label>
+              <input className="form-input" type="date" value={kalForm.tarikh} onChange={e=>setKalForm(f=>({...f,tarikh:e.target.value}))}/>
+            </div>
+            <div className="form-field">
+              <label className="form-label">Jenis</label>
+              <select className="form-input" value={kalForm.jenis} onChange={e=>setKalForm(f=>({...f,jenis:e.target.value}))}>
+                {JENIS_HAL.map(j=><option key={j.lbl}>{j.lbl}</option>)}
+              </select>
+            </div>
           </div>
           <div className="form-field">
-            <label className="form-label">Tag</label>
-            <select className="form-input" value={notisForm.tag} onChange={e=>setNotisForm(f=>({...f,tag:e.target.value}))}>
-              {TAG_OPTS.map(t=><option key={t.lbl}>{t.lbl}</option>)}
-            </select>
+            <label className="form-label">Nota (pilihan)</label>
+            <input className="form-input" placeholder="cth: Dewan Sekolah · 8:00 pagi · Semua guru" value={kalForm.nota} onChange={e=>setKalForm(f=>({...f,nota:e.target.value}))}/>
           </div>
-          <button className="btn-add" style={{width:"100%",justifyContent:"center"}} onClick={addNotis}>Simpan Notis</button>
+          <button className="btn-add" style={{width:"100%",justifyContent:"center"}} onClick={addKal}>Simpan Tarikh</button>
         </Modal>
       )}
 
