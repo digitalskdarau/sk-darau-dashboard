@@ -320,9 +320,9 @@ body::before {
 .lc-logo { display:flex; align-items:center; gap:12px; margin-bottom:24px; }
 .lc-mark {
   width:54px; height:54px; border-radius:16px; flex-shrink:0;
-  background:#2563eb;
+  background:#fff;
   display:flex; align-items:center; justify-content:center;
-  font-size:26px;
+  overflow:hidden;
   border:3px solid #0f172a;
   box-shadow:3px 3px 0 #0f172a;
   animation:wiggle 2.5s ease-in-out infinite;
@@ -426,9 +426,9 @@ body::before {
 .sb-logo { display:flex; align-items:center; gap:10px; }
 .sb-mark {
   width:42px; height:42px; border-radius:14px; flex-shrink:0;
-  background:#ef4444;
+  background:#fff;
   display:flex; align-items:center; justify-content:center;
-  font-size:22px;
+  overflow:hidden;
   border:2.5px solid rgba(255,255,255,0.4);
   box-shadow:3px 3px 0 rgba(0,0,0,0.2);
   animation:wobble 4s ease-in-out infinite;
@@ -612,9 +612,10 @@ body::before {
 .hero-body { padding:32px 28px 10px; position:relative; z-index:1; }
 .hero-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
 .hero-emoji {
-  font-size:78px; animation:float 4s ease-in-out infinite;
-  line-height:1; flex-shrink:0;
+  width:90px; height:90px; animation:float 4s ease-in-out infinite;
+  flex-shrink:0; border-radius:20px; overflow:hidden;
   filter:drop-shadow(0 10px 20px rgba(0,0,0,0.22)); margin-top:4px;
+  background:#fff;
 }
 .hero-title {
   font-family:'Fredoka One',cursive;
@@ -1255,7 +1256,7 @@ function Login({ onLogin }) {
 
       <div className="login-card">
         <div className="lc-logo">
-          <div className="lc-mark">🏫</div>
+          <img className="lc-mark" src="https://i.postimg.cc/pdhvk3Q2/images.jpg" alt="SK Darau" style={{width:"54px",height:"54px",objectFit:"contain"}}/>
           <div>
             <div className="lc-name">EduDashboard</div>
             <div className="lc-school">SK Darau, Kota Kinabalu</div>
@@ -1375,7 +1376,7 @@ function WelcomeSetPassword({ onDone }) {
       ))}
       <div className="login-card">
         <div className="lc-logo">
-          <div className="lc-mark">🏫</div>
+          <img className="lc-mark" src="https://i.postimg.cc/pdhvk3Q2/images.jpg" alt="SK Darau" style={{width:"54px",height:"54px",objectFit:"contain"}}/>
           <div>
             <div className="lc-name">EduDashboard</div>
             <div className="lc-school">SK Darau, Kota Kinabalu</div>
@@ -2001,7 +2002,7 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
       <aside className={`sidebar${open?" open":""}`}>
         <div className="sb-top">
           <div className="sb-logo">
-            <div className="sb-mark">🏫</div>
+            <img className="sb-mark" src="https://i.postimg.cc/pdhvk3Q2/images.jpg" alt="SK Darau" style={{width:"42px",height:"42px",objectFit:"contain"}}/>
             <div>
               <div className="sb-name">EduDashboard</div>
               <div className="sb-school">SK Darau, KK</div>
@@ -2179,7 +2180,7 @@ function Overview({ onNav, user }) {
                 <div className="hero-tag">🏫 SK Darau</div>
               </div>
             </div>
-            <div className="hero-emoji">🏫</div>
+            <img className="hero-emoji" src="https://i.postimg.cc/pdhvk3Q2/images.jpg" alt="SK Darau" style={{width:"90px",height:"90px",objectFit:"contain",borderRadius:"20px"}}/>
           </div>
         </div>
         <Wave />
@@ -10735,7 +10736,7 @@ function OPRPage() {
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1a1a1a;background:#fff}
 .hdr{background:linear-gradient(135deg,#0c4a6e 0%,#0891b2 100%);color:#fff;padding:22px 30px;display:flex;align-items:center;gap:18px}
-.logo{width:72px;height:72px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:38px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+.logo{width:72px;height:72px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.2);overflow:hidden}
 .hdr-txt h1{font-size:20px;font-weight:800;letter-spacing:0.5px;text-shadow:0 1px 3px rgba(0,0,0,0.3)}
 .hdr-txt h2{font-size:11.5px;font-weight:400;opacity:0.88;margin-top:3px}
 .hdr-txt .badge{display:inline-block;margin-top:8px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);padding:3px 14px;border-radius:14px;font-size:11px;font-weight:700;letter-spacing:1px}
@@ -10759,7 +10760,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1a1a1a;backgr
 @media print{.print-btn{display:none!important}.photo-grid{page-break-inside:avoid}}
 </style></head><body>
 <div class="hdr">
-  <div class="logo">🏫</div>
+  <div class="logo"><img src="https://i.postimg.cc/pdhvk3Q2/images.jpg" alt="SK Darau" style="width:100%;height:100%;object-fit:contain;border-radius:50%;"/></div>
   <div class="hdr-txt">
     <h1>SEKOLAH KEBANGSAAN DARAU</h1>
     <h2>Kota Kinabalu, Sabah &nbsp;•&nbsp; Malaysia</h2>
