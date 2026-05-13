@@ -2845,7 +2845,7 @@ function PanitiaMP() {
   return (
     <KurPage title="Panitia Mata Pelajaran" sub="Kurikulum · SK Darau, Kota Kinabalu" stats={statsCards}>
       <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:16}}>
-        {['📋 Senarai Panitia','👩‍🏫 Ahli Panitia','📅 Mesyuarat','🎯 Program & Aktiviti','📊 Analisis Prestasi','📄 Laporan'].map((t,i)=>(
+        {['📋 Senarai Panitia','👩‍🏫 Ahli Panitia','📅 Mesyuarat','🎯 Program & Aktiviti','📊 Analisis Prestasi','📄 Laporan','📁 Fail Drive'].map((t,i)=>(
           <button key={i} style={tabSty(i)} onClick={()=>setSubtab(i)}>{t}</button>
         ))}
       </div>
@@ -3082,6 +3082,15 @@ function PanitiaMP() {
         )}
 
         {/* ── TAB 5: LAPORAN ── */}
+        {subtab===6&&(
+          <div style={{borderRadius:14,overflow:'hidden',border:'1.5px solid var(--border)',marginTop:8}}>
+            <div style={{padding:'10px 16px',background:'var(--card2)',fontWeight:800,fontSize:13,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <span>📁 Fail Drive — Panitia Mata Pelajaran</span>
+              <a href="https://drive.google.com/drive/folders/1W0Pp7ltSrZBJAPalmCelqpfAkQCP3eq2" target="_blank" rel="noreferrer" style={{fontSize:12,color:'var(--accent)',fontWeight:700,textDecoration:'none'}}>Buka dalam Drive ↗</a>
+            </div>
+            <iframe src="https://drive.google.com/embeddedfolderview?id=1W0Pp7ltSrZBJAPalmCelqpfAkQCP3eq2&usp=sharing#list" style={{width:'100%',height:'500px',border:'none',display:'block'}} title="Panitia Drive"/>
+          </div>
+        )}
         {subtab===5&&(
           <div>
             <PanitiaPill/>
