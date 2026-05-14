@@ -1521,7 +1521,7 @@ function WelcomeSetPassword({ onDone }) {
         </div>
         <div className="lc-greet">
           <h1>Tetapkan Kata Laluan 🔐</h1>
-          <p>Sila tetapkan kata laluan baharu anda untuk meneruskan ke dashboard.</p>
+          <p>Selamat datang! Sila tetapkan kata laluan anda sebelum masuk ke dashboard. Simpan kata laluan ini untuk log masuk pada masa hadapan.</p>
         </div>
         {err && <div className="lc-err">⚠️ {err}</div>}
         <div className="lc-field">
@@ -12475,8 +12475,17 @@ export default function App() {
 
   useEffect(() => {
     localStorage.removeItem("edu-user");
+
+    // Detect invite acceptance from URL hash — force set-password screen
+    const urlHash = window.location.hash;
+    const isInvite = urlHash.includes('type=invite');
+    if (isInvite) {
+      setShowReset(true);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      if (session && !isInvite) {
         const u = session.user;
         const name = u.user_metadata?.name || u.user_metadata?.full_name || u.email.split("@")[0];
         const role = u.user_metadata?.role || "Guru";
@@ -12490,6 +12499,8 @@ export default function App() {
         return;
       }
       if (!session) { setUser(null); setShowReset(false); return; }
+      // Don't auto-login if we're showing the set-password screen
+      if (event === "SIGNED_IN" && window.location.hash.includes('type=invite')) return;
       const u = session.user;
       const name = u.user_metadata?.name || u.user_metadata?.full_name || u.email.split("@")[0];
       const role = u.user_metadata?.role || "Guru";
