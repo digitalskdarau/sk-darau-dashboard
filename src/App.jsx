@@ -11210,6 +11210,7 @@ body{font-family:'Inter',sans-serif;font-size:12px;color:#1a1a1a;background:#fff
 .hdr-txt h1{font-family:'Playfair Display',serif;font-size:23px;font-weight:800;letter-spacing:0.6px;text-shadow:0 2px 6px rgba(0,0,0,0.25);margin-bottom:4px;line-height:1.1}
 .hdr-txt h2{font-size:11px;font-weight:500;opacity:0.82;letter-spacing:0.4px;margin-bottom:11px}
 .badge{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(212,160,23,0.28),rgba(212,160,23,0.12));border:1.5px solid rgba(212,160,23,0.7);padding:4px 18px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#fde68a}
+.hdr-right-logo{width:80px;height:80px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3))}
 .hdr-ref{position:absolute;right:36px;bottom:26px;font-size:9.5px;opacity:0.55;letter-spacing:0.3px;z-index:1}
 .gold-bar{height:4px;background:linear-gradient(90deg,#b8860b 0%,#d4a017 25%,#f0c040 50%,#d4a017 75%,#b8860b 100%)}
 
@@ -11280,6 +11281,7 @@ body{font-family:'Inter',sans-serif;font-size:12px;color:#1a1a1a;background:#fff
       <h2>Kota Kinabalu, Sabah &nbsp;·&nbsp; Malaysia</h2>
       <div class="badge">📋 &nbsp;LAPORAN PROGRAM OPR</div>
     </div>
+    <img src="https://i.postimg.cc/zDCxwvZm/download-(1).png" alt="Logo" class="hdr-right-logo"/>
   </div>
   <div class="hdr-ref">Sistem EduDashboard · SK Darau</div>
 </div>
