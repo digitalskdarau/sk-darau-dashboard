@@ -1359,13 +1359,13 @@ function Login({ onLogin }) {
 
   const sendReset = async () => {
     setErr("");
-    if (!email) { setErr("Sila isi emel dahulu."); return; }
+    if (!email.trim()) { setErr("Sila isi emel dahulu."); return; }
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + "/",
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: window.location.origin + window.location.pathname,
     });
     if (error) {
-      setErr("Gagal hantar emel. Cuba semula.");
+      setErr("Gagal hantar emel: " + (error.message || "Cuba semula."));
     } else {
       setResetSent(true);
     }
@@ -1404,7 +1404,9 @@ function Login({ onLogin }) {
           <>
             <div className="lc-greet">
               <h1>Lupa Kata Laluan 🔑</h1>
-              <p>{resetSent ? "Link reset telah dihantar! Semak emel anda." : "Masukkan emel anda untuk terima link reset."}</p>
+              <p>{resetSent
+                ? "✅ Link reset telah dihantar! Semak emel (termasuk folder Spam/Junk)."
+                : "Masukkan emel yang didaftarkan untuk terima link set kata laluan."}</p>
             </div>
             {err && <div className="lc-err">⚠️ {err}</div>}
             {!resetSent && (
@@ -12476,16 +12478,18 @@ export default function App() {
   useEffect(() => {
     localStorage.removeItem("edu-user");
 
-    // Detect invite acceptance from URL hash — force set-password screen
+    // Detect invite / password-reset from URL hash — force set-password screen
     const urlHash = window.location.hash;
-    const isInvite = urlHash.includes('type=invite');
-    if (isInvite) {
+    const isInvite   = urlHash.includes('type=invite');
+    const isRecovery = urlHash.includes('type=recovery');
+    const needsReset = isInvite || isRecovery;
+    if (needsReset) {
       setShowReset(true);
       window.history.replaceState(null, '', window.location.pathname);
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && !isInvite) {
+      if (session && !needsReset) {
         const u = session.user;
         const name = u.user_metadata?.name || u.user_metadata?.full_name || u.email.split("@")[0];
         const role = u.user_metadata?.role || "Guru";
@@ -12499,8 +12503,8 @@ export default function App() {
         return;
       }
       if (!session) { setUser(null); setShowReset(false); return; }
-      // Don't auto-login if we're showing the set-password screen
-      if (event === "SIGNED_IN" && window.location.hash.includes('type=invite')) return;
+      // Don't auto-login when set-password screen is active
+      if (event === "SIGNED_IN" && needsReset) return;
       const u = session.user;
       const name = u.user_metadata?.name || u.user_metadata?.full_name || u.email.split("@")[0];
       const role = u.user_metadata?.role || "Guru";
