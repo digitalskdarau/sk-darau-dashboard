@@ -1936,6 +1936,9 @@ function AdminPanel() {
   const [inviting, setInviting] = useState(false);
   const [msg, setMsg] = useState(null);
   const [delConfirm, setDelConfirm] = useState(null);
+  const [setPwdUser, setSetPwdUser] = useState(null);
+  const [newPwd, setNewPwd] = useState("");
+  const [newPwdLoading, setNewPwdLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -1991,6 +1994,20 @@ function AdminPanel() {
       setUsers(u => u.filter(x => x.id !== userId));
     }
     setDelConfirm(null);
+  };
+
+  const doSetPassword = async () => {
+    if (!newPwd || newPwd.length < 6) { setMsg({ type:"err", text:"Kata laluan sekurang-kurangnya 6 aksara." }); return; }
+    setNewPwdLoading(true);
+    const data = await callFn({ action:"setPassword", userId:setPwdUser.id, newPassword:newPwd });
+    if (data.error) {
+      setMsg({ type:"err", text:"Gagal: " + data.error });
+    } else {
+      setMsg({ type:"ok", text:`Kata laluan ${setPwdUser.email} berjaya ditetapkan.` });
+      setSetPwdUser(null);
+      setNewPwd("");
+    }
+    setNewPwdLoading(false);
   };
 
   const fmt = (d) => d ? new Date(d).toLocaleDateString("ms-MY", { day:"2-digit", month:"short", year:"numeric" }) : "—";
@@ -2096,26 +2113,35 @@ function AdminPanel() {
                       )}
                     </td>
                     <td style={{padding:"11px 16px"}}>
-                      {delConfirm === u.id ? (
-                        <div style={{display:"flex",gap:6}}>
-                          <button onClick={()=>deleteUser(u.id, u.email)}
-                            style={{padding:"3px 10px",borderRadius:6,background:"#ef4444",color:"#fff",
-                              border:"none",fontSize:11,fontWeight:800,cursor:"pointer"}}>
-                            Confirm Padam
-                          </button>
-                          <button onClick={()=>setDelConfirm(null)}
-                            style={{padding:"3px 10px",borderRadius:6,background:"var(--bg)",color:"var(--text2)",
-                              border:"1px solid var(--border)",fontSize:11,fontWeight:800,cursor:"pointer"}}>
-                            Batal
-                          </button>
-                        </div>
-                      ) : (
-                        <button onClick={()=>setDelConfirm(u.id)}
-                          style={{padding:"3px 10px",borderRadius:6,background:"#fef2f2",color:"#ef4444",
-                            border:"1px solid #fecaca",fontSize:11,fontWeight:800,cursor:"pointer"}}>
-                          🗑️ Padam
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                        {/* Set Password */}
+                        <button onClick={()=>{setSetPwdUser(u);setNewPwd("");setDelConfirm(null);}}
+                          style={{padding:"3px 10px",borderRadius:6,background:"#eff6ff",color:"#2563eb",
+                            border:"1px solid #bfdbfe",fontSize:11,fontWeight:800,cursor:"pointer"}}>
+                          🔑 Set Kata Laluan
                         </button>
-                      )}
+                        {/* Delete */}
+                        {delConfirm === u.id ? (
+                          <>
+                            <button onClick={()=>deleteUser(u.id, u.email)}
+                              style={{padding:"3px 10px",borderRadius:6,background:"#ef4444",color:"#fff",
+                                border:"none",fontSize:11,fontWeight:800,cursor:"pointer"}}>
+                              Confirm Padam
+                            </button>
+                            <button onClick={()=>setDelConfirm(null)}
+                              style={{padding:"3px 10px",borderRadius:6,background:"var(--bg)",color:"var(--text2)",
+                                border:"1px solid var(--border)",fontSize:11,fontWeight:800,cursor:"pointer"}}>
+                              Batal
+                            </button>
+                          </>
+                        ) : (
+                          <button onClick={()=>{setDelConfirm(u.id);setSetPwdUser(null);}}
+                            style={{padding:"3px 10px",borderRadius:6,background:"#fef2f2",color:"#ef4444",
+                              border:"1px solid #fecaca",fontSize:11,fontWeight:800,cursor:"pointer"}}>
+                            🗑️ Padam
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -2124,6 +2150,28 @@ function AdminPanel() {
           </div>
         )}
       </div>
+
+      {/* Set Password Modal */}
+      {setPwdUser && (
+        <Modal title={`🔑 Tetapkan Kata Laluan`} onClose={()=>{setSetPwdUser(null);setNewPwd("");}}>
+          <div style={{fontSize:13,color:"var(--text2)",marginBottom:14,padding:"8px 12px",background:"var(--bg)",borderRadius:8,border:"1px solid var(--border)"}}>
+            👤 <strong>{setPwdUser.email}</strong>
+          </div>
+          <div className="form-field">
+            <label className="form-label">Kata Laluan Baru</label>
+            <input className="form-input" type="password" placeholder="Min. 6 aksara"
+              value={newPwd} onChange={e=>setNewPwd(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&doSetPassword()}/>
+          </div>
+          <div style={{fontSize:11,color:"var(--text3)",marginBottom:12}}>
+            💡 Beritahu guru kata laluan baru ini selepas simpan. Guru boleh tukar sendiri kemudian.
+          </div>
+          <button className="btn-add" style={{width:"100%",justifyContent:"center"}}
+            onClick={doSetPassword} disabled={newPwdLoading}>
+            {newPwdLoading ? "⏳ Menyimpan..." : "Simpan Kata Laluan"}
+          </button>
+        </Modal>
+      )}
       </>}
     </div>
   );

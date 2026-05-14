@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    const { action, email, userId, nama } = await req.json()
+    const { action, email, userId, nama, newPassword } = await req.json()
 
     if (action === 'list') {
       const { data, error } = await admin.auth.admin.listUsers({ perPage: 200 })
@@ -70,6 +70,16 @@ Deno.serve(async (req) => {
     if (action === 'delete') {
       if (!userId) throw new Error('userId diperlukan')
       const { error } = await admin.auth.admin.deleteUser(userId)
+      if (error) throw error
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (action === 'setPassword') {
+      if (!userId) throw new Error('userId diperlukan')
+      if (!newPassword || newPassword.length < 6) throw new Error('Kata laluan sekurang-kurangnya 6 aksara')
+      const { error } = await admin.auth.admin.updateUserById(userId, { password: newPassword })
       if (error) throw error
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
