@@ -11183,83 +11183,166 @@ function OPRPage() {
   const printSingleProgram=(r,domLabel,domIcon)=>{
     const w=window.open('','_blank');
     const photos=(r.gambar_links||[]);
+    const tarikhCetak=new Date().toLocaleDateString('ms-MY',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const masaCetak=new Date().toLocaleTimeString('ms-MY',{hour:'2-digit',minute:'2-digit'});
     const photoHtml=photos.length>0?`
       <div class="section">
-        <div class="sec-title">📸 GAMBAR PROGRAM</div>
+        <div class="sec-title"><span class="sec-ico">📸</span>GAMBAR PROGRAM</div>
         <div class="photo-grid">${photos.map(id=>`<div class="photo-wrap"><img src="https://drive.google.com/thumbnail?id=${id}&sz=w600" alt="Gambar" onerror="this.parentElement.style.display='none'"/></div>`).join('')}</div>
-        <p style="font-size:9px;color:#999;margin-top:6px">* Gambar dari Google Drive. Pastikan fail dikongsi secara "Anyone with the link" untuk dipaparkan.</p>
+        <p class="photo-note">* Gambar dari Google Drive. Pastikan fail dikongsi secara "Anyone with the link".</p>
       </div>`:'';
-    const catatanHtml=r.catatan?`<div class="section"><div class="sec-title">📝 CATATAN TAMBAHAN</div><div class="sec-body">${r.catatan}</div></div>`:'';
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>OPR — ${r.nama_program}</title><style>
+    const catatanHtml=r.catatan?`<div class="section"><div class="sec-title"><span class="sec-ico">📝</span>CATATAN TAMBAHAN</div><div class="sec-body">${r.catatan}</div></div>`:'';
+    w.document.write(`<!DOCTYPE html><html lang="ms"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>OPR — ${r.nama_program}</title><style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1a1a1a;background:#fff}
-.hdr{background:linear-gradient(135deg,#0c4a6e 0%,#0891b2 100%);color:#fff;padding:22px 30px;display:flex;align-items:center;gap:18px}
-.logo{width:72px;height:72px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.2);overflow:hidden}
-.hdr-txt h1{font-size:20px;font-weight:800;letter-spacing:0.5px;text-shadow:0 1px 3px rgba(0,0,0,0.3)}
-.hdr-txt h2{font-size:11.5px;font-weight:400;opacity:0.88;margin-top:3px}
-.hdr-txt .badge{display:inline-block;margin-top:8px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);padding:3px 14px;border-radius:14px;font-size:11px;font-weight:700;letter-spacing:1px}
-.title-band{background:#f0f9ff;border-left:5px solid #0891b2;padding:13px 30px;font-size:15px;font-weight:800;color:#0c4a6e;letter-spacing:0.3px}
-.domain-tag{display:inline-block;background:#0891b220;color:#0891b2;border:1px solid #0891b240;border-radius:20px;padding:2px 12px;font-size:11px;font-weight:700;margin-left:10px}
-.content{padding:20px 30px}
-.meta{text-align:right;font-size:10px;color:#94a3b8;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #f1f5f9}
-.info-table{width:100%;border-collapse:collapse;margin-bottom:20px}
-.info-table td{padding:8px 12px;font-size:12px;border:1px solid #e2e8f0}
-.info-table td:first-child{width:38%;font-weight:700;color:#475569;background:#f8fafc}
-.section{margin-bottom:18px}
-.sec-title{font-size:10px;font-weight:800;letter-spacing:1.2px;color:#0891b2;text-transform:uppercase;border-bottom:2px solid #0891b2;padding-bottom:5px;margin-bottom:10px}
-.sec-body{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:13px;font-size:12px;line-height:1.8;color:#334155;min-height:48px;white-space:pre-wrap}
+body{font-family:'Inter',sans-serif;font-size:12px;color:#1a1a1a;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+/* ── HEADER ── */
+.hdr{background:linear-gradient(135deg,#001e3a 0%,#003d6b 38%,#0077b6 70%,#005f99 100%);color:#fff;padding:0;position:relative;overflow:hidden}
+.hdr-orb1{position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(212,160,23,0.12);top:-80px;right:-40px;pointer-events:none}
+.hdr-orb2{position:absolute;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.05);bottom:-60px;left:28%;pointer-events:none}
+.hdr-inner{display:flex;align-items:center;gap:22px;padding:26px 36px;position:relative;z-index:1}
+.logo-ring{width:80px;height:80px;border-radius:50%;background:#fff;padding:5px;box-shadow:0 0 0 3px rgba(212,160,23,0.65),0 6px 20px rgba(0,0,0,0.35);flex-shrink:0;overflow:hidden}
+.logo-ring img{width:100%;height:100%;object-fit:contain;border-radius:50%}
+.hdr-txt{flex:1}
+.hdr-txt h1{font-family:'Playfair Display',serif;font-size:23px;font-weight:800;letter-spacing:0.6px;text-shadow:0 2px 6px rgba(0,0,0,0.25);margin-bottom:4px;line-height:1.1}
+.hdr-txt h2{font-size:11px;font-weight:500;opacity:0.82;letter-spacing:0.4px;margin-bottom:11px}
+.badge{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(212,160,23,0.28),rgba(212,160,23,0.12));border:1.5px solid rgba(212,160,23,0.7);padding:4px 18px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#fde68a}
+.hdr-ref{position:absolute;right:36px;bottom:26px;font-size:9.5px;opacity:0.55;letter-spacing:0.3px;z-index:1}
+.gold-bar{height:4px;background:linear-gradient(90deg,#b8860b 0%,#d4a017 25%,#f0c040 50%,#d4a017 75%,#b8860b 100%)}
+
+/* ── TITLE BAND ── */
+.title-band{background:linear-gradient(90deg,#e8f4fd,#f0f9ff);border-left:5px solid #0077b6;padding:15px 36px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #dbeafe}
+.title-band h3{font-family:'Playfair Display',serif;font-size:15.5px;font-weight:700;color:#002d56;flex:1;letter-spacing:0.2px}
+.domain-tag{display:inline-flex;align-items:center;gap:5px;background:#0077b618;color:#005f99;border:1.5px solid #0077b630;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;white-space:nowrap}
+
+/* ── CONTENT ── */
+.content{padding:22px 36px}
+.meta{display:flex;justify-content:flex-end;align-items:center;gap:6px;font-size:9.5px;color:#94a3b8;font-weight:500;margin-bottom:18px;padding-bottom:10px;border-bottom:1px dashed #e2e8f0;letter-spacing:0.2px}
+.meta-dot{width:3px;height:3px;border-radius:50%;background:#cbd5e1}
+
+/* ── INFO TABLE ── */
+.info-table{width:100%;border-collapse:collapse;margin-bottom:22px;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden}
+.info-table tr:last-child td{border-bottom:none}
+.info-table td{padding:9px 15px;font-size:12px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+.info-table .lbl{width:36%;font-weight:700;color:#64748b;background:#f8fafc;font-size:10.5px;letter-spacing:0.3px;text-transform:uppercase}
+.info-table .val{color:#1e293b;font-weight:500;line-height:1.5}
+.info-table .val strong{color:#002d56;font-weight:800;font-family:'Playfair Display',serif;font-size:13px}
+
+/* ── SECTIONS ── */
+.section{margin-bottom:20px}
+.sec-title{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;letter-spacing:1.3px;color:#0077b6;text-transform:uppercase;padding-bottom:7px;margin-bottom:11px;border-bottom:2px solid #0077b6}
+.sec-ico{font-size:13px;line-height:1}
+.sec-body{background:linear-gradient(135deg,#f8fafc,#f0f9ff);border:1px solid #dbeafe;border-radius:8px;padding:14px 16px;font-size:12px;line-height:1.9;color:#334155;min-height:52px;white-space:pre-wrap;font-weight:500}
+
+/* ── PHOTOS ── */
 .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .photo-wrap{aspect-ratio:4/3;overflow:hidden;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc}
 .photo-wrap img{width:100%;height:100%;object-fit:cover;display:block}
-.footer{margin-top:28px;padding-top:16px;border-top:2px solid #e2e8f0;display:grid;grid-template-columns:1fr 1fr;gap:30px;font-size:11px;color:#555}
+.photo-note{font-size:9px;color:#94a3b8;margin-top:7px;font-style:italic}
+
+/* ── SIGNATURE ── */
+.sig-wrap{margin-top:30px}
+.sig-gold{height:3px;background:linear-gradient(90deg,#b8860b,#f0c040,#b8860b);border-radius:2px;margin-bottom:20px}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:50px}
 .sig-box{text-align:center}
-.sig-line{margin-top:40px;border-top:1px solid #334155;padding-top:5px;font-size:11px}
-.print-btn{display:block;margin:24px auto 0;padding:12px 36px;background:#0891b2;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700}
-@media print{.print-btn{display:none!important}.photo-grid{page-break-inside:avoid}}
+.sig-label{font-size:11px;font-weight:600;color:#64748b;margin-bottom:48px}
+.sig-line{border-top:1.5px solid #334155;padding-top:7px}
+.sig-name{font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:#1e293b}
+.sig-role{font-size:10px;color:#94a3b8;margin-top:3px;font-weight:500}
+
+/* ── DOC FOOTER ── */
+.doc-footer{margin-top:22px;text-align:center;font-size:9px;color:#94a3b8;font-weight:500;letter-spacing:0.3px;padding-top:12px;border-top:1px solid #f1f5f9}
+
+/* ── PRINT BUTTON ── */
+.print-btn{display:block;margin:24px auto 0;padding:13px 44px;background:linear-gradient(135deg,#003d6b,#0077b6);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;letter-spacing:0.3px;box-shadow:0 4px 14px rgba(0,119,182,0.35)}
+.print-btn:hover{background:linear-gradient(135deg,#002d56,#005f99)}
+
+@media print{
+  .print-btn{display:none!important}
+  .photo-grid{page-break-inside:avoid}
+  .sig-wrap{page-break-inside:avoid}
+  body{font-size:11px}
+}
 </style></head><body>
+
 <div class="hdr">
-  <div class="logo"><img src="https://i.postimg.cc/pdhvk3Q2/images.jpg" alt="SK Darau" style="width:100%;height:100%;object-fit:contain;border-radius:50%;"/></div>
-  <div class="hdr-txt">
-    <h1>SEKOLAH KEBANGSAAN DARAU</h1>
-    <h2>Kota Kinabalu, Sabah &nbsp;•&nbsp; Malaysia</h2>
-    <div class="badge">LAPORAN PROGRAM OPR</div>
+  <div class="hdr-orb1"></div>
+  <div class="hdr-orb2"></div>
+  <div class="hdr-inner">
+    <div class="logo-ring">
+      <img src="https://i.postimg.cc/pdhvk3Q2/images.jpg" alt="SK Darau"/>
+    </div>
+    <div class="hdr-txt">
+      <h1>SEKOLAH KEBANGSAAN DARAU</h1>
+      <h2>Kota Kinabalu, Sabah &nbsp;·&nbsp; Malaysia</h2>
+      <div class="badge">📋 &nbsp;LAPORAN PROGRAM OPR</div>
+    </div>
   </div>
+  <div class="hdr-ref">Sistem EduDashboard · SK Darau</div>
 </div>
+<div class="gold-bar"></div>
+
 <div class="title-band">
-  ${r.nama_program}
+  <h3>${r.nama_program}</h3>
   <span class="domain-tag">${domIcon} ${domLabel}</span>
 </div>
+
 <div class="content">
-  <div class="meta">Dijana pada: ${new Date().toLocaleDateString('ms-MY',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} &nbsp;|&nbsp; Tahun Pelajaran ${r.tahun||filterTahun}</div>
+  <div class="meta">
+    <span>Dijana pada: ${tarikhCetak}</span>
+    <span class="meta-dot"></span>
+    <span>${masaCetak}</span>
+    <span class="meta-dot"></span>
+    <span>Tahun Pelajaran ${r.tahun||filterTahun}</span>
+  </div>
+
   <table class="info-table">
-    <tr><td>Nama Program</td><td><strong>${r.nama_program}</strong></td></tr>
-    <tr><td>Domain</td><td>${domIcon} ${domLabel}</td></tr>
-    <tr><td>Tarikh Program</td><td>${fmtT(r.tarikh)}</td></tr>
-    <tr><td>Masa Program</td><td>${r.masa||'—'}</td></tr>
-    <tr><td>Penganjur / Guru Bertanggungjawab</td><td>${r.penganjur||'—'}</td></tr>
-    <tr><td>Sasaran / Peserta</td><td>${r.sasaran||'—'}</td></tr>
-    <tr><td>Tahun Pelajaran</td><td>${r.tahun||filterTahun}</td></tr>
+    <tr><td class="lbl">Nama Program</td><td class="val"><strong>${r.nama_program}</strong></td></tr>
+    <tr><td class="lbl">Domain</td><td class="val">${domIcon} ${domLabel}</td></tr>
+    <tr><td class="lbl">Tarikh Program</td><td class="val">${fmtT(r.tarikh)}</td></tr>
+    <tr><td class="lbl">Masa Program</td><td class="val">${r.masa||'—'}</td></tr>
+    <tr><td class="lbl">Penganjur / Guru Bertanggungjawab</td><td class="val">${r.penganjur||'—'}</td></tr>
+    <tr><td class="lbl">Sasaran / Peserta</td><td class="val">${r.sasaran||'—'}</td></tr>
+    <tr><td class="lbl">Tahun Pelajaran</td><td class="val">${r.tahun||filterTahun}</td></tr>
   </table>
+
   <div class="section">
-    <div class="sec-title">🎯 Impak / Outcome Program</div>
+    <div class="sec-title"><span class="sec-ico">🎯</span>IMPAK / OUTCOME PROGRAM</div>
     <div class="sec-body">${r.impak||'—'}</div>
   </div>
+
   ${catatanHtml}
   ${photoHtml}
-  <div class="footer">
-    <div class="sig-box">
-      <p>Disediakan oleh:</p>
-      <div class="sig-line">${r.penganjur||'................................................'}</div>
-      <p style="margin-top:3px;font-size:10px;color:#777">(Guru Bertanggungjawab)</p>
-    </div>
-    <div class="sig-box">
-      <p>Disahkan oleh:</p>
-      <div class="sig-line">................................................</div>
-      <p style="margin-top:3px;font-size:10px;color:#777">(Pengetua / GPK)</p>
+
+  <div class="sig-wrap">
+    <div class="sig-gold"></div>
+    <div class="sig-grid">
+      <div class="sig-box">
+        <div class="sig-label">Disediakan oleh:</div>
+        <div class="sig-line">
+          <div class="sig-name">${r.penganjur||'................................................'}</div>
+          <div class="sig-role">(Guru Bertanggungjawab)</div>
+        </div>
+      </div>
+      <div class="sig-box">
+        <div class="sig-label">Disahkan oleh:</div>
+        <div class="sig-line">
+          <div class="sig-name">................................................</div>
+          <div class="sig-role">(Pengetua / GPK)</div>
+        </div>
+      </div>
     </div>
   </div>
+
+  <div class="doc-footer">
+    Dokumen ini dijana secara automatik oleh Sistem EduDashboard SK Darau &nbsp;·&nbsp; ${tarikhCetak} ${masaCetak}
+  </div>
 </div>
-<button class="print-btn" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+
+<button class="print-btn" onclick="window.print()">🖨️ &nbsp;Cetak / Simpan PDF</button>
 </body></html>`);
     w.document.close();
   };
