@@ -11185,87 +11185,91 @@ function OPRPage() {
     const photos=(r.gambar_links||[]);
     const tarikhCetak=new Date().toLocaleDateString('ms-MY',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     const masaCetak=new Date().toLocaleTimeString('ms-MY',{hour:'2-digit',minute:'2-digit'});
-    const photoHtml=photos.length>0?`
-      <div class="section">
+    const show4=photos.slice(0,4);
+    const photoColHtml=show4.length>0?`
+      <div class="right-col">
         <div class="sec-title"><span class="sec-ico">📸</span>GAMBAR PROGRAM</div>
-        <div class="photo-grid">${photos.map(id=>`<div class="photo-wrap"><img src="https://drive.google.com/thumbnail?id=${id}&sz=w600" alt="Gambar" onerror="this.parentElement.style.display='none'"/></div>`).join('')}</div>
-        <p class="photo-note">* Gambar dari Google Drive. Pastikan fail dikongsi secara "Anyone with the link".</p>
+        <div class="photo-grid">${show4.map(id=>`<div class="photo-wrap"><img src="https://drive.google.com/thumbnail?id=${id}&sz=w400" alt="Gambar" onerror="this.parentElement.style.display='none'"/></div>`).join('')}</div>
+        <p class="photo-note">* Gambar dari Google Drive. Kongsi sebagai "Anyone with the link".</p>
       </div>`:'';
-    const catatanHtml=r.catatan?`<div class="section"><div class="sec-title"><span class="sec-ico">📝</span>CATATAN TAMBAHAN</div><div class="sec-body">${r.catatan}</div></div>`:'';
+    const hasPhotos=show4.length>0;
+    const catatanHtml=r.catatan?`<div class="sec-full"><div class="sec-title"><span class="sec-ico">📝</span>CATATAN TAMBAHAN</div><div class="sec-body">${r.catatan}</div></div>`:'';
     w.document.write(`<!DOCTYPE html><html lang="ms"><head><meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>OPR — ${r.nama_program}</title><style>
+@page{size:A4 portrait;margin:0}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',sans-serif;font-size:12px;color:#1a1a1a;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+html,body{width:210mm;max-height:297mm;overflow:hidden;font-family:'Inter',sans-serif;font-size:11px;color:#1a1a1a;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 
 /* ── HEADER ── */
-.hdr{background:linear-gradient(135deg,#001e3a 0%,#003d6b 38%,#0077b6 70%,#005f99 100%);color:#fff;padding:0;position:relative;overflow:hidden}
-.hdr-orb1{position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(212,160,23,0.12);top:-80px;right:-40px;pointer-events:none}
-.hdr-orb2{position:absolute;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.05);bottom:-60px;left:28%;pointer-events:none}
-.hdr-inner{display:flex;align-items:center;gap:22px;padding:26px 36px;position:relative;z-index:1}
-.logo-ring{width:80px;height:80px;border-radius:50%;background:#fff;padding:5px;box-shadow:0 0 0 3px rgba(212,160,23,0.65),0 6px 20px rgba(0,0,0,0.35);flex-shrink:0;overflow:hidden}
+.hdr{background:linear-gradient(135deg,#001e3a 0%,#003d6b 38%,#0077b6 70%,#005f99 100%);color:#fff;position:relative;overflow:hidden}
+.hdr-orb1{position:absolute;width:180px;height:180px;border-radius:50%;background:rgba(212,160,23,0.12);top:-70px;right:80px;pointer-events:none}
+.hdr-orb2{position:absolute;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,0.05);bottom:-40px;left:32%;pointer-events:none}
+.hdr-inner{display:flex;align-items:center;gap:18px;padding:16px 28px;position:relative;z-index:1}
+.logo-ring{width:64px;height:64px;border-radius:50%;background:#fff;padding:4px;box-shadow:0 0 0 2.5px rgba(212,160,23,0.65),0 4px 14px rgba(0,0,0,0.3);flex-shrink:0;overflow:hidden}
 .logo-ring img{width:100%;height:100%;object-fit:contain;border-radius:50%}
 .hdr-txt{flex:1}
-.hdr-txt h1{font-family:'Playfair Display',serif;font-size:23px;font-weight:800;letter-spacing:0.6px;text-shadow:0 2px 6px rgba(0,0,0,0.25);margin-bottom:4px;line-height:1.1}
-.hdr-txt h2{font-size:11px;font-weight:500;opacity:0.82;letter-spacing:0.4px;margin-bottom:11px}
-.badge{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(212,160,23,0.28),rgba(212,160,23,0.12));border:1.5px solid rgba(212,160,23,0.7);padding:4px 18px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#fde68a}
-.hdr-right-logo{width:80px;height:80px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3))}
-.hdr-ref{position:absolute;right:36px;bottom:26px;font-size:9.5px;opacity:0.55;letter-spacing:0.3px;z-index:1}
-.gold-bar{height:4px;background:linear-gradient(90deg,#b8860b 0%,#d4a017 25%,#f0c040 50%,#d4a017 75%,#b8860b 100%)}
+.hdr-txt h1{font-family:'Playfair Display',serif;font-size:19px;font-weight:800;letter-spacing:0.5px;text-shadow:0 2px 5px rgba(0,0,0,0.22);margin-bottom:3px;line-height:1.1}
+.hdr-txt h2{font-size:10px;font-weight:500;opacity:0.80;letter-spacing:0.4px;margin-bottom:8px}
+.badge{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(212,160,23,0.28),rgba(212,160,23,0.1));border:1.5px solid rgba(212,160,23,0.68);padding:3px 14px;border-radius:20px;font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#fde68a}
+.hdr-right-logo{width:64px;height:64px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.28))}
+.gold-bar{height:3.5px;background:linear-gradient(90deg,#b8860b 0%,#d4a017 25%,#f0c040 50%,#d4a017 75%,#b8860b 100%)}
 
 /* ── TITLE BAND ── */
-.title-band{background:linear-gradient(90deg,#e8f4fd,#f0f9ff);border-left:5px solid #0077b6;padding:15px 36px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #dbeafe}
-.title-band h3{font-family:'Playfair Display',serif;font-size:15.5px;font-weight:700;color:#002d56;flex:1;letter-spacing:0.2px}
-.domain-tag{display:inline-flex;align-items:center;gap:5px;background:#0077b618;color:#005f99;border:1.5px solid #0077b630;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;white-space:nowrap}
+.title-band{background:linear-gradient(90deg,#e8f4fd,#f0f9ff);border-left:4px solid #0077b6;padding:9px 28px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #dbeafe}
+.title-band h3{font-family:'Playfair Display',serif;font-size:13.5px;font-weight:700;color:#002d56;flex:1;letter-spacing:0.2px}
+.domain-tag{display:inline-flex;align-items:center;gap:4px;background:#0077b618;color:#005f99;border:1.5px solid #0077b630;border-radius:20px;padding:3px 12px;font-size:10px;font-weight:700;white-space:nowrap}
 
 /* ── CONTENT ── */
-.content{padding:22px 36px}
-.meta{display:flex;justify-content:flex-end;align-items:center;gap:6px;font-size:9.5px;color:#94a3b8;font-weight:500;margin-bottom:18px;padding-bottom:10px;border-bottom:1px dashed #e2e8f0;letter-spacing:0.2px}
-.meta-dot{width:3px;height:3px;border-radius:50%;background:#cbd5e1}
+.content{padding:10px 28px 14px}
+.meta{display:flex;justify-content:flex-end;align-items:center;gap:5px;font-size:8.5px;color:#94a3b8;font-weight:500;margin-bottom:10px;padding-bottom:7px;border-bottom:1px dashed #e2e8f0;letter-spacing:0.2px}
+.meta-dot{width:2.5px;height:2.5px;border-radius:50%;background:#cbd5e1}
+
+/* ── TWO-COLUMN LAYOUT ── */
+.two-col{display:grid;grid-template-columns:${hasPhotos?'1.15fr 1fr':'1fr'};gap:14px;margin-bottom:10px;align-items:start}
+.left-col{}
+.right-col{}
 
 /* ── INFO TABLE ── */
-.info-table{width:100%;border-collapse:collapse;margin-bottom:22px;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden}
+.info-table{width:100%;border-collapse:collapse;margin-bottom:9px;border:1.5px solid #e2e8f0;border-radius:8px;overflow:hidden}
 .info-table tr:last-child td{border-bottom:none}
-.info-table td{padding:9px 15px;font-size:12px;border-bottom:1px solid #f1f5f9;vertical-align:top}
-.info-table .lbl{width:36%;font-weight:700;color:#64748b;background:#f8fafc;font-size:10.5px;letter-spacing:0.3px;text-transform:uppercase}
-.info-table .val{color:#1e293b;font-weight:500;line-height:1.5}
-.info-table .val strong{color:#002d56;font-weight:800;font-family:'Playfair Display',serif;font-size:13px}
+.info-table td{padding:6px 11px;font-size:10.5px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+.info-table .lbl{width:40%;font-weight:700;color:#64748b;background:#f8fafc;font-size:9.5px;letter-spacing:0.3px;text-transform:uppercase}
+.info-table .val{color:#1e293b;font-weight:500;line-height:1.4}
+.info-table .val strong{color:#002d56;font-weight:800;font-family:'Playfair Display',serif;font-size:11.5px}
 
-/* ── SECTIONS ── */
-.section{margin-bottom:20px}
-.sec-title{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;letter-spacing:1.3px;color:#0077b6;text-transform:uppercase;padding-bottom:7px;margin-bottom:11px;border-bottom:2px solid #0077b6}
-.sec-ico{font-size:13px;line-height:1}
-.sec-body{background:linear-gradient(135deg,#f8fafc,#f0f9ff);border:1px solid #dbeafe;border-radius:8px;padding:14px 16px;font-size:12px;line-height:1.9;color:#334155;min-height:52px;white-space:pre-wrap;font-weight:500}
+/* ── SECTION ── */
+.sec-title{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:800;letter-spacing:1.2px;color:#0077b6;text-transform:uppercase;padding-bottom:5px;margin-bottom:8px;border-bottom:2px solid #0077b6}
+.sec-ico{font-size:11px;line-height:1}
+.sec-body{background:linear-gradient(135deg,#f8fafc,#f0f9ff);border:1px solid #dbeafe;border-radius:7px;padding:9px 12px;font-size:10.5px;line-height:1.7;color:#334155;white-space:pre-wrap;font-weight:500}
+.sec-full{margin-bottom:9px}
 
-/* ── PHOTOS ── */
-.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.photo-wrap{aspect-ratio:4/3;overflow:hidden;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc}
+/* ── PHOTOS 2x2 ── */
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.photo-wrap{aspect-ratio:4/3;overflow:hidden;border-radius:7px;border:1px solid #e2e8f0;background:#f8fafc}
 .photo-wrap img{width:100%;height:100%;object-fit:cover;display:block}
-.photo-note{font-size:9px;color:#94a3b8;margin-top:7px;font-style:italic}
+.photo-note{font-size:8px;color:#94a3b8;margin-top:5px;font-style:italic}
 
 /* ── SIGNATURE ── */
-.sig-wrap{margin-top:30px}
-.sig-gold{height:3px;background:linear-gradient(90deg,#b8860b,#f0c040,#b8860b);border-radius:2px;margin-bottom:20px}
-.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:50px}
+.sig-wrap{margin-top:10px}
+.sig-gold{height:2.5px;background:linear-gradient(90deg,#b8860b,#f0c040,#b8860b);border-radius:2px;margin-bottom:10px}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px}
 .sig-box{text-align:center}
-.sig-label{font-size:11px;font-weight:600;color:#64748b;margin-bottom:48px}
-.sig-line{border-top:1.5px solid #334155;padding-top:7px}
-.sig-name{font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:#1e293b}
-.sig-role{font-size:10px;color:#94a3b8;margin-top:3px;font-weight:500}
+.sig-label{font-size:10px;font-weight:600;color:#64748b;margin-bottom:30px}
+.sig-line{border-top:1.5px solid #334155;padding-top:5px}
+.sig-name{font-family:'Playfair Display',serif;font-size:10.5px;font-weight:700;color:#1e293b}
+.sig-role{font-size:9px;color:#94a3b8;margin-top:2px;font-weight:500}
 
 /* ── DOC FOOTER ── */
-.doc-footer{margin-top:22px;text-align:center;font-size:9px;color:#94a3b8;font-weight:500;letter-spacing:0.3px;padding-top:12px;border-top:1px solid #f1f5f9}
+.doc-footer{margin-top:10px;text-align:center;font-size:8px;color:#94a3b8;font-weight:500;letter-spacing:0.3px;padding-top:8px;border-top:1px solid #f1f5f9}
 
 /* ── PRINT BUTTON ── */
-.print-btn{display:block;margin:24px auto 0;padding:13px 44px;background:linear-gradient(135deg,#003d6b,#0077b6);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;letter-spacing:0.3px;box-shadow:0 4px 14px rgba(0,119,182,0.35)}
-.print-btn:hover{background:linear-gradient(135deg,#002d56,#005f99)}
+.print-btn{display:block;margin:14px auto 0;padding:10px 40px;background:linear-gradient(135deg,#003d6b,#0077b6);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;letter-spacing:0.3px;box-shadow:0 4px 14px rgba(0,119,182,0.3)}
 
 @media print{
   .print-btn{display:none!important}
-  .photo-grid{page-break-inside:avoid}
-  .sig-wrap{page-break-inside:avoid}
-  body{font-size:11px}
+  html,body{overflow:hidden;max-height:297mm}
 }
 </style></head><body>
 
@@ -11283,7 +11287,6 @@ body{font-family:'Inter',sans-serif;font-size:12px;color:#1a1a1a;background:#fff
     </div>
     <img src="https://i.postimg.cc/zDCxwvZm/download-(1).png" alt="Logo" class="hdr-right-logo"/>
   </div>
-  <div class="hdr-ref">Sistem EduDashboard · SK Darau</div>
 </div>
 <div class="gold-bar"></div>
 
@@ -11294,30 +11297,31 @@ body{font-family:'Inter',sans-serif;font-size:12px;color:#1a1a1a;background:#fff
 
 <div class="content">
   <div class="meta">
-    <span>Dijana pada: ${tarikhCetak}</span>
+    <span>Dijana: ${tarikhCetak}</span>
     <span class="meta-dot"></span>
     <span>${masaCetak}</span>
     <span class="meta-dot"></span>
     <span>Tahun Pelajaran ${r.tahun||filterTahun}</span>
   </div>
 
-  <table class="info-table">
-    <tr><td class="lbl">Nama Program</td><td class="val"><strong>${r.nama_program}</strong></td></tr>
-    <tr><td class="lbl">Domain</td><td class="val">${domIcon} ${domLabel}</td></tr>
-    <tr><td class="lbl">Tarikh Program</td><td class="val">${fmtT(r.tarikh)}</td></tr>
-    <tr><td class="lbl">Masa Program</td><td class="val">${r.masa||'—'}</td></tr>
-    <tr><td class="lbl">Penganjur / Guru Bertanggungjawab</td><td class="val">${r.penganjur||'—'}</td></tr>
-    <tr><td class="lbl">Sasaran / Peserta</td><td class="val">${r.sasaran||'—'}</td></tr>
-    <tr><td class="lbl">Tahun Pelajaran</td><td class="val">${r.tahun||filterTahun}</td></tr>
-  </table>
-
-  <div class="section">
-    <div class="sec-title"><span class="sec-ico">🎯</span>IMPAK / OUTCOME PROGRAM</div>
-    <div class="sec-body">${r.impak||'—'}</div>
+  <div class="two-col">
+    <div class="left-col">
+      <table class="info-table">
+        <tr><td class="lbl">Nama Program</td><td class="val"><strong>${r.nama_program}</strong></td></tr>
+        <tr><td class="lbl">Domain</td><td class="val">${domIcon} ${domLabel}</td></tr>
+        <tr><td class="lbl">Tarikh Program</td><td class="val">${fmtT(r.tarikh)}</td></tr>
+        <tr><td class="lbl">Masa Program</td><td class="val">${r.masa||'—'}</td></tr>
+        <tr><td class="lbl">Penganjur / Guru</td><td class="val">${r.penganjur||'—'}</td></tr>
+        <tr><td class="lbl">Sasaran / Peserta</td><td class="val">${r.sasaran||'—'}</td></tr>
+        <tr><td class="lbl">Tahun Pelajaran</td><td class="val">${r.tahun||filterTahun}</td></tr>
+      </table>
+      <div class="sec-title" style="margin-top:2px"><span class="sec-ico">🎯</span>IMPAK / OUTCOME PROGRAM</div>
+      <div class="sec-body">${r.impak||'—'}</div>
+    </div>
+    ${photoColHtml}
   </div>
 
   ${catatanHtml}
-  ${photoHtml}
 
   <div class="sig-wrap">
     <div class="sig-gold"></div>
