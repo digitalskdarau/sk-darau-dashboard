@@ -5,6 +5,8 @@
 -- ═══════════════════════════════════════════════════════
 
 -- Drop all existing tables (clean slate)
+drop table if exists public.pentadbir cascade;
+drop table if exists public.tetapan cascade;
 drop table if exists public.perkembangan_staf cascade;
 drop table if exists public.nilam cascade;
 drop table if exists public.program_akademik cascade;
@@ -643,3 +645,24 @@ create table public.koku_takwim (
 );
 alter table public.koku_takwim enable row level security;
 create policy "anon full access" on public.koku_takwim for all to anon using (true) with check (true);
+
+-- ─── 25. PENTADBIR (Profil Pentadbir Sekolah) ───────────
+create table public.pentadbir (
+  id          uuid primary key default gen_random_uuid(),
+  nama        text not null,
+  jawatan     text not null,
+  gambar_url  text default '',
+  bio         text default '',
+  urutan      int  default 0,
+  created_at  timestamptz default now()
+);
+alter table public.pentadbir enable row level security;
+create policy "anon full access" on public.pentadbir for all to anon using (true) with check (true);
+
+-- ─── 26. TETAPAN (Key-value settings — logo sekolah dll) ─
+create table public.tetapan (
+  kunci  text primary key,
+  nilai  text not null default ''
+);
+alter table public.tetapan enable row level security;
+create policy "anon full access" on public.tetapan for all to anon using (true) with check (true);

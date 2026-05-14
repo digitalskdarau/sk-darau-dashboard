@@ -1267,6 +1267,67 @@ body::before {
 .kal-jenis { font-size:10.5px; font-weight:900; padding:2px 9px; border-radius:10px; border:1.5px solid currentColor; white-space:nowrap; }
 @media (min-width:769px) { .kal-list { display:grid; grid-template-columns:1fr 1fr; } }
 
+/* ── Profil Pentadbir Sekolah ────────────────────────────────────────────── */
+.profil-logo-wrap {
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  background:var(--surface); border:1.5px solid var(--border); border-radius:16px;
+  padding:16px 20px; margin-bottom:16px; box-shadow:var(--shadow);
+  flex-wrap:wrap;
+}
+.profil-logo-box { display:flex; align-items:center; gap:16px; }
+.profil-logo-img { width:64px; height:64px; object-fit:contain; border-radius:12px; border:2px solid var(--border); background:white; }
+.profil-nama-sek { font-family:'Playfair Display',serif; font-size:16px; font-weight:700; color:var(--text); }
+.profil-alamat-sek { font-size:12px; color:var(--text3); font-weight:600; margin-top:2px; }
+
+.pent-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:14px; margin-bottom:20px;
+}
+.pent-card {
+  background:var(--surface); border:1.5px solid var(--border); border-radius:16px;
+  padding:20px 16px; display:flex; flex-direction:column; align-items:center;
+  text-align:center; gap:10px; box-shadow:var(--shadow); position:relative;
+  animation:fadeIn 0.3s ease both;
+}
+.pent-foto-wrap { width:80px; height:80px; flex-shrink:0; }
+.pent-foto {
+  width:80px; height:80px; border-radius:50%; object-fit:cover;
+  border:3px solid var(--border);
+}
+.pent-foto-ph {
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,#003d6b,#0077b6);
+  color:white; font-size:26px; font-weight:800; font-family:'Playfair Display',serif;
+  border-radius:50%;
+}
+.pent-info { display:flex; flex-direction:column; gap:4px; width:100%; }
+.pent-nama { font-family:'Playfair Display',serif; font-size:13.5px; font-weight:700; color:var(--text); }
+.pent-jawatan {
+  font-size:11.5px; font-weight:700; color:var(--accent); background:var(--accent-lt);
+  border:1px solid var(--border); border-radius:20px; padding:3px 12px;
+  display:inline-block; align-self:center;
+}
+.pent-bio { font-size:11px; color:var(--text3); font-weight:500; line-height:1.5; }
+.pent-actions { position:absolute; top:8px; right:8px; display:flex; gap:4px; }
+.btn-icon-sm {
+  background:none; border:1.5px solid var(--border); border-radius:8px;
+  cursor:pointer; font-size:13px; padding:3px 7px; color:var(--text2);
+  transition:background 0.15s; font-family:'Inter',sans-serif;
+}
+.btn-icon-sm:hover { background:var(--accent-lt); }
+.btn-icon-del:hover { background:#fef2f2; border-color:#ef4444; }
+.btn-sm-ghost {
+  background:none; border:1.5px solid var(--border); border-radius:8px;
+  cursor:pointer; font-size:12px; padding:6px 12px; color:var(--text2);
+  font-weight:600; font-family:'Inter',sans-serif; white-space:nowrap;
+  transition:background 0.15s;
+}
+.btn-sm-ghost:hover { background:var(--accent-lt); }
+
+@media (max-width:600px) {
+  .pent-grid { grid-template-columns:1fr 1fr; }
+}
+
 .loading { padding:48px; text-align:center; color:var(--text3); font-size:15px; font-weight:900; animation:float 2s ease-in-out infinite; font-family:'Playfair Display',serif; letter-spacing:0.03em; }
 `;
 
@@ -2271,6 +2332,51 @@ function Overview({ onNav, user }) {
     return { lbl:`${diff} hari lagi`, tc:"#15803d", bg:"#f0fdf4" };
   };
 
+  const isAdmin = user.email === import.meta.env.VITE_ADMIN_EMAIL;
+
+  // ── Profil Pentadbir ──
+  const [pentadbirData, setPentadbirData] = useState([]);
+  const [logoUrl, setLogoUrl] = useState("https://i.postimg.cc/pdhvk3Q2/images.jpg");
+  const [showAddPent, setShowAddPent] = useState(false);
+  const [editPent, setEditPent] = useState(null);
+  const [pentForm, setPentForm] = useState({ nama:"", jawatan:"", gambar_url:"", bio:"", urutan:0 });
+  const [showLogoEdit, setShowLogoEdit] = useState(false);
+  const [logoInput, setLogoInput] = useState("");
+
+  const loadPentadbir = async () => {
+    const { data } = await supabase.from('pentadbir').select('*').order('urutan', { ascending:true });
+    setPentadbirData(data || []);
+  };
+  const loadTetapan = async () => {
+    const { data } = await supabase.from('tetapan').select('*');
+    const logo = data?.find(r => r.kunci === 'logo_url');
+    if (logo?.nilai) setLogoUrl(logo.nilai);
+  };
+  useEffect(() => { loadPentadbir(); loadTetapan(); }, []);
+
+  const saveLogo = async () => {
+    if (!logoInput.trim()) return;
+    const ok = await dbRun(() => supabase.from('tetapan').upsert([{ kunci:'logo_url', nilai:logoInput.trim() }], { onConflict:'kunci' }));
+    if (ok) { setLogoUrl(logoInput.trim()); setShowLogoEdit(false); toast("Logo dikemaskini!", "success"); }
+  };
+
+  const addPentadbir = async () => {
+    if (!pentForm.nama.trim() || !pentForm.jawatan.trim()) { toast("Sila isi nama dan jawatan."); return; }
+    const ok = await dbRun(() => supabase.from('pentadbir').insert([{ ...pentForm }]));
+    if (ok) { setShowAddPent(false); setPentForm({ nama:"", jawatan:"", gambar_url:"", bio:"", urutan:0 }); loadPentadbir(); toast("Pentadbir ditambah!", "success"); }
+  };
+
+  const updatePentadbir = async () => {
+    if (!pentForm.nama.trim() || !pentForm.jawatan.trim()) { toast("Sila isi nama dan jawatan."); return; }
+    const ok = await dbRun(() => supabase.from('pentadbir').update({ ...pentForm }).eq('id', editPent.id));
+    if (ok) { setEditPent(null); setPentForm({ nama:"", jawatan:"", gambar_url:"", bio:"", urutan:0 }); loadPentadbir(); toast("Maklumat dikemaskini!", "success"); }
+  };
+
+  const delPentadbir = async (id) => {
+    await supabase.from('pentadbir').delete().eq('id', id);
+    setPentadbirData(d => d.filter(r => r.id !== id));
+  };
+
   const STATS = [
     { lbl:"Jumlah Murid",   val:liveStats.murid,    ico:"👦",   color:"#2563eb", featured:true },
     { lbl:"Jumlah Guru",    val:liveStats.guru,     ico:"👩‍🏫",  color:"#0ea5e9" },
@@ -2476,6 +2582,121 @@ function Overview({ onNav, user }) {
             <input className="form-input" placeholder="cth: Dewan Sekolah · 8:00 pagi · Semua guru" value={kalForm.nota} onChange={e=>setKalForm(f=>({...f,nota:e.target.value}))}/>
           </div>
           <button className="btn-add" style={{width:"100%",justifyContent:"center"}} onClick={addKal}>Simpan Tarikh</button>
+        </Modal>
+      )}
+
+      {/* ── Profil Pentadbir Sekolah ── */}
+      <div className="sec-hd" style={{marginTop:22}}>
+        <div className="sec-title">🏫 Profil Pentadbir Sekolah</div>
+        {isAdmin && (
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <button className="btn-add" onClick={()=>setShowAddPent(true)}>+ Tambah</button>
+          </div>
+        )}
+      </div>
+
+      {/* Logo + nama sekolah */}
+      <div className="profil-logo-wrap">
+        <div className="profil-logo-box">
+          <img src={logoUrl} alt="Logo SK Darau" className="profil-logo-img"
+            onError={e=>{e.target.style.display='none';}}/>
+          <div>
+            <div className="profil-nama-sek">Sekolah Kebangsaan Darau</div>
+            <div className="profil-alamat-sek">Kota Kinabalu, Sabah, Malaysia</div>
+          </div>
+        </div>
+        {isAdmin && (
+          <button className="btn-sm-ghost" onClick={()=>{setLogoInput(logoUrl);setShowLogoEdit(true);}}>✏️ Tukar Logo</button>
+        )}
+      </div>
+
+      {/* Pentadbir cards */}
+      <div className="pent-grid">
+        {pentadbirData.length===0 ? (
+          <div style={{gridColumn:"1/-1",textAlign:"center",padding:"28px",color:"var(--text3)",fontWeight:700,fontSize:14}}>
+            {isAdmin ? "Tiada pentadbir. Klik '+ Tambah' untuk mula!" : "Tiada maklumat pentadbir."}
+          </div>
+        ) : pentadbirData.map((p,i)=>(
+          <div className="pent-card" key={p.id} style={{animationDelay:`${i*0.08}s`}}>
+            {isAdmin && (
+              <div className="pent-actions">
+                <button className="btn-icon-sm" title="Edit"
+                  onClick={()=>{setEditPent(p);setPentForm({nama:p.nama,jawatan:p.jawatan,gambar_url:p.gambar_url||"",bio:p.bio||"",urutan:p.urutan||0});}}>✏️</button>
+                <button className="btn-icon-sm btn-icon-del" title="Padam"
+                  onClick={()=>delPentadbir(p.id)}>🗑️</button>
+              </div>
+            )}
+            <div className="pent-foto-wrap">
+              {p.gambar_url
+                ? <img src={p.gambar_url} alt={p.nama} className="pent-foto" onError={e=>{e.target.style.display='none';}}/>
+                : <div className="pent-foto pent-foto-ph">{p.nama.split(" ").map(w=>w[0]).join("").slice(0,2)}</div>
+              }
+            </div>
+            <div className="pent-info">
+              <div className="pent-nama">{p.nama}</div>
+              <div className="pent-jawatan">{p.jawatan}</div>
+              {p.bio && <div className="pent-bio">{p.bio}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add / Edit Pentadbir Modal */}
+      {(showAddPent || editPent) && (
+        <Modal
+          title={editPent ? "Kemaskini Pentadbir" : "Tambah Pentadbir"}
+          onClose={()=>{setShowAddPent(false);setEditPent(null);setPentForm({nama:"",jawatan:"",gambar_url:"",bio:"",urutan:0});}}>
+          <div className="form-field">
+            <label className="form-label">Nama Penuh</label>
+            <input className="form-input" placeholder="cth: En. Ahmad bin Ali" value={pentForm.nama}
+              onChange={e=>setPentForm(f=>({...f,nama:e.target.value}))}/>
+          </div>
+          <div className="form-field">
+            <label className="form-label">Jawatan</label>
+            <input className="form-input" placeholder="cth: Guru Besar" value={pentForm.jawatan}
+              onChange={e=>setPentForm(f=>({...f,jawatan:e.target.value}))}/>
+          </div>
+          <div className="form-field">
+            <label className="form-label">URL Gambar (pilihan)</label>
+            <input className="form-input" placeholder="https://..." value={pentForm.gambar_url}
+              onChange={e=>setPentForm(f=>({...f,gambar_url:e.target.value}))}/>
+          </div>
+          {pentForm.gambar_url && (
+            <img src={pentForm.gambar_url} alt="Preview"
+              style={{width:72,height:72,objectFit:"cover",borderRadius:"50%",margin:"4px auto 8px",display:"block",border:"2px solid var(--border)"}}
+              onError={e=>{e.target.style.display='none';}}/>
+          )}
+          <div className="form-field">
+            <label className="form-label">Bio Ringkas (pilihan)</label>
+            <input className="form-input" placeholder="cth: 15 tahun pengalaman dalam pendidikan"
+              value={pentForm.bio} onChange={e=>setPentForm(f=>({...f,bio:e.target.value}))}/>
+          </div>
+          <div className="form-field">
+            <label className="form-label">Susunan (nombor — 1 = pertama)</label>
+            <input className="form-input" type="number" min="0" value={pentForm.urutan}
+              onChange={e=>setPentForm(f=>({...f,urutan:+e.target.value}))}/>
+          </div>
+          <button className="btn-add" style={{width:"100%",justifyContent:"center"}}
+            onClick={editPent ? updatePentadbir : addPentadbir}>
+            {editPent ? "Kemaskini" : "Simpan Pentadbir"}
+          </button>
+        </Modal>
+      )}
+
+      {/* Logo Edit Modal */}
+      {showLogoEdit && (
+        <Modal title="Tukar Logo Sekolah" onClose={()=>setShowLogoEdit(false)}>
+          <div className="form-field">
+            <label className="form-label">URL Logo Sekolah</label>
+            <input className="form-input" placeholder="https://..." value={logoInput}
+              onChange={e=>setLogoInput(e.target.value)}/>
+          </div>
+          {logoInput && (
+            <img src={logoInput} alt="Preview Logo"
+              style={{width:80,height:80,objectFit:"contain",borderRadius:12,margin:"8px auto",display:"block",border:"2px solid var(--border)",background:"white"}}
+              onError={e=>{e.target.style.display='none';}}/>
+          )}
+          <button className="btn-add" style={{width:"100%",justifyContent:"center"}} onClick={saveLogo}>Simpan Logo</button>
         </Modal>
       )}
 
