@@ -1332,6 +1332,136 @@ body::before {
 `;
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
+// ─── PUBLIC VIEW (no auth) ────────────────────────────────────────────────────
+function PublicView() {
+  const [notis, setNotis] = useState([]);
+  const [kal, setKal] = useState([]);
+  const [pent, setPent] = useState([]);
+  const [logo, setLogo] = useState("https://i.postimg.cc/pdhvk3Q2/images.jpg");
+
+  useEffect(() => {
+    supabase.from('notis').select('*').order('created_at',{ascending:false}).then(({data})=>setNotis(data||[]));
+    supabase.from('kalendar').select('*').order('tarikh',{ascending:true}).then(({data})=>setKal(data||[]));
+    supabase.from('pentadbir').select('*').order('urutan',{ascending:true}).then(({data})=>setPent(data||[]));
+    supabase.from('tetapan').select('*').then(({data})=>{
+      const l=data?.find(r=>r.kunci==='logo_url'); if(l?.nilai) setLogo(l.nilai);
+    });
+  },[]);
+
+  const BULAN=["JAN","FEB","MAR","APR","MEI","JUN","JUL","OGO","SEP","OKT","NOV","DIS"];
+  const fmtD=(s)=>{const d=new Date(s+'T00:00:00');const t=new Date();t.setHours(0,0,0,0);const diff=Math.ceil((d-t)/86400000);return{day:d.getDate(),mon:BULAN[d.getMonth()],diff};};
+  const cdStyle=(diff)=>{
+    if(diff<0) return{lbl:`${Math.abs(diff)} hari lalu`,tc:"#94a3b8",bg:"#f1f5f9"};
+    if(diff===0) return{lbl:"Hari ini!",tc:"#92400e",bg:"#fef9c3"};
+    if(diff<=7) return{lbl:`${diff} hari lagi`,tc:"#0077b6",bg:"#e8f4fd"};
+    return{lbl:`${diff} hari lagi`,tc:"#15803d",bg:"#f0fdf4"};
+  };
+
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#f5f0e8,#faf6ee,#f0e8d8)",fontFamily:"'Inter',sans-serif"}}>
+      <style>{CSS}</style>
+      {/* Header */}
+      <div style={{background:"linear-gradient(135deg,#001e3a,#003d6b,#0077b6)",color:"#fff",padding:"18px 28px",display:"flex",alignItems:"center",gap:16,boxShadow:"0 2px 12px rgba(0,0,0,0.2)"}}>
+        <img src={logo} alt="Logo" style={{width:52,height:52,borderRadius:"50%",border:"2px solid rgba(212,160,23,0.7)",objectFit:"contain",background:"#fff"}}/>
+        <div style={{flex:1}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:800,letterSpacing:0.4}}>Sekolah Kebangsaan Darau</div>
+          <div style={{fontSize:11,opacity:0.8,marginTop:2}}>Kota Kinabalu, Sabah · Malaysia</div>
+        </div>
+        <a href={window.location.pathname} style={{padding:"7px 16px",background:"rgba(255,255,255,0.15)",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,color:"#fff",textDecoration:"none",fontSize:12,fontWeight:700}}>
+          🔐 Log Masuk Admin
+        </a>
+      </div>
+      <div style={{height:3,background:"linear-gradient(90deg,#b8860b,#f0c040,#b8860b)"}}/>
+
+      <div style={{maxWidth:900,margin:"0 auto",padding:"24px 16px"}}>
+
+        {/* Profil Pentadbir */}
+        {pent.length>0 && <>
+          <div className="sec-hd" style={{marginBottom:12}}>
+            <div className="sec-title">🏫 Pentadbir Sekolah</div>
+          </div>
+          <div className="pent-grid" style={{marginBottom:24}}>
+            {pent.map((p,i)=>(
+              <div className="pent-card" key={p.id} style={{animationDelay:`${i*0.08}s`}}>
+                <div className="pent-foto-wrap">
+                  {p.gambar_url
+                    ? <img src={p.gambar_url} alt={p.nama} className="pent-foto"/>
+                    : <div className="pent-foto pent-foto-ph">{p.nama.split(" ").map(w=>w[0]).join("").slice(0,2)}</div>}
+                </div>
+                <div className="pent-info">
+                  <div className="pent-nama">{p.nama}</div>
+                  <div className="pent-jawatan">{p.jawatan}</div>
+                  {p.bio&&<div className="pent-bio">{p.bio}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>}
+
+        {/* Makluman */}
+        <div className="sec-hd" style={{marginBottom:12}}>
+          <div className="sec-title">📢 Makluman Sekolah</div>
+          <span className="sec-sub">{notis.length} item</span>
+        </div>
+        <div className="updates" style={{marginBottom:24}}>
+          {notis.length===0
+            ? <div style={{gridColumn:"1/-1",textAlign:"center",padding:28,color:"var(--text3)",fontWeight:700}}>Tiada makluman.</div>
+            : notis.map((u,i)=>{
+                const sas=SASARAN_OPTS.find(s=>s.lbl===(u.sasaran||"Semua"))||SASARAN_OPTS[0];
+                return(
+                  <div className="upd-card" key={u.id} style={{animationDelay:`${i*0.07}s`}}>
+                    <div className="upd-top">
+                      <span className="upd-ico">{u.icon}</span>
+                      <span className="upd-tag" style={{color:u.tc,background:u.bg}}>{u.tag}</span>
+                      <span className="mak-sasaran" style={{color:sas.tc,background:sas.bg}}>{sas.ico} {sas.lbl}</span>
+                    </div>
+                    <div className="upd-txt">{u.teks}</div>
+                  </div>
+                );
+              })
+          }
+        </div>
+
+        {/* Kalendar */}
+        <div className="sec-hd" style={{marginBottom:12}}>
+          <div className="sec-title">📅 Kalendar Sekolah</div>
+          <span className="sec-sub">{kal.length} acara</span>
+        </div>
+        <div className="kal-list" style={{marginBottom:24}}>
+          {kal.length===0
+            ? <div style={{textAlign:"center",padding:28,color:"var(--text3)",fontWeight:700}}>Tiada acara.</div>
+            : kal.map((k,i)=>{
+                const{day,mon,diff}=fmtD(k.tarikh);
+                const cd=cdStyle(diff);
+                const jn=JENIS_HAL.find(j=>j.lbl===k.jenis)||JENIS_HAL[4];
+                return(
+                  <div className={`kal-card${diff<0?" kal-past":""}`} key={k.id} style={{animationDelay:`${i*0.06}s`}}>
+                    <div className="kal-date-box" style={diff<0?{background:"var(--text3)"}:{}}>
+                      <div className="kal-date-day">{day}</div>
+                      <div className="kal-date-mon">{mon}</div>
+                    </div>
+                    <div className="kal-body">
+                      <div className="kal-tajuk">{k.tajuk}</div>
+                      {k.nota&&<div className="kal-nota">{k.nota}</div>}
+                      <div className="kal-badges">
+                        <span className="kal-jenis" style={{color:jn.tc,background:jn.bg,borderColor:jn.tc}}>{k.jenis}</span>
+                        <span className="kal-countdown" style={{color:cd.tc,background:cd.bg,borderColor:cd.tc}}>{cd.lbl}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+          }
+        </div>
+
+        <div style={{textAlign:"center",fontSize:11,color:"#94a3b8",paddingTop:12,borderTop:"1px solid #e2e8f0"}}>
+          Sistem EduDashboard · SK Darau · {new Date().getFullYear()}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Login({ onLogin }) {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -1939,6 +2069,7 @@ function AdminPanel() {
   const [setPwdUser, setSetPwdUser] = useState(null);
   const [newPwd, setNewPwd] = useState("");
   const [newPwdLoading, setNewPwdLoading] = useState(false);
+  const [roleLoading, setRoleLoading] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -1994,6 +2125,21 @@ function AdminPanel() {
       setUsers(u => u.filter(x => x.id !== userId));
     }
     setDelConfirm(null);
+  };
+
+  const toggleAdmin = async (u) => {
+    const newRole = u.user_metadata?.role === "Admin" ? "Guru" : "Admin";
+    setRoleLoading(u.id);
+    const data = await callFn({ action:"setRole", userId:u.id, role:newRole });
+    if (data.error) {
+      setMsg({ type:"err", text:"Gagal tukar role: " + data.error });
+    } else {
+      setMsg({ type:"ok", text:`${u.email} kini ${newRole}.` });
+      setUsers(list => list.map(x => x.id===u.id
+        ? {...x, user_metadata:{...x.user_metadata, role:newRole}}
+        : x));
+    }
+    setRoleLoading(null);
   };
 
   const doSetPassword = async () => {
@@ -2114,6 +2260,16 @@ function AdminPanel() {
                     </td>
                     <td style={{padding:"11px 16px"}}>
                       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                        {/* Toggle Admin role */}
+                        {u.email !== import.meta.env.VITE_ADMIN_EMAIL && (
+                          <button onClick={()=>toggleAdmin(u)} disabled={roleLoading===u.id}
+                            style={{padding:"3px 10px",borderRadius:6,fontSize:11,fontWeight:800,cursor:"pointer",
+                              background: u.user_metadata?.role==="Admin" ? "#fef9c3" : "#f0fdf4",
+                              color: u.user_metadata?.role==="Admin" ? "#92400e" : "#15803d",
+                              border: `1px solid ${u.user_metadata?.role==="Admin" ? "#fde68a" : "#bbf7d0"}`}}>
+                            {roleLoading===u.id ? "⏳" : u.user_metadata?.role==="Admin" ? "⭐ Admin — Buang" : "Jadikan Admin"}
+                          </button>
+                        )}
                         {/* Set Password */}
                         <button onClick={()=>{setSetPwdUser(u);setNewPwd("");setDelConfirm(null);}}
                           style={{padding:"3px 10px",borderRadius:6,background:"#eff6ff",color:"#2563eb",
@@ -2250,7 +2406,7 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
               style={{width:"100%",marginBottom:6,padding:"8px 14px",borderRadius:10,background:"rgba(99,102,241,0.18)",
                 border:"1px solid rgba(99,102,241,0.35)",color:"rgba(255,255,255,0.85)",
                 cursor:"pointer",fontSize:13,fontWeight:800,textAlign:"left",position:"relative"}}>
-              ⚙️ &nbsp;Urus Akaun Guru
+              ⚙️ &nbsp;Panel Admin (Super)
               {unreadTickets > 0 && (
                 <span style={{position:"absolute",top:6,right:10,background:"#ef4444",color:"#fff",borderRadius:"50%",
                   width:18,height:18,fontSize:10,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -2258,6 +2414,13 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
                 </span>
               )}
             </button>
+          )}
+          {user.role === "Admin" && user.email !== import.meta.env.VITE_ADMIN_EMAIL && (
+            <div style={{width:"100%",marginBottom:6,padding:"7px 14px",borderRadius:10,
+              background:"rgba(212,160,23,0.15)",border:"1px solid rgba(212,160,23,0.35)",
+              color:"rgba(253,230,138,0.9)",fontSize:12,fontWeight:700,textAlign:"center"}}>
+              ⭐ Admin — Boleh edit kandungan
+            </div>
           )}
           <button className="sb-out" onClick={onLogout}>🚪 &nbsp;Log Keluar</button>
           <div style={{marginTop:8,padding:"9px 12px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,textAlign:"center"}}>
@@ -2382,7 +2545,8 @@ function Overview({ onNav, user }) {
     return { lbl:`${diff} hari lagi`, tc:"#15803d", bg:"#f0fdf4" };
   };
 
-  const isAdmin = user.email === import.meta.env.VITE_ADMIN_EMAIL;
+  const isSuperAdmin = user.email === import.meta.env.VITE_ADMIN_EMAIL;
+  const isAdmin = isSuperAdmin || user.role === "Admin";
 
   // ── Profil Pentadbir ──
   const [pentadbirData, setPentadbirData] = useState([]);
@@ -12567,7 +12731,7 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    if (!user || user.email !== import.meta.env.VITE_ADMIN_EMAIL) return;
+    if (!user || user.email !== import.meta.env.VITE_ADMIN_EMAIL) return; // super admin only
     const fetchUnread = () =>
       supabase.from("support_tickets").select("id", { count:"exact", head:true })
         .eq("dibaca_admin", false).then(({ count }) => setUnreadTickets(count || 0));
@@ -12581,6 +12745,10 @@ export default function App() {
   const idx = m?.ids.indexOf(actSub)??-1;
   const sName = idx>=0 ? m.subs[idx] : "";
   const initials = user ? user.name.split(" ").map(w=>w[0]).join("").slice(0,2) : "";
+
+  // Public view — no auth needed
+  const isPublicMode = new URLSearchParams(window.location.search).has('public');
+  if (isPublicMode) return <PublicView />;
 
   if (!authChecked) return (
     <><style>{CSS}</style>
