@@ -1462,7 +1462,7 @@ function PublicView() {
   );
 }
 
-function Login({ onLogin }) {
+function Login({ onLogin, isModal = false }) {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [show, setShow] = useState(false);
@@ -1511,9 +1511,9 @@ function Login({ onLogin }) {
   ];
 
   return (
-    <div className="login-page">
+    <div className={isModal ? undefined : "login-page"} style={isModal ? {display:"flex",justifyContent:"center",padding:"0 16px"} : undefined}>
       <style>{CSS}</style>
-      {blobs.map((b,i) => (
+      {!isModal && blobs.map((b,i) => (
         <div key={i} className="blob" style={{
           width:b.w, height:b.h, background:b.bg,
           top:b.top, left:b.left, bottom:b.bottom, right:b.right,
@@ -2333,11 +2333,28 @@ function AdminPanel() {
   );
 }
 
+// ─── NEED LOGIN ───────────────────────────────────────────────────────────────
+function NeedLogin({ onLoginClick }) {
+  return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+      minHeight:320,gap:16,padding:40,textAlign:"center"}}>
+      <div style={{fontSize:56}}>🔐</div>
+      <div style={{fontSize:20,fontWeight:800,color:"var(--text1)"}}>Log masuk diperlukan</div>
+      <div style={{fontSize:14,color:"var(--text3)",maxWidth:320}}>Bahagian ini hanya untuk pengguna yang telah log masuk.</div>
+      <button onClick={onLoginClick}
+        style={{padding:"10px 28px",background:"#2563eb",color:"#fff",border:"none",
+          borderRadius:12,fontWeight:700,fontSize:15,cursor:"pointer"}}>
+        🔐 Log Masuk
+      </button>
+    </div>
+  );
+}
+
 // ─── SIDEBAR ──────────────────────────────────────────────────────────────────
-function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLogout, unreadTickets }) {
+function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLogout, unreadTickets, onLoginClick }) {
   const greetings = ["Semoga hari cikgu menyeronokkan! ✨","Hebat! Cikgu dah log masuk 🎉","Selamat bertugas, Cikgu! 💪","Jom buat kerja best harini! 🚀"];
   const [g] = useState(() => greetings[Math.floor(Math.random()*greetings.length)]);
-  const initials = user.name.split(" ").map(w=>w[0]).join("").slice(0,2);
+  const initials = user ? user.name.split(" ").map(w=>w[0]).join("").slice(0,2) : "👤";
 
   return (
     <>
@@ -2388,41 +2405,52 @@ function Sidebar({ open, onClose, exp, setExp, actMod, actSub, onNav, user, onLo
         </nav>
 
         <div className="sb-foot">
-          <div className="sb-user">
-            <div className="sb-av">{initials}</div>
-            <div>
-              <div className="sb-uname">{user.name.split(" ").slice(0,2).join(" ")}</div>
-              <div className="sb-urole">{user.role}</div>
-            </div>
-          </div>
-          <button onClick={()=>{ onNav("support", null); onClose(); }}
-            style={{width:"100%",marginBottom:6,padding:"8px 14px",borderRadius:10,background:"rgba(14,165,233,0.15)",
-              border:"1px solid rgba(14,165,233,0.35)",color:"rgba(255,255,255,0.85)",
-              cursor:"pointer",fontSize:13,fontWeight:800,textAlign:"left"}}>
-            🆘 &nbsp;Bantuan &amp; Aduan
-          </button>
-          {user.email === import.meta.env.VITE_ADMIN_EMAIL && (
-            <button onClick={()=>{ onNav("admin", null); onClose(); }}
-              style={{width:"100%",marginBottom:6,padding:"8px 14px",borderRadius:10,background:"rgba(99,102,241,0.18)",
-                border:"1px solid rgba(99,102,241,0.35)",color:"rgba(255,255,255,0.85)",
-                cursor:"pointer",fontSize:13,fontWeight:800,textAlign:"left",position:"relative"}}>
-              ⚙️ &nbsp;Panel Admin (Super)
-              {unreadTickets > 0 && (
-                <span style={{position:"absolute",top:6,right:10,background:"#ef4444",color:"#fff",borderRadius:"50%",
-                  width:18,height:18,fontSize:10,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  {unreadTickets}
-                </span>
+          {user ? (
+            <>
+              <div className="sb-user">
+                <div className="sb-av">{initials}</div>
+                <div>
+                  <div className="sb-uname">{user.name.split(" ").slice(0,2).join(" ")}</div>
+                  <div className="sb-urole">{user.role}</div>
+                </div>
+              </div>
+              <button onClick={()=>{ onNav("support", null); onClose(); }}
+                style={{width:"100%",marginBottom:6,padding:"8px 14px",borderRadius:10,background:"rgba(14,165,233,0.15)",
+                  border:"1px solid rgba(14,165,233,0.35)",color:"rgba(255,255,255,0.85)",
+                  cursor:"pointer",fontSize:13,fontWeight:800,textAlign:"left"}}>
+                🆘 &nbsp;Bantuan &amp; Aduan
+              </button>
+              {user.email === import.meta.env.VITE_ADMIN_EMAIL && (
+                <button onClick={()=>{ onNav("admin", null); onClose(); }}
+                  style={{width:"100%",marginBottom:6,padding:"8px 14px",borderRadius:10,background:"rgba(99,102,241,0.18)",
+                    border:"1px solid rgba(99,102,241,0.35)",color:"rgba(255,255,255,0.85)",
+                    cursor:"pointer",fontSize:13,fontWeight:800,textAlign:"left",position:"relative"}}>
+                  ⚙️ &nbsp;Panel Admin (Super)
+                  {unreadTickets > 0 && (
+                    <span style={{position:"absolute",top:6,right:10,background:"#ef4444",color:"#fff",borderRadius:"50%",
+                      width:18,height:18,fontSize:10,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      {unreadTickets}
+                    </span>
+                  )}
+                </button>
               )}
+              {user.role === "Admin" && user.email !== import.meta.env.VITE_ADMIN_EMAIL && (
+                <div style={{width:"100%",marginBottom:6,padding:"7px 14px",borderRadius:10,
+                  background:"rgba(212,160,23,0.15)",border:"1px solid rgba(212,160,23,0.35)",
+                  color:"rgba(253,230,138,0.9)",fontSize:12,fontWeight:700,textAlign:"center"}}>
+                  ⭐ Admin2 — Boleh edit kandungan
+                </div>
+              )}
+              <button className="sb-out" onClick={onLogout}>🚪 &nbsp;Log Keluar</button>
+            </>
+          ) : (
+            <button onClick={()=>{ onLoginClick(); onClose(); }}
+              style={{width:"100%",marginBottom:6,padding:"10px 14px",borderRadius:10,background:"rgba(37,99,235,0.25)",
+                border:"1px solid rgba(37,99,235,0.5)",color:"rgba(255,255,255,0.9)",
+                cursor:"pointer",fontSize:14,fontWeight:800,textAlign:"center"}}>
+              🔐 &nbsp;Log Masuk
             </button>
           )}
-          {user.role === "Admin" && user.email !== import.meta.env.VITE_ADMIN_EMAIL && (
-            <div style={{width:"100%",marginBottom:6,padding:"7px 14px",borderRadius:10,
-              background:"rgba(212,160,23,0.15)",border:"1px solid rgba(212,160,23,0.35)",
-              color:"rgba(253,230,138,0.9)",fontSize:12,fontWeight:700,textAlign:"center"}}>
-              ⭐ Admin — Boleh edit kandungan
-            </div>
-          )}
-          <button className="sb-out" onClick={onLogout}>🚪 &nbsp;Log Keluar</button>
           <div style={{marginTop:8,padding:"9px 12px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,textAlign:"center"}}>
             <div style={{fontSize:9.5,color:"rgba(255,255,255,0.45)",fontWeight:900,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>Pentadbir Sistem</div>
             <div style={{fontSize:11.5,color:"rgba(255,255,255,0.82)",fontWeight:900}}>En. Khairul Azwani bin Hj. Ahinin</div>
@@ -2458,9 +2486,9 @@ function CyclingText() {
 }
 
 // ─── OVERVIEW ─────────────────────────────────────────────────────────────────
-function Overview({ onNav, user }) {
+function Overview({ onNav, user, onLoginClick }) {
   const today = new Date().toLocaleDateString("ms-MY",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-  const initials = user.name.split(" ").map(w=>w[0]).join("").slice(0,2);
+  const initials = user ? user.name.split(" ").map(w=>w[0]).join("").slice(0,2) : "";
   const greetHour = new Date().getHours();
   const greetWord = greetHour < 12 ? "Selamat Pagi" : greetHour < 17 ? "Selamat Petang" : "Selamat Malam";
 
@@ -2545,8 +2573,8 @@ function Overview({ onNav, user }) {
     return { lbl:`${diff} hari lagi`, tc:"#15803d", bg:"#f0fdf4" };
   };
 
-  const isSuperAdmin = user.email === import.meta.env.VITE_ADMIN_EMAIL;
-  const isAdmin = isSuperAdmin || user.role === "Admin";
+  const isSuperAdmin = user?.email === import.meta.env.VITE_ADMIN_EMAIL;
+  const isAdmin = !!(user && (isSuperAdmin || user.role === "Admin"));
 
   // ── Profil Pentadbir ──
   const [pentadbirData, setPentadbirData] = useState([]);
@@ -2609,13 +2637,13 @@ function Overview({ onNav, user }) {
         <div className="hero-body">
           <div className="hero-top">
             <div style={{flex:1}}>
-              <div className="hero-title">{greetWord}, Cikgu {user.name.split(" ")[0]}! 🎉</div>
+              <div className="hero-title">{greetWord}{user ? `, Cikgu ${user.name.split(" ")[0]}` : ""}! 🎉</div>
               <div className="hero-sub"><CyclingText /></div>
               <div className="hero-date">{today}</div>
               <div className="hero-tags">
                 <div className="hero-tag">✅ Semua Modul Aktif</div>
                 <div className="hero-tag">📅 Penggal 2 · 2025</div>
-                <div className="hero-tag">👋 Hai, {initials}!</div>
+                {user && <div className="hero-tag">👋 Hai, {initials}!</div>}
                 <div className="hero-tag">🏫 SK Darau</div>
               </div>
             </div>
@@ -12680,6 +12708,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [showReset, setShowReset] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
   const [sbOpen, setSbOpen] = useState(false);
   const [exp, setExp] = useState("");
   const [actMod, setActMod] = useState(null);
@@ -12757,18 +12786,29 @@ export default function App() {
     </div></>
   );
 
-  if (showReset) return <WelcomeSetPassword onDone={(u)=>{ setShowReset(false); setUser(u); }}/>;
-
-  if (!user) return <Login onLogin={u=>setUser(u)}/>;
+  if (showReset) return <WelcomeSetPassword onDone={(u)=>{ setShowReset(false); setUser(u); setShowLogin(false); }}/>;
 
   return (
     <>
       <style>{CSS}</style>
+      {showLogin && !user && (
+        <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center"}}
+          onClick={e=>{ if(e.target===e.currentTarget) setShowLogin(false); }}>
+          <div style={{position:"relative",width:"100%",maxWidth:480}}>
+            <Login onLogin={u=>{ setUser(u); setShowLogin(false); }} isModal={true}/>
+            <button onClick={()=>setShowLogin(false)}
+              style={{position:"absolute",top:12,right:12,background:"rgba(255,255,255,0.15)",border:"none",
+                color:"#fff",borderRadius:"50%",width:32,height:32,fontSize:18,cursor:"pointer",fontWeight:900,
+                display:"flex",alignItems:"center",justifyContent:"center",zIndex:1}}>×</button>
+          </div>
+        </div>
+      )}
+
       <div className="app">
         <Sidebar open={sbOpen} onClose={()=>setSbOpen(false)}
           exp={exp} setExp={setExp} actMod={actMod} actSub={actSub}
           onNav={onNav} user={user} onLogout={async ()=>{ await supabase.auth.signOut(); }}
-          unreadTickets={unreadTickets}/>
+          unreadTickets={unreadTickets} onLoginClick={()=>setShowLogin(true)}/>
 
         <div className="main">
           <div className="topbar">
@@ -12785,21 +12825,31 @@ export default function App() {
                 title="Tukar tema">
                 {theme==="light" ? "🌙" : "☀️"}
               </button>
-              <div className="tb-notif">🔔<div className="tb-dot"/></div>
-              <div className="tb-user">
-                <div className="tb-uav">{initials}</div>
-                <div className="tb-uname">{user.name.split(" ")[0]}</div>
-              </div>
+              {user ? (
+                <>
+                  <div className="tb-notif">🔔<div className="tb-dot"/></div>
+                  <div className="tb-user">
+                    <div className="tb-uav">{initials}</div>
+                    <div className="tb-uname">{user.name.split(" ")[0]}</div>
+                  </div>
+                </>
+              ) : (
+                <button onClick={()=>setShowLogin(true)}
+                  style={{padding:"7px 16px",background:"#2563eb",color:"#fff",border:"none",
+                    borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap"}}>
+                  🔐 Log Masuk
+                </button>
+              )}
             </div>
           </div>
 
           <div className="content">
             {!actMod
-              ? <Overview onNav={onNav} user={user}/>
+              ? <Overview onNav={onNav} user={user} onLoginClick={()=>setShowLogin(true)}/>
               : actMod==="support"
-                ? <SupportPanel user={user}/>
+                ? user ? <SupportPanel user={user}/> : <NeedLogin onLoginClick={()=>setShowLogin(true)}/>
                 : actMod==="admin"
-                  ? <AdminPanel />
+                  ? user ? <AdminPanel /> : <NeedLogin onLoginClick={()=>setShowLogin(true)}/>
                   : actMod==="kurikulum"
                   ? <KurikulumPage subId={actSub} onNav={onNav}/>
                   : actMod==="hem"
